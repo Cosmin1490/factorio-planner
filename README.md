@@ -1,0 +1,104 @@
+# factorio-planner
+
+Node.js CLI tool for Factorio production planning using Helmod's Lua solver. Designed to be driven by Claude — you describe what you want to produce, Claude resolves the recipe chain, invokes the solver, and iterates.
+
+## Requirements
+
+- Node.js 22+
+- [helmod-web](https://github.com/rbalan/helmod-web) cloned at `~/code/helmod-web` (provides Lua solver + prototype data)
+
+## Setup
+
+```bash
+npm install
+```
+
+The project uses symlinks to helmod-web:
+- `lua/` → helmod-web's Lua solver sources (`src/lua/`)
+- `data/` → helmod-web's prototype export (`py-export/`)
+
+If symlinks are broken, recreate them:
+```bash
+ln -sf ~/code/helmod-web/src/lua lua
+ln -sf ~/code/helmod-web/py-export data
+```
+
+## Usage
+
+Run commands via `npx tsx src/cli.ts <command>`.
+
+### Query commands (explore recipe data)
+
+```bash
+# Find recipes that produce an item
+npx tsx src/cli.ts recipes --produces "iron-plate"
+
+# Find recipes that consume an item
+npx tsx src/cli.ts recipes --consumes "coal"
+
+# Show full recipe details
+npx tsx src/cli.ts recipe-info "iron-plate"
+
+# List factories for a recipe category
+npx tsx src/cli.ts factories --category "smelting"
+
+# Search items/fluids by name
+npx tsx src/cli.ts items --search "coal"
+```
+
+### Solve command (compute production ratios)
+
+```bash
+# Target mode: "I want 100 iron-plate per minute"
+npx tsx src/cli.ts solve --recipes "iron-plate" --target "iron-plate:100"
+
+# Multi-recipe chain
+npx tsx src/cli.ts solve --recipes "iron-plate,iron-gear-wheel" --target "iron-gear-wheel:100"
+
+# Override factory choice
+npx tsx src/cli.ts solve --recipes "iron-plate" --target "iron-plate:100" --factory "iron-plate:stone-furnace"
+
+# Raw JSON output
+npx tsx src/cli.ts solve --recipes "iron-plate" --target "iron-plate:100" --json
+```
+
+## Architecture
+
+```
+CLI (commander)
+  → PrototypeLoader (reads 16MB JSON, builds recipe/factory indexes)
+  → NodeBridge (Fengari Lua VM, runs Helmod's ModelCompute solver)
+  → Output (text summary or JSON)
+```
+
+The solver is Helmod's `ModelCompute.lua` running in a Fengari Lua VM. It computes exact factory counts, crafting speeds, power consumption, and material flows using Simplex/Gaussian methods.
+
+**Claude is the AI layer** — no interactive prompts. Claude explores recipes via query commands, builds the recipe list, and invokes solve with explicit parameters.
+
+## Known Issues
+
+- **Multi-recipe algebra mode**: With `solver=false` (default), the algebra solver may treat intermediate products as raw imports instead of linking to in-block recipes. Use `solver=true` (simplex) for better multi-recipe chain optimization. Not yet exposed as a CLI flag.
+- **Input mode** (`--input`): Flag exists but the solver integration for constrained-input mode needs further testing/tuning.
+- **Prototype data**: The JSON dump contains ALL recipes regardless of tech level. No filtering by researched technologies yet.
+
+## Development
+
+```bash
+# Run directly (no build step)
+npx tsx src/cli.ts --help
+
+# Build TypeScript
+npm run build
+
+# Run built version
+node dist/cli.js --help
+```
+
+## Prototype Data
+
+The recipe/entity/item data comes from a Factorio mod export (`helmod-web/export-mod/`). To regenerate after mod updates:
+
+1. Load Factorio with the export mod + desired mod set (e.g., Pyanodon's)
+2. Run `/helmod-web-export` in the Factorio console
+3. Output lands in `factorio/script-output/helmod-web-prototypes.json`
+4. Copy to `helmod-web/py-export/`

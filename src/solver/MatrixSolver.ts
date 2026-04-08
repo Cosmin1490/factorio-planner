@@ -259,8 +259,10 @@ export function solve(data: PrototypeData, input: SolveInput): SolveResult {
     if (fuel) {
       const burner = factory.burner_prototype!;
       const consumptionEffect = 1 + row.effects.consumption;
-      // Energy per recipe cycle (joules) = energy_usage (watts) × cycle_time (seconds)
-      const energyPerCycle = (factory.energy_usage ?? 0) * (recipe.energy / row.effectiveSpeed) * consumptionEffect;
+      // energy_usage is in J/tick; multiply by 60 to get watts (J/s)
+      const powerWatts = (factory.energy_usage ?? 0) * 60;
+      // Energy per recipe cycle (joules) = watts × cycle_time (seconds)
+      const energyPerCycle = powerWatts * (recipe.energy / row.effectiveSpeed) * consumptionEffect;
       // Fuel units per cycle = energy per cycle / (fuel_value × burner effectivity)
       const fuelPerCycle = energyPerCycle / (fuel.fuelValue * burner.effectivity);
       const fuelPerTime = fuelPerCycle * cyclesPerTime;

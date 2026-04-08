@@ -6,7 +6,7 @@
  * loadstring() can parse and ModelBuilder.copyModel() can reconstruct.
  */
 
-import { gzipSync } from 'zlib';
+import { deflateSync } from 'zlib';
 import type { PrototypeData } from '../data/PrototypeLoader.js';
 import type { SolveInput, SolveResult } from '../solver/types.js';
 
@@ -52,6 +52,7 @@ interface HelmodFactory {
   name: string;
   quality: string;
   amount: number;
+  fuel?: string;
   modules: Record<string, { name: string; amount: number; quality: string }>;
 }
 
@@ -103,6 +104,9 @@ function buildHelmodModel(input: SolveInput, result: SolveResult, data: Prototyp
       amount: 0, // let Helmod re-solve
       modules,
     };
+    if (spec.fuel) {
+      factory.fuel = spec.fuel;
+    }
 
     // Build beacons
     const beacons: HelmodBeacon[] = [];
@@ -142,6 +146,27 @@ function buildHelmodModel(input: SolveInput, result: SolveResult, data: Prototyp
   // Build target objective if present
   const blockName = input.recipes[0]?.recipeName ?? 'block';
 
+  // Build input/output constraints
+  const blockProducts: Record<string, unknown> = {};
+  const blockIngredients: Record<string, unknown> = {};
+
+  if (input.target) {
+    const itemType = data.items[input.target.name] ? 'item' : 'fluid';
+    blockProducts[input.target.name] = {
+      name: input.target.name,
+      type: itemType,
+      input: input.target.amount,
+    };
+  }
+  if (input.input) {
+    const itemType = data.items[input.input.name] ? 'item' : 'fluid';
+    blockIngredients[input.input.name] = {
+      name: input.input.name,
+      type: itemType,
+      input: input.input.amount,
+    };
+  }
+
   return {
     class: 'Model',
     version: 2,
@@ -153,9 +178,11 @@ function buildHelmodModel(input: SolveInput, result: SolveResult, data: Prototyp
       type: '',
       owner: '',
       by_product: !input.input,
-      by_factory: !!input.input,
+      by_factory: false,
       solver: false,
       children,
+      products: blockProducts,
+      ingredients: blockIngredients,
     },
     blocks: {},
   };
@@ -166,6 +193,6 @@ function buildHelmodModel(input: SolveInput, result: SolveResult, data: Prototyp
 export function exportHelmod(input: SolveInput, result: SolveResult, data: PrototypeData): string {
   const model = buildHelmodModel(input, result, data);
   const luaSource = luaSerialize(model);
-  const compressed = gzipSync(Buffer.from(luaSource, 'utf-8'));
-  return '0' + compressed.toString('base64');
+  const compressed = deflateSync(Buffer.from(luaSource, 'utf-8'));
+  return compressed.toString('base64');
 }

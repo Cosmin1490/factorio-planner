@@ -27,12 +27,23 @@ export interface RecipeSpec {
   fuel?: string;           // fuel item name for burner factories (e.g., "coal")
 }
 
+export type SolverMode = 'algebra' | 'simplex';
+
+/** Constraint on which recipe handles a specific product */
+export interface ConstraintSpec {
+  recipeName: string;
+  productName: string;
+  type: 'master' | 'exclude';  // master = force this recipe, exclude = skip this recipe
+}
+
 /** Input to the solver */
 export interface SolveInput {
   recipes: RecipeSpec[];
   target?: { name: string; amount: number };
   input?: { name: string; amount: number };
   time: number;
+  solver?: SolverMode;
+  constraints?: ConstraintSpec[];
 }
 
 /** Item/fluid flow in solver results */

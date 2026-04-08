@@ -1,7 +1,7 @@
 import { loadPrototypes, pickFactory } from '../data/PrototypeLoader.js';
 import { solve } from '../solver/MatrixSolver.js';
 import { exportHelmod } from '../export/helmod.js';
-import type { RecipeSpec, SolveInput, ModuleSpec, BeaconSpec } from '../solver/types.js';
+import type { RecipeSpec, SolveInput, ModuleSpec, BeaconSpec, SolverMode, ConstraintSpec } from '../solver/types.js';
 
 interface SolveOptions {
   recipes: string;
@@ -14,6 +14,8 @@ interface SolveOptions {
   beacons?: string[];
   export?: string;
   json?: boolean;
+  solver?: string;
+  constraint?: string[];
 }
 
 function parseAmountSpec(spec: string): { name: string; amount: number } {
@@ -127,9 +129,33 @@ export function solveCommand(protoPath: string, options: SolveOptions) {
     });
   }
 
+  // Parse constraints
+  const constraints: ConstraintSpec[] = [];
+  for (const spec of options.constraint ?? []) {
+    const parts = spec.split(':');
+    if (parts.length < 3) {
+      console.error(`Invalid constraint "${spec}" — expected "recipe:product:master|exclude"`);
+      process.exit(1);
+    }
+    const [recipe, product, type] = parts;
+    if (type !== 'master' && type !== 'exclude') {
+      console.error(`Invalid constraint type "${type}" — must be "master" or "exclude"`);
+      process.exit(1);
+    }
+    constraints.push({ recipeName: recipe, productName: product, type });
+  }
+
+  const solverMode = (options.solver ?? 'algebra') as SolverMode;
+  if (solverMode !== 'algebra' && solverMode !== 'simplex') {
+    console.error(`Invalid solver "${options.solver}" — must be "algebra" or "simplex"`);
+    process.exit(1);
+  }
+
   const solveInput: SolveInput = {
     recipes: recipeSpecs,
     time,
+    solver: solverMode,
+    constraints: constraints.length > 0 ? constraints : undefined,
   };
 
   if (options.target) {

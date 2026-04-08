@@ -1,42 +1,57 @@
 /**
  * TypeScript reimplementation of the Helmod production solver.
  *
- * Solves for factory counts given a set of recipes and a production target,
- * using Gaussian elimination on a recipe/item coefficient matrix.
+ * Supports two solver algorithms:
+ * - Algebraic: greedy multi-pass Gaussian elimination (fast, handles most linear chains)
+ * - Simplex: tableau pivoting with artificial variables (handles cyclic/over-determined systems)
+ *
+ * Matrix layout: rows = recipes, columns = items/fluids.
+ * Positive coefficients = production, negative = consumption.
  */
 
 import type { PrototypeData, Recipe, Entity, Item, RecipeElement } from '../data/PrototypeLoader.js';
 import { computeEffects, effectiveSpeed, effectiveProductivity } from './ModuleEffects.js';
-import { ItemState, type SolveInput, type SolveResult, type RecipeResult, type ItemFlow, type EffectTotals } from './types.js';
+import { ItemState, type SolveInput, type SolveResult, type RecipeResult, type ItemFlow, type EffectTotals, type ConstraintSpec } from './types.js';
 
-/** Resolved fuel info for a burner factory */
+// ── Internal types ──────────────────────────────────────────────────────────
+
 interface FuelInfo {
   item: Item;
-  fuelValue: number;       // joules per unit
-  burntResult?: string;    // item name of burnt result (e.g., "ash")
+  fuelValue: number;
+  burntResult?: string;
 }
 
-/** Column in the solver matrix — represents one item/fluid flow */
 interface MatrixColumn {
-  key: string;        // unique key: "name:type" or "name:type:temp"
+  key: string;
   name: string;
   type: 'item' | 'fluid';
   temperature?: number;
   state: ItemState;
 }
 
-/** Row metadata — represents one recipe */
-interface MatrixRow {
+interface ResolvedRecipe {
+  recipe: Recipe;
+  factory: Entity;
+  fuel: FuelInfo | null;
   recipeName: string;
   factoryName: string;
-  factoryCount: number;
   effectiveSpeed: number;
   effects: EffectTotals;
 }
 
-/**
- * Build a unique key for an item/fluid. Fluids with temperature get a suffix.
- */
+/** The constructed matrix + metadata, ready for a solver to consume */
+interface SolverMatrix {
+  matrix: number[][];
+  columns: MatrixColumn[];
+  colIndex: Map<string, number>;
+  resolved: ResolvedRecipe[];
+  Z: number[];
+  numRows: number;
+  numCols: number;
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
 function itemKey(el: RecipeElement): string {
   if (el.type === 'fluid' && el.temperature != null) {
     return `${el.name}:${el.type}:${el.temperature}`;
@@ -44,9 +59,6 @@ function itemKey(el: RecipeElement): string {
   return `${el.name}:${el.type}`;
 }
 
-/**
- * Get effective amount for a recipe element, accounting for probability and extra_count_fraction.
- */
 function elementAmount(el: RecipeElement): number {
   const base = el.amount ?? ((el.amount_min ?? 0) + (el.amount_max ?? 0)) / 2;
   const prob = el.probability ?? 1;
@@ -54,13 +66,6 @@ function elementAmount(el: RecipeElement): number {
   return base * prob + extra;
 }
 
-/**
- * Classify items as intermediate (state=0), output (state=1), or input (state=2).
- * An item that appears as both a product and an ingredient across the block's recipes
- * is an intermediate — the solver should link production to consumption internally.
- *
- * extraProduced/extraConsumed account for non-recipe flows like fuel and burnt results.
- */
 function classifyItems(
   recipes: Recipe[],
   extraProduced: Set<string>,
@@ -71,17 +76,12 @@ function classifyItems(
 
   for (const recipe of recipes) {
     const products = Array.isArray(recipe.products) ? recipe.products : [];
-    for (const p of products) {
-      producedBy.add(itemKey(p));
-    }
-    for (const ing of recipe.ingredients) {
-      consumedBy.add(`${ing.name}:${ing.type}`);
-    }
+    for (const p of products) producedBy.add(itemKey(p));
+    for (const ing of recipe.ingredients) consumedBy.add(`${ing.name}:${ing.type}`);
   }
 
   const result = new Map<string, { name: string; type: 'item' | 'fluid'; temperature?: number; state: ItemState }>();
 
-  // Helper to add an item with proper classification
   function addItem(name: string, type: 'item' | 'fluid', temperature?: number) {
     const key = temperature != null ? `${name}:${type}:${temperature}` : `${name}:${type}`;
     if (result.has(key)) return;
@@ -89,9 +89,7 @@ function classifyItems(
     const isIntermediate = producedBy.has(baseKey) && consumedBy.has(baseKey);
     const isProduced = producedBy.has(key) || producedBy.has(baseKey);
     result.set(key, {
-      name,
-      type,
-      temperature,
+      name, type, temperature,
       state: isIntermediate ? ItemState.Intermediate : (isProduced ? ItemState.Output : ItemState.Input),
     });
   }
@@ -101,8 +99,6 @@ function classifyItems(
     for (const p of products) addItem(p.name, p.type, p.temperature);
     for (const ing of recipe.ingredients) addItem(ing.name, ing.type);
   }
-
-  // Add fuel/burnt result items
   for (const key of extraConsumed) {
     const [name, type] = key.split(':');
     addItem(name, type as 'item' | 'fluid');
@@ -115,15 +111,7 @@ function classifyItems(
   return result;
 }
 
-/**
- * Resolve fuel for a burner factory. If no fuel is specified, pick the first
- * available fuel from the item list matching the burner's fuel categories.
- */
-function resolveFuel(
-  data: PrototypeData,
-  factory: Entity,
-  fuelName?: string,
-): FuelInfo | null {
+function resolveFuel(data: PrototypeData, factory: Entity, fuelName?: string): FuelInfo | null {
   const burner = factory.burner_prototype;
   if (!burner) return null;
 
@@ -133,8 +121,6 @@ function resolveFuel(
     return { item, fuelValue: item.fuel_value, burntResult: item.burnt_result?.name };
   }
 
-  // Auto-pick: find a fuel item matching the burner's categories
-  // Prefer coal as a common default
   const fuelCategories = burner.fuel_categories;
   for (const name of ['coal', 'wood', 'solid-fuel']) {
     const item = data.items[name];
@@ -142,270 +128,426 @@ function resolveFuel(
       return { item, fuelValue: item.fuel_value, burntResult: item.burnt_result?.name };
     }
   }
-
-  // Fall back to any matching fuel
   for (const item of Object.values(data.items)) {
     if (item.fuel_value && item.fuel_category && fuelCategories[item.fuel_category]) {
       return { item, fuelValue: item.fuel_value, burntResult: item.burnt_result?.name };
     }
   }
-
   return null;
 }
 
-/**
- * Find a column index by item name, trying item first then fluid.
- */
 function findColumn(colIndex: Map<string, number>, name: string): number | null {
   return colIndex.get(`${name}:item`) ?? colIndex.get(`${name}:fluid`) ?? null;
 }
 
-export function solve(data: PrototypeData, input: SolveInput): SolveResult {
+// ── Matrix construction ─────────────────────────────────────────────────────
+
+function buildMatrix(data: PrototypeData, input: SolveInput): SolverMatrix {
   const { time } = input;
 
   // Resolve recipes, factories, and fuel
-  const resolvedRecipes: { recipe: Recipe; factory: Entity; row: MatrixRow; fuel: FuelInfo | null }[] = [];
+  const resolved: ResolvedRecipe[] = [];
   for (const spec of input.recipes) {
     const recipe = data.recipes[spec.recipeName];
     if (!recipe) throw new Error(`Recipe "${spec.recipeName}" not found`);
     const factory = data.entities[spec.factoryName];
     if (!factory) throw new Error(`Factory "${spec.factoryName}" not found`);
 
-    const effects = computeEffects(
-      data.items,
-      data.entities,
-      recipe,
-      factory,
-      spec.modules ?? [],
-      spec.beacons ?? [],
-    );
-
+    const effects = computeEffects(data.items, data.entities, recipe, factory, spec.modules ?? [], spec.beacons ?? []);
     const speed = effectiveSpeed(factory, effects, spec.factoryQuality);
     const fuel = resolveFuel(data, factory, spec.fuel);
 
-    resolvedRecipes.push({
-      recipe,
-      factory,
-      fuel,
-      row: {
-        recipeName: spec.recipeName,
-        factoryName: spec.factoryName,
-        factoryCount: 0,
-        effectiveSpeed: speed,
-        effects,
-      },
-    });
+    resolved.push({ recipe, factory, fuel, recipeName: spec.recipeName, factoryName: spec.factoryName, effectiveSpeed: speed, effects });
   }
 
-  // Step 1: Classify items (including fuel/burnt result items)
+  // Classify items
   const extraProduced = new Set<string>();
   const extraConsumed = new Set<string>();
-  for (const { fuel } of resolvedRecipes) {
+  for (const { fuel } of resolved) {
     if (fuel) {
       extraConsumed.add(`${fuel.item.name}:item`);
-      if (fuel.burntResult) {
-        extraProduced.add(`${fuel.burntResult}:item`);
-      }
+      if (fuel.burntResult) extraProduced.add(`${fuel.burntResult}:item`);
     }
   }
-  const itemClassification = classifyItems(resolvedRecipes.map(r => r.recipe), extraProduced, extraConsumed);
+  const itemClassification = classifyItems(resolved.map(r => r.recipe), extraProduced, extraConsumed);
 
-  // Step 2: Build column index
+  // Build column index
   const columns: MatrixColumn[] = [];
   const colIndex = new Map<string, number>();
-
   for (const [key, info] of itemClassification) {
     colIndex.set(key, columns.length);
     columns.push({ key, name: info.name, type: info.type, temperature: info.temperature, state: info.state });
   }
 
-  const numRows = resolvedRecipes.length;
+  const numRows = resolved.length;
   const numCols = columns.length;
 
-  // Step 3: Build coefficient matrix
-  // matrix[row][col] = rate of item flow per factory for this recipe
-  // Positive = production, Negative = consumption
+  // Build coefficient matrix
   const matrix: number[][] = [];
   for (let r = 0; r < numRows; r++) {
     matrix[r] = new Array(numCols).fill(0);
-    const { recipe, row } = resolvedRecipes[r];
-    const productivity = effectiveProductivity(row.effects);
-
-    // Recipe cycle time and cycles per time base
-    const cycleTime = recipe.energy / row.effectiveSpeed;
+    const { recipe, factory, fuel, effectiveSpeed: speed, effects } = resolved[r];
+    const productivity = effectiveProductivity(effects);
+    const cycleTime = recipe.energy / speed;
     const cyclesPerTime = time / cycleTime;
 
-    // Products (positive flow)
     const products = Array.isArray(recipe.products) ? recipe.products : [];
     for (const p of products) {
-      const key = itemKey(p);
-      const ci = colIndex.get(key);
-      if (ci != null) {
-        matrix[r][ci] += elementAmount(p) * productivity * cyclesPerTime;
-      }
+      const ci = colIndex.get(itemKey(p));
+      if (ci != null) matrix[r][ci] += elementAmount(p) * productivity * cyclesPerTime;
     }
-
-    // Ingredients (negative flow)
     for (const ing of recipe.ingredients) {
-      const key = `${ing.name}:${ing.type}`;
-      const ci = colIndex.get(key);
-      if (ci != null) {
-        matrix[r][ci] -= elementAmount(ing) * cyclesPerTime;
-      }
+      const ci = colIndex.get(`${ing.name}:${ing.type}`);
+      if (ci != null) matrix[r][ci] -= elementAmount(ing) * cyclesPerTime;
     }
 
-    // Fuel consumption and burnt result for burner factories
-    const { fuel, factory } = resolvedRecipes[r];
     if (fuel) {
       const burner = factory.burner_prototype!;
-      const consumptionEffect = 1 + row.effects.consumption;
-      // energy_usage is in J/tick; multiply by 60 to get watts (J/s)
+      const consumptionEffect = 1 + effects.consumption;
       const powerWatts = (factory.energy_usage ?? 0) * 60;
-      // Energy per recipe cycle (joules) = watts × cycle_time (seconds)
-      const energyPerCycle = powerWatts * (recipe.energy / row.effectiveSpeed) * consumptionEffect;
-      // Fuel units per cycle = energy per cycle / (fuel_value × burner effectivity)
+      const energyPerCycle = powerWatts * (recipe.energy / speed) * consumptionEffect;
       const fuelPerCycle = energyPerCycle / (fuel.fuelValue * burner.effectivity);
       const fuelPerTime = fuelPerCycle * cyclesPerTime;
 
-      // Fuel consumed (negative flow)
       const fuelCol = colIndex.get(`${fuel.item.name}:item`);
-      if (fuelCol != null) {
-        matrix[r][fuelCol] -= fuelPerTime;
-      }
-
-      // Burnt result produced (positive flow, 1:1 with fuel consumed)
+      if (fuelCol != null) matrix[r][fuelCol] -= fuelPerTime;
       if (fuel.burntResult) {
         const burntCol = colIndex.get(`${fuel.burntResult}:item`);
-        if (burntCol != null) {
-          matrix[r][burntCol] += fuelPerTime;
-        }
+        if (burntCol != null) matrix[r][burntCol] += fuelPerTime;
       }
     }
   }
 
-  // TODO: Temperature-linked fluid conversion rows would be inserted here.
-  // For fluids that exist at different temperatures, synthetic conversion rows
-  // allow the solver to route between compatible temperature variants.
-  // See: Helmod SolverLinkedMatrix.lua linkTemperatureFluid()
-
-  // Step 4: Z-row (objective/demand vector)
-  // Z[col] tracks remaining demand. Negative = demand, positive = surplus.
+  // Z-row (objective/demand vector)
   const Z = new Array(numCols).fill(0);
-  const isInputMode = !!input.input && !input.target;
-
   if (input.target) {
-    // Target mode: set demand for desired output
     const targetCol = findColumn(colIndex, input.target.name);
-    if (targetCol == null) {
-      throw new Error(`Target "${input.target.name}" not found in recipe products/ingredients`);
-    }
+    if (targetCol == null) throw new Error(`Target "${input.target.name}" not found in recipe products/ingredients`);
     Z[targetCol] = -input.target.amount;
   } else if (input.input) {
-    // Input mode: set available supply for a constrained input.
-    // We need to find which recipe consumes this input, scale it to use exactly
-    // the specified amount, then propagate forward to see what we produce.
     const inputCol = findColumn(colIndex, input.input.name);
-    if (inputCol == null) {
-      throw new Error(`Input "${input.input.name}" not found in recipe products/ingredients`);
-    }
-    // Set supply as positive (available resource)
+    if (inputCol == null) throw new Error(`Input "${input.input.name}" not found in recipe products/ingredients`);
     Z[inputCol] = input.input.amount;
   }
 
-  // Step 5: Gaussian elimination (multi-pass)
-  // Process recipes repeatedly until all satisfiable demands are met.
-  // A single pass may not suffice because downstream recipes create demand
-  // for upstream recipes that were processed earlier in the same pass.
-  const recipeCounts: number[] = new Array(numRows).fill(0);
+  return { matrix, columns, colIndex, resolved, Z, numRows, numCols };
+}
+
+// ── Algebraic solver ────────────────────────────────────────────────────────
+
+function solveAlgebra(m: SolverMatrix, input: SolveInput): number[] {
+  const { matrix, Z, numRows, numCols, resolved } = m;
+  const recipeCounts = new Array(numRows).fill(0);
   const maxPasses = numRows + 1;
+  const isInputMode = !!input.input && !input.target;
+
+  // Build constraint lookup: recipeName → ConstraintSpec[]
+  const constraintMap = new Map<string, ConstraintSpec[]>();
+  for (const c of input.constraints ?? []) {
+    const existing = constraintMap.get(c.recipeName) ?? [];
+    existing.push(c);
+    constraintMap.set(c.recipeName, existing);
+  }
 
   if (isInputMode) {
-    // Input mode: scale recipes to consume available supply.
-    // Find the recipe that consumes the input, scale it to use available supply,
-    // then propagate outputs forward through remaining recipes.
     for (let pass = 0; pass < maxPasses; pass++) {
       let changed = false;
-
       for (let r = 0; r < numRows; r++) {
-        // Find column with most available supply that this recipe consumes
         let bestCol = -1;
         let bestScale = 0;
+        const constraints = constraintMap.get(resolved[r].recipeName);
 
         for (let c = 0; c < numCols; c++) {
-          const consumption = -matrix[r][c]; // positive if recipe consumes this
+          const consumption = -matrix[r][c];
           if (consumption <= 0) continue;
-
-          const supply = Z[c];              // positive = available supply
+          const supply = Z[c];
           if (supply <= 1e-9) continue;
 
-          // Scale to consume all available supply of this item
-          const scale = supply / consumption;
-          if (scale > bestScale) {
-            bestScale = scale;
-            bestCol = c;
+          // Check constraints
+          if (constraints) {
+            const colName = m.columns[c].name;
+            const isMaster = constraints.some(cs => cs.productName === colName && cs.type === 'master');
+            const isExcluded = constraints.some(cs => cs.productName === colName && cs.type === 'exclude');
+            if (isExcluded) continue;
+            if (isMaster) { bestCol = c; bestScale = supply / consumption; break; }
           }
-        }
 
+          const scale = supply / consumption;
+          if (scale > bestScale) { bestScale = scale; bestCol = c; }
+        }
         if (bestCol < 0) continue;
 
-        const consumption = -matrix[r][bestCol];
-        const supply = Z[bestCol];
-        const scale = supply / consumption;
-
+        const scale = Z[bestCol] / (-matrix[r][bestCol]);
         recipeCounts[r] += scale;
         changed = true;
-
-        // Update Z-row: apply this recipe's flows (scaled)
-        // Consumed items decrease, produced items increase
-        for (let c = 0; c < numCols; c++) {
-          Z[c] += matrix[r][c] * scale;
-        }
+        for (let c = 0; c < numCols; c++) Z[c] += matrix[r][c] * scale;
       }
-
       if (!changed) break;
     }
   } else {
-    // Target mode: scale recipes to satisfy demand
     for (let pass = 0; pass < maxPasses; pass++) {
       let changed = false;
-
       for (let r = 0; r < numRows; r++) {
         let bestCol = -1;
         let bestRatio = 0;
+        const constraints = constraintMap.get(resolved[r].recipeName);
 
         for (let c = 0; c < numCols; c++) {
           const production = matrix[r][c];
           if (production <= 0) continue;
-
           const demand = -Z[c];
           if (demand <= 1e-9) continue;
 
-          const ratio = demand / production;
-          if (ratio > bestRatio) {
-            bestRatio = ratio;
-            bestCol = c;
+          if (constraints) {
+            const colName = m.columns[c].name;
+            const isMaster = constraints.some(cs => cs.productName === colName && cs.type === 'master');
+            const isExcluded = constraints.some(cs => cs.productName === colName && cs.type === 'exclude');
+            if (isExcluded) continue;
+            if (isMaster) { bestCol = c; bestRatio = demand / production; break; }
           }
-        }
 
+          const ratio = demand / production;
+          if (ratio > bestRatio) { bestRatio = ratio; bestCol = c; }
+        }
         if (bestCol < 0) continue;
 
         const production = matrix[r][bestCol];
         const demand = -Z[bestCol];
         const scale = demand / production;
-
         recipeCounts[r] += scale;
         changed = true;
-
-        for (let c = 0; c < numCols; c++) {
-          Z[c] += matrix[r][c] * scale;
-        }
+        for (let c = 0; c < numCols; c++) Z[c] += matrix[r][c] * scale;
       }
-
       if (!changed) break;
     }
   }
 
-  // Step 6: Compute actual production/consumption totals per column
+  return recipeCounts;
+}
+
+// ── Simplex solver ──────────────────────────────────────────────────────────
+
+interface SimplexTableau {
+  rows: number[][];         // includes Z-row as last row
+  headers: number[];        // row header → original column index (-1 for artificial)
+  colMap: number[];         // tableau column → original column index (-1 for slack/artificial)
+  coefficients: number[];   // per-row coefficient values
+  numOrigRows: number;
+  numOrigCols: number;
+  totalCols: number;
+}
+
+function simplexPrepare(m: SolverMatrix, input: SolveInput): SimplexTableau {
+  const { matrix, Z, numRows, numCols } = m;
+  const isInputMode = !!input.input && !input.target;
+
+  // Deep copy matrix rows and Z
+  // In input mode, negate the matrix (Helmod uses factor=-1 for by_product=false)
+  // This flips production/consumption so the simplex can work forward from inputs
+  const rows: number[][] = [];
+  for (let r = 0; r < numRows; r++) {
+    if (isInputMode) {
+      rows.push(matrix[r].map(v => -v));
+    } else {
+      rows.push([...matrix[r]]);
+    }
+  }
+  const zRow = [...Z];
+
+  // Coefficients per row (initially 0)
+  const coefficients = new Array(numRows).fill(0);
+
+  // Headers: each row starts mapped to itself
+  const headers = Array.from({ length: numRows }, (_, i) => i);
+
+  // Column map: first numCols are original columns
+  const colMap = Array.from({ length: numCols }, (_, i) => i);
+
+  // Step 1: Add artificial rows for unproduced columns
+  // A column is "unproduced" if no recipe row has a positive value for it
+  const artificialRows: number[][] = [];
+  const artificialCoeffs: number[] = [];
+  let artIndex = 1;
+
+  for (let c = 0; c < numCols; c++) {
+    let hasProducer = false;
+    for (let r = 0; r < numRows; r++) {
+      if (rows[r][c] > 0) { hasProducer = true; break; }
+    }
+    if (!hasProducer) {
+      // Add artificial row with 1 in this column, 0 elsewhere
+      const artRow = new Array(numCols).fill(0);
+      artRow[c] = 1;
+      artificialRows.push(artRow);
+      artificialCoeffs.push(1e4 * artIndex);
+      artIndex++;
+    }
+  }
+
+  // Combine real + artificial rows
+  for (const artRow of artificialRows) {
+    rows.push(artRow);
+    headers.push(-1); // artificial row marker
+  }
+  for (const coeff of artificialCoeffs) {
+    coefficients.push(coeff);
+  }
+
+  const totalRows = rows.length; // real + artificial (not counting Z-row yet)
+
+  // Step 2: Prepend coefficient column
+  for (let r = 0; r < totalRows; r++) {
+    rows[r].unshift(coefficients[r]);
+  }
+  // Coefficient column is index 0 in the tableau
+  const coeffColMap = [-1]; // not an original column
+  const shiftedColMap = colMap.map(c => c); // original columns shift by 1
+
+  // Step 3: Append identity matrix (slack variables) — one per ORIGINAL row only
+  // Helmod uses rawlen(matrix.rows) = numOrigRows, NOT including artificial rows
+  for (let r = 0; r < totalRows; r++) {
+    for (let s = 0; s < numRows; s++) {
+      rows[r].push(r === s ? 1 : 0);
+    }
+  }
+
+  // Step 4: Z-row — simplex needs positive values for items with unsatisfied demand/supply
+  // In buildMatrix: target mode sets Z = -amount (demand), input mode sets Z = +amount (supply)
+  // Simplex pivots on positive Z values, so use absolute values
+  const zRowTableau: number[] = [0]; // coefficient column = 0
+  for (let c = 0; c < numCols; c++) {
+    zRowTableau.push(Math.abs(zRow[c]));
+  }
+  // Slack columns in Z-row = 0 (one per original row)
+  for (let s = 0; s < numRows; s++) {
+    zRowTableau.push(0);
+  }
+  rows.push(zRowTableau);
+
+  // Build full column map
+  const fullColMap: number[] = [-1]; // coeff column
+  for (const c of shiftedColMap) fullColMap.push(c);
+  for (let s = 0; s < numRows; s++) fullColMap.push(-1); // slack columns
+
+  const totalCols = 1 + numCols + numRows; // coeff + original + slack (original rows only)
+
+  return {
+    rows,
+    headers,
+    colMap: fullColMap,
+    coefficients,
+    numOrigRows: numRows,
+    numOrigCols: numCols,
+    totalCols,
+  };
+}
+
+function simplexGetPivot(t: SimplexTableau): { found: boolean; xrow: number; xcol: number } {
+  const zRow = t.rows[t.rows.length - 1];
+  const numDataRows = t.rows.length - 1; // exclude Z-row
+
+  let maxZValue = 0;
+  let xcol = -1;
+  let xrow = -1;
+
+  // Find column with highest positive Z-value (skip coefficient column at index 0)
+  for (let c = 1; c < t.totalCols; c++) {
+    const zVal = zRow[c] ?? 0;
+    if (zVal > maxZValue) {
+      // Find best row for this column (ratio test)
+      let bestRatio: number | null = null;
+      let bestValue = 0;
+      let candidateRow = -1;
+
+      for (let r = 0; r < numDataRows; r++) {
+        const cellVal = t.rows[r][c] ?? 0;
+        if (cellVal > 0) {
+          const coeff = t.rows[r][0]; // coefficient is column 0
+          const ratio = coeff / cellVal;
+          if (bestRatio === null || ratio > bestRatio || coeff > bestValue) {
+            bestRatio = ratio;
+            bestValue = coeff;
+            candidateRow = r;
+          }
+        }
+      }
+
+      if (candidateRow >= 0) {
+        maxZValue = zVal;
+        xcol = c;
+        xrow = candidateRow;
+      }
+    }
+  }
+
+  return { found: maxZValue > 1e-10, xrow, xcol };
+}
+
+function simplexPivot(t: SimplexTableau, xrow: number, xcol: number): void {
+  const pivotValue = t.rows[xrow][xcol];
+  const numAllRows = t.rows.length;
+  const oldRows = t.rows.map(row => [...row]); // snapshot
+
+  // Update coefficient for pivot row
+  t.coefficients[xrow] = t.coefficients[xrow] / pivotValue;
+  t.rows[xrow][0] = t.coefficients[xrow];
+
+  for (let r = 0; r < numAllRows; r++) {
+    for (let c = 0; c < t.totalCols; c++) {
+      const cellVal = oldRows[r][c] ?? 0;
+      if (r === xrow) {
+        // Pivot row: divide by pivot value
+        t.rows[r][c] = cellVal / pivotValue;
+      } else if (c === xcol) {
+        // Pivot column: zero out
+        t.rows[r][c] = 0;
+      } else {
+        const B = oldRows[r][xcol] ?? 0;
+        const D = oldRows[xrow][c] ?? 0;
+        const value = cellVal - (B * D) / pivotValue;
+        t.rows[r][c] = Math.abs(value) < 1e-10 ? 0 : value;
+      }
+    }
+  }
+
+  // Swap basis: the row's header becomes the column, and vice versa
+  // Track which original column is now in this row's basis
+  const oldHeader = t.headers[xrow];
+  t.headers[xrow] = t.colMap[xcol];
+  t.colMap[xcol] = oldHeader;
+}
+
+function solveSimplex(m: SolverMatrix, input: SolveInput): number[] {
+  const tableau = simplexPrepare(m, input);
+
+  // Pivot loop
+  const maxIterations = (m.numRows + m.numCols) * 3;
+  for (let iter = 0; iter < maxIterations; iter++) {
+    const { found, xrow, xcol } = simplexGetPivot(tableau);
+    if (!found) break;
+    simplexPivot(tableau, xrow, xcol);
+  }
+
+  // Extract recipe counts from the slack variable columns in the Z-row
+  // After pivoting, recipe counts are: -Z[slackCol] for each original recipe row
+  // (Helmod's table_compute: parameters.recipe_count = -zrow[icol])
+  const recipeCounts = new Array(m.numRows).fill(0);
+  const zRow = tableau.rows[tableau.rows.length - 1];
+  const slackStart = 1 + m.numCols; // coeff column + original columns
+
+  for (let r = 0; r < m.numRows; r++) {
+    const slackVal = zRow[slackStart + r] ?? 0;
+    recipeCounts[r] = Math.abs(slackVal) < 1e-10 ? 0 : -slackVal;
+  }
+
+  return recipeCounts;
+}
+
+// ── Result extraction (shared) ──────────────────────────────────────────────
+
+function extractResults(m: SolverMatrix, recipeCounts: number[]): SolveResult {
+  const { matrix, columns, resolved, numRows, numCols } = m;
+
   const totalProduction = new Array(numCols).fill(0);
   const totalConsumption = new Array(numCols).fill(0);
   for (let r = 0; r < numRows; r++) {
@@ -416,16 +558,14 @@ export function solve(data: PrototypeData, input: SolveInput): SolveResult {
     }
   }
 
-  // Step 7: Extract results
   const recipeResults: RecipeResult[] = [];
   for (let r = 0; r < numRows; r++) {
-    const { row } = resolvedRecipes[r];
     recipeResults.push({
-      recipeName: row.recipeName,
-      factoryName: row.factoryName,
+      recipeName: resolved[r].recipeName,
+      factoryName: resolved[r].factoryName,
       factoryCount: recipeCounts[r],
-      effectiveSpeed: row.effectiveSpeed,
-      energyUsage: 0, // TODO: compute from factory energy × consumption effect
+      effectiveSpeed: resolved[r].effectiveSpeed,
+      energyUsage: 0,
     });
   }
 
@@ -435,27 +575,17 @@ export function solve(data: PrototypeData, input: SolveInput): SolveResult {
 
   for (let c = 0; c < numCols; c++) {
     const col = columns[c];
-
     if (col.state === ItemState.Intermediate) {
-      // For intermediates, check if there's a net surplus or deficit
       const net = totalProduction[c] - totalConsumption[c];
-      if (Math.abs(net) < 0.0001) continue; // perfectly balanced, true intermediate
-      // Unbalanced intermediate — show surplus as output, deficit as input
+      if (Math.abs(net) < 0.0001) continue;
       const flow: ItemFlow = { name: col.name, type: col.type, amount: Math.abs(net), state: col.state };
-      if (net > 0) {
-        flow.state = ItemState.Output;
-        products.push(flow);
-      } else {
-        flow.state = ItemState.Input;
-        ingredients.push(flow);
-      }
+      if (net > 0) { flow.state = ItemState.Output; products.push(flow); }
+      else { flow.state = ItemState.Input; ingredients.push(flow); }
     } else if (col.state === ItemState.Output) {
-      // Output items: report total production
       if (totalProduction[c] > 0.0001) {
         products.push({ name: col.name, type: col.type, amount: totalProduction[c], state: col.state });
       }
     } else {
-      // Input items: report total consumption
       if (totalConsumption[c] > 0.0001) {
         ingredients.push({ name: col.name, type: col.type, amount: totalConsumption[c], state: col.state });
       }
@@ -463,4 +593,13 @@ export function solve(data: PrototypeData, input: SolveInput): SolveResult {
   }
 
   return { recipes: recipeResults, products, ingredients, intermediates };
+}
+
+// ── Public API ──────────────────────────────────────────────────────────────
+
+export function solve(data: PrototypeData, input: SolveInput): SolveResult {
+  const m = buildMatrix(data, input);
+  const solver = input.solver ?? 'algebra';
+  const recipeCounts = solver === 'simplex' ? solveSimplex(m, input) : solveAlgebra(m, input);
+  return extractResults(m, recipeCounts);
 }

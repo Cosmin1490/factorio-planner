@@ -67,6 +67,8 @@ program
   .option('--fuel <recipe:item...>', 'Fuel override for burner factories (e.g., "iron-plate:coal")')
   .option('--modules <recipe:module:count...>', 'Factory modules (e.g., "iron-plate:speed-module-3:4")')
   .option('--beacons <recipe:beacon:module:mCount:bCount...>', 'Beacons (e.g., "iron-plate:beacon:speed-module-3:2:8")')
+  .option('--solver <mode>', 'Solver algorithm: algebra (default) or simplex', 'algebra')
+  .option('--constraint <spec...>', 'Recipe constraint (e.g., "iron-plate:iron-plate:master")')
   .option('--export <format>', 'Export as Helmod import string (format: helmod)')
   .option('--json', 'Output raw JSON result')
   .option('--proto <path>', 'Path to prototype JSON', DEFAULT_PROTO_PATH)
@@ -80,6 +82,8 @@ program
       fuel: opts.fuel,
       modules: opts.modules,
       beacons: opts.beacons,
+      solver: opts.solver,
+      constraint: opts.constraint,
       export: opts.export,
       json: opts.json,
     });

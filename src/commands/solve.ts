@@ -1,5 +1,6 @@
 import { loadPrototypes, pickFactory } from '../data/PrototypeLoader.js';
 import { solve } from '../solver/MatrixSolver.js';
+import { exportHelmod } from '../export/helmod.js';
 import type { RecipeSpec, SolveInput, ModuleSpec, BeaconSpec } from '../solver/types.js';
 
 interface SolveOptions {
@@ -11,6 +12,7 @@ interface SolveOptions {
   fuel?: string[];
   modules?: string[];
   beacons?: string[];
+  export?: string;
   json?: boolean;
 }
 
@@ -141,6 +143,12 @@ export function solveCommand(protoPath: string, options: SolveOptions) {
 
   console.error('Running solver...');
   const result = solve(data, solveInput);
+
+  if (options.export === 'helmod') {
+    const exportString = exportHelmod(solveInput, result, data);
+    console.log(exportString);
+    return;
+  }
 
   if (options.json) {
     console.log(JSON.stringify(result, null, 2));

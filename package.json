@@ -1,0 +1,24 @@
+{
+  "name": "factorio-planner",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "factorio-planner": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/cli.js",
+    "dev": "tsx src/cli.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "commander": "^13.0.0",
+    "fengari": "^0.1.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

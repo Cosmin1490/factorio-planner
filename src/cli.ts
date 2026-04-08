@@ -65,6 +65,8 @@ program
   .option('--time <seconds>', 'Time base in seconds (default: 60)', '60')
   .option('--factory <recipe:entity...>', 'Factory override (e.g., "iron-plate:stone-furnace")')
   .option('--fuel <recipe:item...>', 'Fuel override for burner factories (e.g., "iron-plate:coal")')
+  .option('--modules <recipe:module:count...>', 'Factory modules (e.g., "iron-plate:speed-module-3:4")')
+  .option('--beacons <recipe:beacon:module:mCount:bCount...>', 'Beacons (e.g., "iron-plate:beacon:speed-module-3:2:8")')
   .option('--json', 'Output raw JSON result')
   .option('--proto <path>', 'Path to prototype JSON', DEFAULT_PROTO_PATH)
   .action((opts) => {
@@ -75,6 +77,8 @@ program
       time: opts.time,
       factory: opts.factory,
       fuel: opts.fuel,
+      modules: opts.modules,
+      beacons: opts.beacons,
       json: opts.json,
     });
   });

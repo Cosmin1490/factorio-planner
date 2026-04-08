@@ -1,6 +1,6 @@
 import { loadPrototypes, pickFactory } from '../data/PrototypeLoader.js';
 import { solve } from '../solver/MatrixSolver.js';
-import type { RecipeSpec, SolveInput } from '../solver/types.js';
+import type { RecipeSpec, SolveInput, ModuleSpec, BeaconSpec } from '../solver/types.js';
 
 interface SolveOptions {
   recipes: string;
@@ -9,12 +9,59 @@ interface SolveOptions {
   time?: string;
   factory?: string[];
   fuel?: string[];
+  modules?: string[];
+  beacons?: string[];
   json?: boolean;
 }
 
 function parseAmountSpec(spec: string): { name: string; amount: number } {
   const [name, amountStr] = spec.split(':');
   return { name, amount: parseFloat(amountStr) };
+}
+
+/**
+ * Parse --modules "recipe:module:count[:quality]"
+ * Returns a map of recipe name → ModuleSpec[]
+ */
+function parseModuleSpecs(specs: string[]): Map<string, ModuleSpec[]> {
+  const result = new Map<string, ModuleSpec[]>();
+  for (const spec of specs) {
+    const parts = spec.split(':');
+    if (parts.length < 3) {
+      console.error(`Invalid module spec "${spec}" — expected "recipe:module:count[:quality]"`);
+      process.exit(1);
+    }
+    const [recipe, moduleName, countStr, quality] = parts;
+    const existing = result.get(recipe) ?? [];
+    existing.push({ name: moduleName, count: parseInt(countStr, 10), quality });
+    result.set(recipe, existing);
+  }
+  return result;
+}
+
+/**
+ * Parse --beacons "recipe:beacon:module:moduleCount:beaconCount[:quality]"
+ * Returns a map of recipe name → BeaconSpec[]
+ */
+function parseBeaconSpecs(specs: string[]): Map<string, BeaconSpec[]> {
+  const result = new Map<string, BeaconSpec[]>();
+  for (const spec of specs) {
+    const parts = spec.split(':');
+    if (parts.length < 5) {
+      console.error(`Invalid beacon spec "${spec}" — expected "recipe:beacon:module:moduleCount:beaconCount[:quality]"`);
+      process.exit(1);
+    }
+    const [recipe, beaconName, moduleName, moduleCountStr, beaconCountStr, quality] = parts;
+    const existing = result.get(recipe) ?? [];
+    existing.push({
+      name: beaconName,
+      modules: [{ name: moduleName, count: parseInt(moduleCountStr, 10) }],
+      count: parseInt(beaconCountStr, 10),
+      quality,
+    });
+    result.set(recipe, existing);
+  }
+  return result;
 }
 
 export function solveCommand(protoPath: string, options: SolveOptions) {
@@ -26,19 +73,21 @@ export function solveCommand(protoPath: string, options: SolveOptions) {
     process.exit(1);
   }
 
-  // Parse factory overrides: --factory "recipe:entity"
+  // Parse overrides
   const factoryOverrides = new Map<string, string>();
   for (const spec of options.factory ?? []) {
     const [recipe, entity] = spec.split(':');
     factoryOverrides.set(recipe, entity);
   }
 
-  // Parse fuel overrides: --fuel "recipe:item"
   const fuelOverrides = new Map<string, string>();
   for (const spec of options.fuel ?? []) {
     const [recipe, fuelItem] = spec.split(':');
     fuelOverrides.set(recipe, fuelItem);
   }
+
+  const moduleOverrides = parseModuleSpecs(options.modules ?? []);
+  const beaconOverrides = parseBeaconSpecs(options.beacons ?? []);
 
   const time = parseInt(options.time ?? '60', 10);
 
@@ -71,7 +120,8 @@ export function solveCommand(protoPath: string, options: SolveOptions) {
       recipeName,
       factoryName,
       fuel: fuelOverrides.get(recipeName),
-      // TODO: parse --modules and --beacons options
+      modules: moduleOverrides.get(recipeName),
+      beacons: beaconOverrides.get(recipeName),
     });
   }
 

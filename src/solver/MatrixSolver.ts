@@ -153,6 +153,13 @@ function resolveFuel(
   return null;
 }
 
+/**
+ * Find a column index by item name, trying item first then fluid.
+ */
+function findColumn(colIndex: Map<string, number>, name: string): number | null {
+  return colIndex.get(`${name}:item`) ?? colIndex.get(`${name}:fluid`) ?? null;
+}
+
 export function solve(data: PrototypeData, input: SolveInput): SolveResult {
   const { time } = input;
 
@@ -282,20 +289,25 @@ export function solve(data: PrototypeData, input: SolveInput): SolveResult {
   // Step 4: Z-row (objective/demand vector)
   // Z[col] tracks remaining demand. Negative = demand, positive = surplus.
   const Z = new Array(numCols).fill(0);
+  const isInputMode = !!input.input && !input.target;
 
   if (input.target) {
-    // Find the target column
-    const targetKey = `${input.target.name}:item`;
-    let targetCol = colIndex.get(targetKey);
-    if (targetCol == null) {
-      // Try as fluid
-      const fluidKey = `${input.target.name}:fluid`;
-      targetCol = colIndex.get(fluidKey);
-    }
+    // Target mode: set demand for desired output
+    const targetCol = findColumn(colIndex, input.target.name);
     if (targetCol == null) {
       throw new Error(`Target "${input.target.name}" not found in recipe products/ingredients`);
     }
     Z[targetCol] = -input.target.amount;
+  } else if (input.input) {
+    // Input mode: set available supply for a constrained input.
+    // We need to find which recipe consumes this input, scale it to use exactly
+    // the specified amount, then propagate forward to see what we produce.
+    const inputCol = findColumn(colIndex, input.input.name);
+    if (inputCol == null) {
+      throw new Error(`Input "${input.input.name}" not found in recipe products/ingredients`);
+    }
+    // Set supply as positive (available resource)
+    Z[inputCol] = input.input.amount;
   }
 
   // Step 5: Gaussian elimination (multi-pass)
@@ -305,46 +317,90 @@ export function solve(data: PrototypeData, input: SolveInput): SolveResult {
   const recipeCounts: number[] = new Array(numRows).fill(0);
   const maxPasses = numRows + 1;
 
-  for (let pass = 0; pass < maxPasses; pass++) {
-    let changed = false;
+  if (isInputMode) {
+    // Input mode: scale recipes to consume available supply.
+    // Find the recipe that consumes the input, scale it to use available supply,
+    // then propagate outputs forward through remaining recipes.
+    for (let pass = 0; pass < maxPasses; pass++) {
+      let changed = false;
 
-    for (let r = 0; r < numRows; r++) {
-      // Find best pivot column: the column with the most unsatisfied demand
-      // that this recipe can produce.
-      let bestCol = -1;
-      let bestRatio = 0;
+      for (let r = 0; r < numRows; r++) {
+        // Find column with most available supply that this recipe consumes
+        let bestCol = -1;
+        let bestScale = 0;
 
-      for (let c = 0; c < numCols; c++) {
-        const production = matrix[r][c]; // how much this recipe produces per factory
-        if (production <= 0) continue;    // can't produce this item
+        for (let c = 0; c < numCols; c++) {
+          const consumption = -matrix[r][c]; // positive if recipe consumes this
+          if (consumption <= 0) continue;
 
-        const demand = -Z[c];            // positive = unsatisfied demand
-        if (demand <= 1e-9) continue;     // no demand for this item
+          const supply = Z[c];              // positive = available supply
+          if (supply <= 1e-9) continue;
 
-        const ratio = demand / production;
-        if (ratio > bestRatio) {
-          bestRatio = ratio;
-          bestCol = c;
+          // Scale to consume all available supply of this item
+          const scale = supply / consumption;
+          if (scale > bestScale) {
+            bestScale = scale;
+            bestCol = c;
+          }
+        }
+
+        if (bestCol < 0) continue;
+
+        const consumption = -matrix[r][bestCol];
+        const supply = Z[bestCol];
+        const scale = supply / consumption;
+
+        recipeCounts[r] += scale;
+        changed = true;
+
+        // Update Z-row: apply this recipe's flows (scaled)
+        // Consumed items decrease, produced items increase
+        for (let c = 0; c < numCols; c++) {
+          Z[c] += matrix[r][c] * scale;
         }
       }
 
-      if (bestCol < 0) continue; // recipe doesn't satisfy any demand
-
-      // Scale factor: how many factories of this recipe do we need?
-      const production = matrix[r][bestCol];
-      const demand = -Z[bestCol];
-      const scale = demand / production;
-
-      recipeCounts[r] += scale;
-      changed = true;
-
-      // Update Z-row: subtract this recipe's contributions (scaled)
-      for (let c = 0; c < numCols; c++) {
-        Z[c] += matrix[r][c] * scale;
-      }
+      if (!changed) break;
     }
+  } else {
+    // Target mode: scale recipes to satisfy demand
+    for (let pass = 0; pass < maxPasses; pass++) {
+      let changed = false;
 
-    if (!changed) break;
+      for (let r = 0; r < numRows; r++) {
+        let bestCol = -1;
+        let bestRatio = 0;
+
+        for (let c = 0; c < numCols; c++) {
+          const production = matrix[r][c];
+          if (production <= 0) continue;
+
+          const demand = -Z[c];
+          if (demand <= 1e-9) continue;
+
+          const ratio = demand / production;
+          if (ratio > bestRatio) {
+            bestRatio = ratio;
+            bestCol = c;
+          }
+        }
+
+        if (bestCol < 0) continue;
+
+        const production = matrix[r][bestCol];
+        const demand = -Z[bestCol];
+        const scale = demand / production;
+
+        recipeCounts[r] += scale;
+        changed = true;
+
+        for (let c = 0; c < numCols; c++) {
+          Z[c] += matrix[r][c] * scale;
+        }
+      }
+
+      if (!changed) break;
+    }
   }
 
   // Step 6: Compute actual production/consumption totals per column

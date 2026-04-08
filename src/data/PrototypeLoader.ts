@@ -12,6 +12,10 @@ export interface RecipeElement {
   amount_max?: number;
   probability?: number;
   catalyst_amount?: number;
+  temperature?: number;
+  minimum_temperature?: number;
+  maximum_temperature?: number;
+  extra_count_fraction?: number;
 }
 
 export interface Recipe {
@@ -26,7 +30,17 @@ export interface Recipe {
   group?: { name: string; order: string };
   subgroup?: { name: string; order: string };
   allowed_effects?: Record<string, boolean>;
+  maximum_productivity?: number;
+  emissions_multiplier?: number;
   order?: string;
+}
+
+export interface BurnerPrototype {
+  fuel_categories: Record<string, boolean>;
+  effectivity: number;
+  emissions_per_joule?: Record<string, number>;
+  fuel_inventory_size?: number;
+  type: string;
 }
 
 export interface Entity {
@@ -35,6 +49,15 @@ export interface Entity {
   crafting_categories?: Record<string, boolean>;
   crafting_speed?: Record<string, number>;
   module_slots?: number;
+  module_inventory_size?: number;
+  distribution_effectivity?: number;
+  distribution_effectivity_bonus_per_quality_level?: number;
+  profile?: number[];
+  allowed_effects?: Record<string, boolean>;
+  allowed_module_categories?: Record<string, boolean>;
+  beacon_counter?: string;
+  energy_usage?: number;
+  burner_prototype?: BurnerPrototype;
   hidden?: boolean;
 }
 
@@ -44,6 +67,11 @@ export interface Item {
   group?: { name: string };
   subgroup?: { name: string };
   order?: string;
+  module_effects?: Record<string, Record<string, number>>;
+  fuel_value?: number;
+  fuel_category?: string;
+  fuel_emissions_multiplier?: number;
+  burnt_result?: { name: string; type: string };
 }
 
 export interface Fluid {

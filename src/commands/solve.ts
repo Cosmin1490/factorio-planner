@@ -1,6 +1,6 @@
-import { resolve } from 'path';
-import { loadPrototypes, pickFactory, type PrototypeData } from '../data/PrototypeLoader.js';
-import { NodeBridge, type SolverBlock, type SolverEntry } from '../bridge/NodeBridge.js';
+import { loadPrototypes, pickFactory } from '../data/PrototypeLoader.js';
+import { solve } from '../solver/MatrixSolver.js';
+import type { RecipeSpec, SolveInput } from '../solver/types.js';
 
 interface SolveOptions {
   recipes: string;
@@ -8,6 +8,7 @@ interface SolveOptions {
   input?: string;
   time?: string;
   factory?: string[];
+  fuel?: string[];
   json?: boolean;
 }
 
@@ -16,36 +17,7 @@ function parseAmountSpec(spec: string): { name: string; amount: number } {
   return { name, amount: parseFloat(amountStr) };
 }
 
-function buildEntry(
-  id: string,
-  index: number,
-  recipeName: string,
-  factoryName: string,
-  factoryType: string,
-): SolverEntry {
-  return {
-    id,
-    name: recipeName,
-    type: 'recipe',
-    index,
-    count: 0,
-    production: 1,
-    quality: 'normal',
-    base_time: 60,
-    factory: {
-      name: factoryName,
-      type: factoryType,
-      quality: 'normal',
-      modules: [],
-    },
-    beacons: [],
-    isBlock: false,
-    need_candidat_objective: true,
-    need_first_candidat_objective: index === 0,
-  };
-}
-
-export function solveCommand(protoPath: string, luaDir: string, options: SolveOptions) {
+export function solveCommand(protoPath: string, options: SolveOptions) {
   const data = loadPrototypes(protoPath);
   const recipeNames = options.recipes.split(',').map(s => s.trim()).filter(Boolean);
 
@@ -61,29 +33,31 @@ export function solveCommand(protoPath: string, luaDir: string, options: SolveOp
     factoryOverrides.set(recipe, entity);
   }
 
-  const time = parseInt(options.time ?? '60', 10);
-  const isInputMode = !!options.input;
+  // Parse fuel overrides: --fuel "recipe:item"
+  const fuelOverrides = new Map<string, string>();
+  for (const spec of options.fuel ?? []) {
+    const [recipe, fuelItem] = spec.split(':');
+    fuelOverrides.set(recipe, fuelItem);
+  }
 
-  // Build children
-  const children: Record<string, SolverEntry> = {};
-  for (let i = 0; i < recipeNames.length; i++) {
-    const recipeName = recipeNames[i];
+  const time = parseInt(options.time ?? '60', 10);
+
+  // Resolve factories for each recipe
+  const recipeSpecs: RecipeSpec[] = [];
+  for (const recipeName of recipeNames) {
     const recipe = data.recipes[recipeName];
     if (!recipe) {
       console.error(`Recipe "${recipeName}" not found`);
       process.exit(1);
     }
 
-    // Determine factory
     let factoryName = factoryOverrides.get(recipeName);
-    let factoryType = 'assembling-machine';
     if (factoryName) {
       const entity = data.entities[factoryName];
       if (!entity) {
         console.error(`Factory "${factoryName}" not found`);
         process.exit(1);
       }
-      factoryType = entity.type;
     } else {
       const factory = pickFactory(data, recipe.category);
       if (!factory) {
@@ -91,43 +65,32 @@ export function solveCommand(protoPath: string, luaDir: string, options: SolveOp
         process.exit(1);
       }
       factoryName = factory.name;
-      factoryType = factory.type;
     }
 
-    const entryId = `entry_${i + 1}`;
-    children[entryId] = buildEntry(entryId, i, recipeName, factoryName, factoryType);
+    recipeSpecs.push({
+      recipeName,
+      factoryName,
+      fuel: fuelOverrides.get(recipeName),
+      // TODO: parse --modules and --beacons options
+    });
   }
 
-  // Parse target/input
-  let targetAmount: number | undefined;
-  if (options.target) {
-    const spec = parseAmountSpec(options.target);
-    targetAmount = spec.amount;
-  }
-
-  // Build block
-  const block: SolverBlock = {
-    id: 'block_1',
-    name: recipeNames[0],
-    children,
-    products: {},
-    ingredients: {},
+  const solveInput: SolveInput = {
+    recipes: recipeSpecs,
     time,
-    count: 1,
-    by_product: !isInputMode,
-    by_factory: isInputMode,
-    solver: false,
-    isBlock: true,
-    index: 0,
-    __target_amount: targetAmount,
   };
 
-  // Initialize bridge and run solver
-  const bridge = new NodeBridge(luaDir);
-  console.error('Initializing solver (loading prototypes)...');
-  bridge.init(protoPath);
+  if (options.target) {
+    const spec = parseAmountSpec(options.target);
+    solveInput.target = spec;
+  }
+  if (options.input) {
+    const spec = parseAmountSpec(options.input);
+    solveInput.input = spec;
+  }
+
   console.error('Running solver...');
-  const result = bridge.computeBlock(block);
+  const result = solve(data, solveInput);
 
   if (options.json) {
     console.log(JSON.stringify(result, null, 2));
@@ -135,55 +98,30 @@ export function solveCommand(protoPath: string, luaDir: string, options: SolveOp
   }
 
   // Pretty-print results
-  const resultChildren = (result as Record<string, unknown>).children as Record<string, Record<string, unknown>> | undefined;
-  if (!resultChildren) {
-    console.log('No results from solver');
-    return;
-  }
-
   console.log(`\nResults (time base: ${time}s):\n`);
   console.log('Recipe                          Factory                    Count    Speed');
   console.log('─'.repeat(80));
 
-  for (const [_id, child] of Object.entries(resultChildren)) {
-    const name = child.name as string;
-    const factory = child.factory as Record<string, unknown>;
-    const factoryName = factory.name as string;
-    const count = factory.count as number ?? factory.amount as number ?? 0;
-    const speed = factory.speed as number ?? 0;
+  for (const r of result.recipes) {
     console.log(
-      `${name.padEnd(32)}${factoryName.padEnd(27)}${Math.ceil(count).toString().padStart(5)}    ${speed.toFixed(2)}`
+      `${r.recipeName.padEnd(32)}${r.factoryName.padEnd(27)}${Math.ceil(r.factoryCount).toString().padStart(5)}    ${r.effectiveSpeed.toFixed(2)}`
     );
   }
 
-  // Show products and ingredients
-  const products = (result as Record<string, unknown>).products as Record<string, Record<string, unknown>> | undefined;
-  const ingredients = (result as Record<string, unknown>).ingredients as Record<string, Record<string, unknown>> | undefined;
+  const visibleProducts = result.products.filter(p => p.amount >= 0.01);
+  const visibleIngredients = result.ingredients.filter(i => i.amount >= 0.01);
 
-  if (products && Object.keys(products).length > 0) {
+  if (visibleProducts.length > 0) {
     console.log('\nOutputs:');
-    for (const [_key, prod] of Object.entries(products)) {
-      const name = prod.name as string ?? _key;
-      const amount = prod.count as number ?? prod.amount as number ?? 0;
-      if (amount > 0.001) {
-        console.log(`  ${name}: ${amount.toFixed(2)}/${time}s`);
-      }
+    for (const p of visibleProducts) {
+      console.log(`  ${p.name}: ${p.amount.toFixed(2)}/${time}s`);
     }
   }
 
-  if (ingredients && Object.keys(ingredients).length > 0) {
+  if (visibleIngredients.length > 0) {
     console.log('\nInputs (raw):');
-    for (const [_key, ing] of Object.entries(ingredients)) {
-      const name = ing.name as string ?? _key;
-      const amount = ing.count as number ?? ing.amount as number ?? 0;
-      if (amount > 0.001) {
-        console.log(`  ${name}: ${amount.toFixed(2)}/${time}s`);
-      }
+    for (const ing of visibleIngredients) {
+      console.log(`  ${ing.name}: ${ing.amount.toFixed(2)}/${time}s`);
     }
-  }
-
-  const power = (result as Record<string, unknown>).power as number | undefined;
-  if (power) {
-    console.log(`\nTotal power: ${(power / 1000).toFixed(1)} kW`);
   }
 }

@@ -12,13 +12,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '..');
 
 const DEFAULT_PROTO_PATH = resolve(PROJECT_ROOT, 'data/helmod-web-prototypes.json');
-const DEFAULT_LUA_DIR = resolve(PROJECT_ROOT, 'lua');
 
 const program = new Command();
 
 program
   .name('factorio-planner')
-  .description('Factorio production planner using Helmod solver')
+  .description('Factorio production planner')
   .version('0.1.0');
 
 program
@@ -65,16 +64,17 @@ program
   .option('--input <item:amount>', 'Constrained input (e.g., "raw-coal:15")')
   .option('--time <seconds>', 'Time base in seconds (default: 60)', '60')
   .option('--factory <recipe:entity...>', 'Factory override (e.g., "iron-plate:stone-furnace")')
+  .option('--fuel <recipe:item...>', 'Fuel override for burner factories (e.g., "iron-plate:coal")')
   .option('--json', 'Output raw JSON result')
   .option('--proto <path>', 'Path to prototype JSON', DEFAULT_PROTO_PATH)
-  .option('--lua <path>', 'Path to Lua source directory', DEFAULT_LUA_DIR)
   .action((opts) => {
-    solveCommand(opts.proto, opts.lua, {
+    solveCommand(opts.proto, {
       recipes: opts.recipes,
       target: opts.target,
       input: opts.input,
       time: opts.time,
       factory: opts.factory,
+      fuel: opts.fuel,
       json: opts.json,
     });
   });

@@ -71,6 +71,19 @@ Pipeline: `luaSerialize(model)` → `zlib.deflateSync()` → `base64` — **NO v
 - **Ash is free**: Treat ash as a readily available input. Don't let it drive scaling.
 - **Void solid byproducts**: Stone can be voided via `saline-water` recipe (10 stone + 100 water → 50 water-saline).
 
+## Recipe alternative evaluation
+
+When comparing recipe alternatives, don't assume "more complex = more efficient":
+
+1. **Identify the bottleneck** — what's the most expensive input? (deep chain, slow buildings, rare ores, animal husbandry)
+2. **Trace both paths to shared dependencies** — alternatives often share the same bottleneck upstream. Compare per-unit consumption of that bottleneck.
+3. **Normalize to same output** — compare cost per 1 unit of output, not per craft. 4x output at 2 inputs beats 2x output at 1 input.
+4. **Check if the alternative actually bypasses the bottleneck** — if both converge on the same expensive intermediate, the "upgrade" is a trap.
+5. **Rank by:** efficiency (raw materials/output) > complexity (recipes/buildings) > convenience
+6. **Watch for "later game" recipes** — some exist to consume excess byproducts (e.g., rubber uses excess petrochemicals), not for efficiency. They're traps at early tech.
+
+Example: stopper-2 (rubber) looks like an upgrade over stopper, but both need 0.5 latex/stopper (same formic-acid cost). Rubber just adds carbon-black + polybutadiene + titanium for no benefit.
+
 ## Pyanodon module tricks
 
 Some Pyanodon buildings use items (not standard modules) as modules:

@@ -75,30 +75,30 @@ Pipeline: `luaSerialize(model)` → `zlib.deflateSync()` → `base64` — **NO v
 
 ## Recipe alternative evaluation
 
-When comparing recipe alternatives, don't assume "more complex = more efficient":
+### Comparing alternatives
+1. **Identify the bottleneck** — most expensive input (deep chain, slow buildings, rare ores, animal husbandry).
+2. **Trace alternatives to the shared bottleneck** — compare per-unit consumption of the limiter. If both paths converge on the same expensive intermediate, the "upgrade" is a trap.
+3. **Normalize to same output** — cost per 1 unit of output, not per craft. 4x output at 2 inputs beats 2x at 1.
+4. **Rank by:** efficiency (raw materials/output) > complexity (recipes/buildings) > convenience. Watch for "later game" recipes that exist to consume excess byproducts — traps at early tech.
 
-1. **Identify the bottleneck** — what's the most expensive input? (deep chain, slow buildings, rare ores, animal husbandry)
-2. **Trace both paths to shared dependencies** — alternatives often share the same bottleneck upstream. Compare per-unit consumption of that bottleneck.
-3. **Normalize to same output** — compare cost per 1 unit of output, not per craft. 4x output at 2 inputs beats 2x output at 1 input.
-4. **Check if the alternative actually bypasses the bottleneck** — if both converge on the same expensive intermediate, the "upgrade" is a trap.
-5. **Rank by:** efficiency (raw materials/output) > complexity (recipes/buildings) > convenience
-6. **Watch for "later game" recipes** — some exist to consume excess byproducts (e.g., rubber uses excess petrochemicals), not for efficiency. They're traps at early tech.
-7. **Match the limiting reagent when adding byproduct consumers** — if a consumer takes two byproducts (e.g., syngas + aromatics → plastic), don't force the abundant one to zero. That over-scales the consumer and imports the scarce one. Let the scarce byproduct set the pace; leave the surplus as output.
-8. **Classify byproducts before linking** — (a) convertible to fluid/gas → add consumer, (b) only converts to solid → low value unless needed, (c) no conversion → accept as waste (e.g., ash). Only invest recipes in category (a).
-9. **Account for power cost** — electric boilers are 25 MW each and often dominate the power budget (67% in the pitch pipeline). Compute total MW: count × energy_usage × 60. Steam is never free.
-10. **Use unlocked factory tiers** — solver auto-picks mk04 but those are usually locked. Always specify `--factory` with actual unlocked tiers. mk01 uses less power per building but needs 4x more buildings.
-11. **Prefer burning byproduct fluids over electric boilers** — when a pipeline produces burnable fluids (gasoline, naphthalene-oil, syngas), use an oil boiler instead of electric boilers. Oil boiler mk01: effectivity=2 (double fuel efficiency), burns any fluid with fuel_value, 0 MW electrical. Math: `fuel_rate = (steam_rate × heat_capacity × ΔT) / (fuel_value × effectivity)`. Pyanodon water heat_capacity=2,100 J/unit/°C (not vanilla 200), ΔT=235 (250-15). `max_energy_usage` is J/tick (×60 for watts). Fluid `fuel_value` is in `data.fluids`, not `data.items`.
+### Byproduct management
+5. **Classify before linking** — (a) convertible to fluid/gas → add consumer, (b) solid-to-solid → low value unless needed, (c) no conversion → waste (ash). Only invest recipes in (a).
+6. **Match the limiting reagent** — don't force the abundant byproduct to zero; that over-scales the consumer and imports the scarce one. Let the scarce one set the pace. Use `--constraint "recipe:product:exclude"` + `--max-import "scarce-input:0"`.
+7. **Recycle intermediates through every producing step** — when multiple recipes produce the target as byproduct (coal chain: raw-coal → coal → coke → coal-gas all produce tar), force intermediates back with `--max-import item:0`. Coal chain: 3x raw-material reduction (33 → 11/s for 100 tar/s).
 
-12. **Decompose at natural handoff points** — split multi-stage chains at commodity boundaries (tar, pitch, steam). Optimize each sub-pipeline independently. Don't solve one giant chain end-to-end.
-13. **Recycle intermediates through every producing step** — in the coal chain, raw-coal → coal → coke → coal-gas each produce tar. Forcing all intermediates back (max-import coal:0, coal-gas:0, coke:0) gave 3x raw-material reduction (33 → 11 raw-coal/s for 100 tar/s).
-14. **Start from the immediate input, not the raw material** — "how much tar for 140 pitch?" (100/s) before "how much raw-coal for 100 tar?" Decompose before optimizing.
-15. **Byproducts of optimization can fund energy** — recycling the coal chain produces syngas as waste (113.65/s), which covers ~77% of total steam needs via oil boiler.
+### Power & energy
+8. **Account for power cost, use unlocked tiers** — total MW = count × energy_usage × 60. Electric boilers (25 MW each) often dominate. Always `--factory` with unlocked tiers — solver auto-picks mk04 which are usually locked.
+9. **Burn byproduct fluids instead of electric boilers** — oil boiler mk01: effectivity=2, 0 MW electrical. `fuel_rate = (steam_rate × heat_capacity × ΔT) / (fuel_value × effectivity)`. Pyanodon water heat_capacity=2,100, ΔT=235. Fluid fuel_value in `data.fluids` not `data.items`. Recycling byproducts (syngas, gasoline) often cover most steam needs.
 
-Examples:
-- stopper-2 (rubber) looks like an upgrade over stopper, but both need 0.5 latex/stopper (same formic-acid cost). Rubber just adds carbon-black + polybutadiene + titanium for no benefit.
-- Forcing syngas to zero through aromatics-to-plastic imported 18.71/s light-oil because aromatics (57/s) was the limiter vs syngas (151/s). Matching the limiter gave 1.14 plastic/s with zero imports.
-- Pitch pipeline: 3 electric boilers = 75 MW out of 111.5 MW total. Switching to oil boiler burning gasoline (28.79/s for 140 steam/s, effectivity=2) saves 75 MW electrical.
-- Full coal chain recycling: 11 raw-coal/s → 100 tar/s + 113.65 syngas/s (vs 33 raw-coal/s without recycling). Syngas burns for 184/240 steam/s needed.
+### Pipeline decomposition
+10. **Decompose at commodity boundaries** — ask "how much tar for 140 pitch?" (100/s) before "how much raw-coal for 100 tar?" Split at handoff points, optimize each stage independently.
+11. **Design for explicit handoff** — track exports/imports between pipelines. Surpluses become fuel (syngas → oil boiler) or feed parallel consumers. Deficits identify where to add recipes or accept imports.
+
+### Examples
+- stopper-2 (rubber): same formic-acid cost as stopper, rubber just adds overhead.
+- Aromatics-to-plastic: forcing syngas to zero imported 18.71/s light-oil. Matching the limiter (aromatics) gave 1.14 plastic/s with zero imports.
+- Pitch pipeline: 3 electric boilers = 75 MW / 111.5 MW total. Oil boiler burning gasoline (28.79/s for 140 steam/s) saves 75 MW.
+- Coal chain recycling: 11 raw-coal/s → 100 tar/s + 113.65 syngas/s (vs 33/s without). Syngas covers 77% of steam needs.
 
 ## Pyanodon module tricks
 

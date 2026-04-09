@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsx:*)",
+      "Bash(python3 -c ':*)",
+      "Read(//tmp/**)",
+      "Bash(python3:*)",
+      "Bash(grep -E \"\\\\.\\(json|lua\\)$\")",
+      "Bash(find:*)",
+      "Bash(node:*)",
+      "WebFetch(domain:lua-api.factorio.com)",
+      "WebFetch(domain:wiki.factorio.com)",
+      "WebFetch(domain:factorio.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:forums.factorio.com)",
+      "WebFetch(domain:factorio.mod-portal.com)",
+      "WebFetch(domain:www.reddit.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:factorio.fandom.com)",
+      "WebFetch(domain:factoriowiki.com)",
+      "WebFetch(domain:factorio-modding.readthedocs.io)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:factoriotools.github.io)"
+    ]
+  }
+}

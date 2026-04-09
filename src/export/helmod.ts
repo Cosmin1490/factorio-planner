@@ -81,9 +81,11 @@ interface HelmodRecipe {
 function buildHelmodModel(input: SolveInput, result: SolveResult, data: PrototypeData): Record<string, unknown> {
   const children: Record<string, HelmodRecipe> = {};
 
-  for (let i = 0; i < input.recipes.length; i++) {
-    const spec = input.recipes[i];
-    const recipeResult = result.recipes[i];
+  const numRecipes = input.recipes.length;
+  for (let i = 0; i < numRecipes; i++) {
+    const srcIdx = numRecipes - 1 - i;  // reverse: output recipe first
+    const spec = input.recipes[srcIdx];
+    const recipeResult = result.recipes[srcIdx];
     const id = `R${i + 1}`;
 
     // Build factory modules
@@ -133,7 +135,7 @@ function buildHelmodModel(input: SolveInput, result: SolveResult, data: Prototyp
     children[id] = {
       class: 'Recipe',
       id,
-      index: i + 1,
+      index: i,
       name: spec.recipeName,
       type: 'recipe',
       production: 1,
@@ -144,7 +146,7 @@ function buildHelmodModel(input: SolveInput, result: SolveResult, data: Prototyp
   }
 
   // Build target objective if present
-  const blockName = input.recipes[0]?.recipeName ?? 'block';
+  const blockName = input.recipes[numRecipes - 1]?.recipeName ?? 'block';
 
   // Build input/output constraints
   const blockProducts: Record<string, unknown> = {};

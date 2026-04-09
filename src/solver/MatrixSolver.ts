@@ -356,6 +356,27 @@ function simplexPrepare(m: SolverMatrix, input: SolveInput): SimplexTableau {
       rows.push([...matrix[r]]);
     }
   }
+  // Apply exclude constraints: zero out production coefficients so the simplex
+  // won't use excluded byproducts to satisfy downstream demand.
+  // The original matrix (used by extractResults) is untouched.
+  const constraintMap = new Map<string, ConstraintSpec[]>();
+  for (const c of input.constraints ?? []) {
+    const existing = constraintMap.get(c.recipeName) ?? [];
+    existing.push(c);
+    constraintMap.set(c.recipeName, existing);
+  }
+  for (let r = 0; r < numRows; r++) {
+    const constraints = constraintMap.get(m.resolved[r].recipeName);
+    if (!constraints) continue;
+    for (let c = 0; c < numCols; c++) {
+      if (rows[r][c] <= 0) continue;
+      const colName = m.columns[c].name;
+      if (constraints.some(cs => cs.productName === colName && cs.type === 'exclude')) {
+        rows[r][c] = 0;
+      }
+    }
+  }
+
   const zRow = [...Z];
 
   // Coefficients per row (initially 0)

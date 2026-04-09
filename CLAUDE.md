@@ -35,6 +35,7 @@ No build step needed for dev. The 16MB prototype JSON loads in ~0.6 seconds.
 - `--constraint "recipe:product:exclude"` prevents a recipe's byproduct from driving solver scaling (works in both algebraic and simplex)
 - `--max-import "item:amount"` caps how much of an item can be imported. `amount=0` forces full internal production. Post-processing pass scales up producer/consumer recipes to close balance gaps, cascading deficits to raw materials. Works with both solver modes.
 - Helmod export reverses recipe order (output recipe first) to match Helmod's top-to-bottom processing
+- **Solver is purely algebraic — no physical validation**: Does not model fluid temperatures, belt throughput, or energy. All steam is treated as one item regardless of temperature. Example: polybutadiene produces steam at 150°C, but tar-refining needs 250°C+ — solver links them anyway. Always verify `recipe.products[].temperature` and `recipe.ingredients[].minimum_temperature` for steam after solver runs.
 
 ## Prototype data quirks
 
@@ -73,6 +74,7 @@ Pipeline: `luaSerialize(model)` → `zlib.deflateSync()` → `base64` — **NO v
 - **Ash is free**: Treat ash as a readily available input. Don't let it drive scaling.
 - **Void solid byproducts**: Stone can be voided via `saline-water` recipe (10 stone + 100 water → 50 water-saline).
 - **Import deep commodities for large runs**: For 50+ recipe solver runs, import items with deep/expensive chains (battery-mk01, rubber, creosote, plastic-bar) instead of producing them inline. Recipes with high input:output ratios are cascade magnifiers (carbon-black 50:1, battery-mk01 30:1 cyanic-acid). Exclude byproducts at EVERY cascade link — breaking one link isn't enough if the solver imports the intermediate.
+- **Check sub-factory energy self-sufficiency**: After splitting a pipeline into sub-factories, check if byproduct fluids (syngas, pitch, gasoline) can fuel oil boilers to cover the sub-factory's own steam needs. Example: rubber sub-factory's syngas (177/s) + pitch (44.8/s) can fuel oil boilers for its 32/s steam at 250°C+, making it energy self-sufficient — even though its 120/s steam byproduct at 150°C is waste.
 
 ## Recipe alternative evaluation
 
@@ -94,6 +96,26 @@ Pipeline: `luaSerialize(model)` → `zlib.deflateSync()` → `base64` — **NO v
 ### Pipeline decomposition
 10. **Decompose at commodity boundaries** — ask "how much tar for 140 pitch?" (100/s) before "how much raw-coal for 100 tar?" Split at handoff points, optimize each stage independently. When multiple end products share deep infrastructure, split by shared system (auog farm, plasmids, bio commons) not by end product. Map all dependencies first, identify natural service layers, then build bottom-up.
 11. **Design for explicit handoff** — track exports/imports between pipelines. Surpluses become fuel (syngas → oil boiler) or feed parallel consumers. Deficits identify where to add recipes or accept imports.
+
+### Commodity boundary selection
+A good boundary is an item where you'd naturally put a train stop. Score candidates on:
+
+12. **Consumer count** — items consumed by many unlocked recipes are natural bus items. Empirical counts (Pyanodon, current unlock):
+    - **Tier A (20+)**: small-parts-01 (126), iron-plate (105), electronic-circuit (96), steel-plate (93), glass (39), stone-brick (35), copper-plate (25), titanium-plate (24), copper-cable (20)
+    - **Tier B (10-19)**: iron-stick (14), battery-mk01 (12), plastic-bar (12), tin-plate (11), coke (10), bolts (10)
+    - **Tier C (4-9)**: petri-dish (9), tar (7), rubber (6), pitch (6), middle-oil (5), ceramic (5), creosote (5)
+    - **Tier D (1-3)**: light-oil (4), syngas (4), lab-instrument (4), latex (3), iron-gear-wheel (2)
+    Items in Tier A/B are almost always good boundaries. Tier C/D items are intermediates — only boundary-worthy if they also have deep chains or cascade risk.
+
+13. **Chain depth below** — deep chains (5+ recipes) or chains containing cascade magnifiers (high input:output ratio) justify splitting. Battery-mk01 (antimony + zinc + lead + cyanic-acid 30:1) and rubber (coal → tar → syngas → aromatics → polybutadiene) are worth splitting even at 12 and 6 consumers. Iron-plate from ore is only 2-3 recipes — not worth splitting on its own.
+
+14. **Context-dependent depth** — the boundary moves based on what you're solving. Making circuits? Iron-plate is a boundary (import it). Making iron-plate itself? Ore is the boundary. Rule: **import from the highest tier that's below your current target**.
+
+15. **Stable physical properties** — good boundaries have uniform properties across consumers. Iron-plate at X/s is iron-plate regardless of consumer. Steam is a BAD boundary because temperature matters (150°C ≠ 250°C) and the solver doesn't distinguish them.
+
+16. **Cascade isolation** — importing an item eliminates its entire production chain from the solver. Prioritize boundaries that remove cascade magnifiers: battery-mk01 (30:1 cyanic-acid), carbon-black (50:1 anthracene-oil), rubber (deep petrochemical chain).
+
+17. **Transport density** — prefer the densest form of an item as the boundary. If a high-consumer item is trivially crafted from a precursor with equal or better stack density, the precursor is the better boundary. Example: copper-cable (20 consumers) is made 2:1 from copper-plate, both stack to 200 — transporting plates moves 2x the effective material per slot. Same logic applies to iron-stick, iron-gear-wheel, and similar 1-step derivatives. The boundary should be the item you'd put on a train, not the item you'd craft on-site.
 
 ### Examples
 - stopper-2 (rubber): same formic-acid cost as stopper, rubber just adds overhead.

@@ -121,16 +121,41 @@ export function solveCommand(protoPath: string, options: SolveOptions) {
       factoryName = factory.name;
     }
 
-    if (options.unlocked && !isRecipeUnlocked(data, recipeName)) {
-      console.error(`Warning: recipe "${recipeName}" is not unlocked in your save`);
+    if (options.unlocked) {
+      if (!isRecipeUnlocked(data, recipeName)) {
+        console.error(`Warning: recipe "${recipeName}" is not unlocked in your save`);
+      }
+      if (!isRecipeUnlocked(data, factoryName)) {
+        console.error(`Warning: factory "${factoryName}" is not unlocked in your save`);
+      }
+    }
+
+    const mods = moduleOverrides.get(recipeName);
+    const beacs = beaconOverrides.get(recipeName);
+    if (options.unlocked) {
+      for (const mod of mods ?? []) {
+        if (!isRecipeUnlocked(data, mod.name)) {
+          console.error(`Warning: module "${mod.name}" is not unlocked in your save`);
+        }
+      }
+      for (const b of beacs ?? []) {
+        if (!isRecipeUnlocked(data, b.name)) {
+          console.error(`Warning: beacon "${b.name}" is not unlocked in your save`);
+        }
+        for (const mod of b.modules) {
+          if (!isRecipeUnlocked(data, mod.name)) {
+            console.error(`Warning: module "${mod.name}" is not unlocked in your save`);
+          }
+        }
+      }
     }
 
     recipeSpecs.push({
       recipeName,
       factoryName,
       fuel: fuelOverrides.get(recipeName),
-      modules: moduleOverrides.get(recipeName),
-      beacons: beaconOverrides.get(recipeName),
+      modules: mods,
+      beacons: beacs,
     });
   }
 

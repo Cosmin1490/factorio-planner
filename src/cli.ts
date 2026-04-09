@@ -103,6 +103,7 @@ program
   .option('--produces-from <item>', 'Show product tree (what can I make from this?)')
   .option('--depth <n>', 'Max recursion depth (default: unlimited)')
   .option('--unlocked', 'Only show unlocked recipes')
+  .option('--ignore <items...>', 'Items to skip expanding (treated as raw/terminal)')
   .option('--proto <path>', 'Path to prototype JSON', DEFAULT_PROTO_PATH)
   .action((opts) => {
     recipeTreeCommand(opts.proto, {
@@ -110,6 +111,7 @@ program
       producesFrom: opts.producesFrom,
       depth: opts.depth,
       unlocked: opts.unlocked,
+      ignore: opts.ignore,
     });
   });
 

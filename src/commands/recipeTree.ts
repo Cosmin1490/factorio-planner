@@ -6,6 +6,7 @@ interface RecipeTreeOptions {
   producesFrom?: string;
   depth?: string;
   unlocked?: boolean;
+  ignore?: string[];
 }
 
 export function recipeTreeCommand(protoPath: string, options: RecipeTreeOptions) {
@@ -21,15 +22,16 @@ export function recipeTreeCommand(protoPath: string, options: RecipeTreeOptions)
   const data = loadPrototypes(protoPath);
   const maxDepth = options.depth ? parseInt(options.depth, 10) : Infinity;
   const showUnlocked = !!options.unlocked;
+  const ignoreSet = new Set(options.ignore ?? []);
 
   if (options.needs) {
     const producerIndex = buildProducerIndex(data);
     console.log(options.needs);
-    printNeedsTree(data, producerIndex, options.needs, maxDepth, showUnlocked, '', true, new Set());
+    printNeedsTree(data, producerIndex, options.needs, maxDepth, showUnlocked, ignoreSet, '', true, new Set());
   } else {
     const consumerIndex = buildConsumerIndex(data);
     console.log(options.producesFrom);
-    printProducesTree(data, consumerIndex, options.producesFrom!, maxDepth, showUnlocked, '', true, new Set());
+    printProducesTree(data, consumerIndex, options.producesFrom!, maxDepth, showUnlocked, ignoreSet, '', true, new Set());
   }
 }
 
@@ -51,6 +53,7 @@ function printNeedsTree(
   itemName: string,
   maxDepth: number,
   onlyUnlocked: boolean,
+  ignoreSet: Set<string>,
   prefix: string,
   isRoot: boolean,
   visited: Set<string>,
@@ -84,14 +87,15 @@ function printNeedsTree(
       const ingChildPrefix = isLastIng ? '   ' : '│  ';
       const amount = ing.amount ?? 1;
 
-      const producers = filterRecipes(data, producerIndex.get(ing.name) ?? [], onlyUnlocked);
-      const rawMarker = producers.length === 0 ? ' ★ raw' : '';
+      const ignored = ignoreSet.has(ing.name);
+      const producers = ignored ? [] : filterRecipes(data, producerIndex.get(ing.name) ?? [], onlyUnlocked);
+      const marker = ignored ? ' (ignored)' : producers.length === 0 ? ' ★ raw' : '';
 
-      console.log(`${prefix}${childPrefix}${ingBranch}${amount}x ${ing.name}${rawMarker}`);
+      console.log(`${prefix}${childPrefix}${ingBranch}${amount}x ${ing.name}${marker}`);
 
       if (producers.length > 0) {
         printNeedsTree(
-          data, producerIndex, ing.name, maxDepth - 1, onlyUnlocked,
+          data, producerIndex, ing.name, maxDepth - 1, onlyUnlocked, ignoreSet,
           `${prefix}${childPrefix}${ingChildPrefix}`, false, visited,
         );
       }
@@ -105,6 +109,7 @@ function printProducesTree(
   itemName: string,
   maxDepth: number,
   onlyUnlocked: boolean,
+  ignoreSet: Set<string>,
   prefix: string,
   isRoot: boolean,
   visited: Set<string>,
@@ -138,14 +143,15 @@ function printProducesTree(
       const prodChildPrefix = isLastProd ? '   ' : '│  ';
       const amount = prod.amount ?? 1;
 
-      const consumers = filterRecipes(data, consumerIndex.get(prod.name) ?? [], onlyUnlocked);
-      const terminalMarker = consumers.length === 0 ? ' ★ terminal' : '';
+      const ignored = ignoreSet.has(prod.name);
+      const consumers = ignored ? [] : filterRecipes(data, consumerIndex.get(prod.name) ?? [], onlyUnlocked);
+      const marker = ignored ? ' (ignored)' : consumers.length === 0 ? ' ★ terminal' : '';
 
-      console.log(`${prefix}${childPrefix}${prodBranch}${amount}x ${prod.name}${terminalMarker}`);
+      console.log(`${prefix}${childPrefix}${prodBranch}${amount}x ${prod.name}${marker}`);
 
       if (consumers.length > 0) {
         printProducesTree(
-          data, consumerIndex, prod.name, maxDepth - 1, onlyUnlocked,
+          data, consumerIndex, prod.name, maxDepth - 1, onlyUnlocked, ignoreSet,
           `${prefix}${childPrefix}${prodChildPrefix}`, false, visited,
         );
       }

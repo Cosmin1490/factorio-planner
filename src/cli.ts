@@ -4,8 +4,8 @@ import { Command } from 'commander';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { recipesCommand, recipeInfoCommand } from './commands/recipes.js';
-import { factoriesCommand } from './commands/factories.js';
-import { itemsCommand } from './commands/items.js';
+import { factoriesCommand, factoryInfoCommand } from './commands/factories.js';
+import { itemsCommand, itemInfoCommand } from './commands/items.js';
 import { solveCommand } from './commands/solve.js';
 import { techsCommand } from './commands/techs.js';
 import { recipeTreeCommand } from './commands/recipeTree.js';
@@ -57,6 +57,23 @@ program
   .option('--proto <path>', 'Path to prototype JSON', DEFAULT_PROTO_PATH)
   .action((opts) => {
     itemsCommand(opts.proto, { search: opts.search });
+  });
+
+program
+  .command('item-info <name>')
+  .description('Show detailed info about an item or fluid (stack size, consumers, producers)')
+  .option('--unlocked', 'Only count unlocked recipes')
+  .option('--proto <path>', 'Path to prototype JSON', DEFAULT_PROTO_PATH)
+  .action((name, opts) => {
+    itemInfoCommand(opts.proto, name, { unlocked: opts.unlocked });
+  });
+
+program
+  .command('factory-info <name>')
+  .description('Show detailed info about a factory (speed, energy, modules, categories)')
+  .option('--proto <path>', 'Path to prototype JSON', DEFAULT_PROTO_PATH)
+  .action((name, opts) => {
+    factoryInfoCommand(opts.proto, name);
   });
 
 program

@@ -57,6 +57,8 @@ export interface Entity {
   allowed_module_categories?: Record<string, boolean>;
   beacon_counter?: string;
   energy_usage?: number;
+  tile_width?: number;
+  tile_height?: number;
   burner_prototype?: BurnerPrototype;
   hidden?: boolean;
 }
@@ -67,6 +69,7 @@ export interface Item {
   group?: { name: string };
   subgroup?: { name: string };
   order?: string;
+  stack_size?: number;
   module_effects?: Record<string, Record<string, number>>;
   fuel_value?: number;
   fuel_category?: string;
@@ -77,6 +80,10 @@ export interface Item {
 export interface Fluid {
   name: string;
   order?: string;
+  heat_capacity?: number;
+  default_temperature?: number;
+  max_temperature?: number;
+  fuel_value?: number;
 }
 
 export interface ForceRecipe {

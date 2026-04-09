@@ -1,6 +1,8 @@
 # factorio-planner
 
-Node.js CLI tool for Factorio production planning using Helmod's Lua solver. Designed to be driven by Claude — you describe what you want to produce, Claude resolves the recipe chain, invokes the solver, and iterates.
+Node.js CLI tool for Factorio production planning. Designed to be driven by Claude — you describe what you want to produce, Claude resolves the recipe chain, invokes the solver, and iterates.
+
+Features a native TypeScript solver (algebraic + simplex), Helmod export for in-game import, and tech-level filtering from save data.
 
 ## Requirements
 
@@ -14,10 +16,13 @@ npm install
 
 ## Project Structure
 
-- `lua/` — Helmod's Lua solver sources (ModelCompute, matrix solvers, prototype wrappers)
-- `data/` — Prototype JSON export (recipes, entities, items, fluids from Factorio + mods)
-- `export-mod/` — Factorio mod that generates the prototype JSON export
 - `src/` — TypeScript CLI source
+  - `src/solver/` — Matrix solver (algebraic + simplex), module/beacon effects
+  - `src/commands/` — CLI command handlers
+  - `src/export/` — Helmod import string generator
+  - `src/data/` — Prototype data loader
+- `data/` — Prototype JSON export (recipes, entities, items, fluids from Factorio + mods)
+- `export-mod/` — Factorio mod that generates the prototype JSON export (includes force/technology data)
 
 ## Usage
 
@@ -28,6 +33,9 @@ Run commands via `npx tsx src/cli.ts <command>`.
 ```bash
 # Find recipes that produce an item
 npx tsx src/cli.ts recipes --produces "iron-plate"
+
+# Only show unlocked recipes (requires force data in prototype export)
+npx tsx src/cli.ts recipes --produces "iron-plate" --unlocked
 
 # Find recipes that consume an item
 npx tsx src/cli.ts recipes --consumes "coal"
@@ -40,19 +48,43 @@ npx tsx src/cli.ts factories --category "smelting"
 
 # Search items/fluids by name
 npx tsx src/cli.ts items --search "coal"
+
+# Show which technology unlocks a recipe
+npx tsx src/cli.ts techs --unlocks "automation-science-pack"
 ```
 
 ### Solve command (compute production ratios)
 
 ```bash
-# Target mode: "I want 100 iron-plate per minute"
+# Target mode: "I want 100 iron-plate per 60s"
 npx tsx src/cli.ts solve --recipes "iron-plate" --target "iron-plate:100"
 
-# Multi-recipe chain
-npx tsx src/cli.ts solve --recipes "iron-plate,iron-gear-wheel" --target "iron-gear-wheel:100"
+# Input mode: "I have 15 iron-ore per second, maximize output"
+npx tsx src/cli.ts solve --recipes "iron-plate" --input "iron-ore:15" --time 1
 
-# Override factory choice
-npx tsx src/cli.ts solve --recipes "iron-plate" --target "iron-plate:100" --factory "iron-plate:stone-furnace"
+# Multi-recipe chain with factory overrides
+npx tsx src/cli.ts solve \
+  --recipes "grade-1-iron-crush,low-grade-smelting-iron,iron-gear-wheel" \
+  --target "iron-gear-wheel:10" --time 1 \
+  --factory "grade-1-iron-crush:jaw-crusher" \
+  --factory "low-grade-smelting-iron:advanced-foundry-mk01"
+
+# Exclude byproducts from solver optimization
+npx tsx src/cli.ts solve \
+  --recipes "grade-1-iron-crush,low-grade-smelting-iron" \
+  --target "iron-plate:1" --time 1 \
+  --constraint "grade-1-iron-crush:stone:exclude"
+
+# Modules and beacons
+npx tsx src/cli.ts solve --recipes "iron-plate" --target "iron-plate:100" \
+  --modules "iron-plate:speed-module-3:4" \
+  --beacons "iron-plate:beacon:speed-module-3:2:8"
+
+# Warn if any recipe/factory/module is not unlocked
+npx tsx src/cli.ts solve --recipes "iron-plate" --target "iron-plate:100" --unlocked
+
+# Export as Helmod import string
+npx tsx src/cli.ts solve --recipes "iron-plate" --target "iron-plate:100" --export helmod
 
 # Raw JSON output
 npx tsx src/cli.ts solve --recipes "iron-plate" --target "iron-plate:100" --json
@@ -62,40 +94,35 @@ npx tsx src/cli.ts solve --recipes "iron-plate" --target "iron-plate:100" --json
 
 ```
 CLI (commander)
-  → PrototypeLoader (reads 16MB JSON, builds recipe/factory indexes)
-  → NodeBridge (Fengari Lua VM, runs Helmod's ModelCompute solver)
-  → Output (text summary or JSON)
+  → PrototypeLoader (reads 16MB JSON, builds recipe/factory/tech indexes)
+  → MatrixSolver (native TS: matrix construction, algebraic + simplex solvers)
+  → Output (text summary, JSON, or Helmod export string)
 ```
 
-The solver is Helmod's `ModelCompute.lua` running in a Fengari Lua VM. It computes exact factory counts, crafting speeds, power consumption, and material flows using Simplex/Gaussian methods.
+The solver is a native TypeScript reimplementation. It computes exact factory counts, crafting speeds, fuel consumption, and material flows. The simplex solver handles multi-recipe chains with competing intermediates.
 
 **Claude is the AI layer** — no interactive prompts. Claude explores recipes via query commands, builds the recipe list, and invokes solve with explicit parameters.
 
-## Known Issues
+## Solver modes
 
-- **Multi-recipe algebra mode**: With `solver=false` (default), the algebra solver may treat intermediate products as raw imports instead of linking to in-block recipes. Use `solver=true` (simplex) for better multi-recipe chain optimization. Not yet exposed as a CLI flag.
-- **Input mode** (`--input`): Flag exists but the solver integration for constrained-input mode needs further testing/tuning.
-- **Prototype data**: The JSON dump contains ALL recipes regardless of tech level. No filtering by researched technologies yet.
-
-## Development
-
-```bash
-# Run directly (no build step)
-npx tsx src/cli.ts --help
-
-# Build TypeScript
-npm run build
-
-# Run built version
-node dist/cli.js --help
-```
+- **Algebraic** (`--solver algebra`, default for target mode): Multi-pass Gaussian elimination. Fast, works well for simple chains. Breaks on large chains (12+ recipes).
+- **Simplex** (`--solver simplex`, default for input mode): Linear programming. Handles complex chains, competing consumers, and cyclic dependencies. Supports `--constraint` for excluding byproducts.
 
 ## Updating Prototype Data
 
 The prototype JSON is generated by the export mod in `export-mod/`. To regenerate after mod updates:
 
-1. Copy `export-mod/` to your Factorio mods directory
+1. Copy/symlink `export-mod/` to your Factorio mods directory
 2. Load Factorio with the export mod + desired mod set (e.g., Pyanodon's)
 3. Run `/helmod-web-export` in the Factorio console
 4. Output lands in `factorio/script-output/helmod-web-prototypes.json`
 5. Copy to `data/helmod-web-prototypes.json`
+
+The export includes `force.recipes` (unlock state) and `technologies` (researched techs) from your save, enabling the `--unlocked` flag.
+
+## TODO
+
+- [ ] `--electric` / `--no-burner` flag: auto-select best electric factory per recipe (avoid burnt-result coupling)
+- [ ] `--recipe-tree <item>`: trace full ingredient tree with unlock status
+- [ ] Multi-input constraints: `--input "iron-ore:15" --input "copper-ore:5"`
+- [ ] Temperature-linked fluids: conversion rows for steam at different temperatures

@@ -107,8 +107,12 @@ export interface PrototypeData {
 /** Map from item/fluid name to recipes that produce it */
 export type ProducerIndex = Map<string, Recipe[]>;
 
+/** Map from item/fluid name to recipes that consume it */
+export type ConsumerIndex = Map<string, Recipe[]>;
+
 let cachedData: PrototypeData | null = null;
 let cachedProducerIndex: ProducerIndex | null = null;
+let cachedConsumerIndex: ConsumerIndex | null = null;
 
 export function loadPrototypes(jsonPath: string): PrototypeData {
   if (cachedData) return cachedData;
@@ -181,6 +185,36 @@ export function buildProducerIndex(data: PrototypeData): ProducerIndex {
   }
 
   cachedProducerIndex = index;
+  return index;
+}
+
+/**
+ * Build an index: item/fluid name → recipes that consume it.
+ * Same filtering as buildProducerIndex.
+ */
+export function buildConsumerIndex(data: PrototypeData): ConsumerIndex {
+  if (cachedConsumerIndex) return cachedConsumerIndex;
+
+  const index: ConsumerIndex = new Map();
+
+  for (const recipe of Object.values(data.recipes)) {
+    if (recipe.hidden) continue;
+    if (recipe.category === 'barreling' || recipe.category === 'unbarreling') continue;
+    if (recipe.name.startsWith('fill-') || recipe.name.startsWith('empty-')) continue;
+    if (recipe.category === 'recycling') continue;
+
+    const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+    for (const ingredient of ingredients) {
+      const existing = index.get(ingredient.name);
+      if (existing) {
+        existing.push(recipe);
+      } else {
+        index.set(ingredient.name, [recipe]);
+      }
+    }
+  }
+
+  cachedConsumerIndex = index;
   return index;
 }
 

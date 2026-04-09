@@ -8,6 +8,7 @@ import { factoriesCommand } from './commands/factories.js';
 import { itemsCommand } from './commands/items.js';
 import { solveCommand } from './commands/solve.js';
 import { techsCommand } from './commands/techs.js';
+import { recipeTreeCommand } from './commands/recipeTree.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '..');
@@ -91,6 +92,23 @@ program
       maxImport: opts.maxImport,
       export: opts.export,
       json: opts.json,
+      unlocked: opts.unlocked,
+    });
+  });
+
+program
+  .command('recipe-tree')
+  .description('Show ingredient or product tree for an item')
+  .option('--needs <item>', 'Show ingredient tree (what do I need to make this?)')
+  .option('--produces-from <item>', 'Show product tree (what can I make from this?)')
+  .option('--depth <n>', 'Max recursion depth (default: unlimited)')
+  .option('--unlocked', 'Only show unlocked recipes')
+  .option('--proto <path>', 'Path to prototype JSON', DEFAULT_PROTO_PATH)
+  .action((opts) => {
+    recipeTreeCommand(opts.proto, {
+      needs: opts.needs,
+      producesFrom: opts.producesFrom,
+      depth: opts.depth,
       unlocked: opts.unlocked,
     });
   });

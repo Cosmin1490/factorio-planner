@@ -81,8 +81,12 @@ When comparing recipe alternatives, don't assume "more complex = more efficient"
 4. **Check if the alternative actually bypasses the bottleneck** — if both converge on the same expensive intermediate, the "upgrade" is a trap.
 5. **Rank by:** efficiency (raw materials/output) > complexity (recipes/buildings) > convenience
 6. **Watch for "later game" recipes** — some exist to consume excess byproducts (e.g., rubber uses excess petrochemicals), not for efficiency. They're traps at early tech.
+7. **Match the limiting reagent when adding byproduct consumers** — if a consumer takes two byproducts (e.g., syngas + aromatics → plastic), don't force the abundant one to zero. That over-scales the consumer and imports the scarce one. Let the scarce byproduct set the pace; leave the surplus as output.
+8. **Classify byproducts before linking** — (a) convertible to fluid/gas → add consumer, (b) only converts to solid → low value unless needed, (c) no conversion → accept as waste (e.g., ash). Only invest recipes in category (a).
 
-Example: stopper-2 (rubber) looks like an upgrade over stopper, but both need 0.5 latex/stopper (same formic-acid cost). Rubber just adds carbon-black + polybutadiene + titanium for no benefit.
+Examples:
+- stopper-2 (rubber) looks like an upgrade over stopper, but both need 0.5 latex/stopper (same formic-acid cost). Rubber just adds carbon-black + polybutadiene + titanium for no benefit.
+- Forcing syngas to zero through aromatics-to-plastic imported 18.71/s light-oil because aromatics (57/s) was the limiter vs syngas (151/s). Matching the limiter gave 1.14 plastic/s with zero imports.
 
 ## Pyanodon module tricks
 

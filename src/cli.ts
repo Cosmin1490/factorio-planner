@@ -63,7 +63,7 @@ program
   .description('Solve a production block')
   .requiredOption('--recipes <list>', 'Comma-separated recipe names')
   .option('--target <item:amount>', 'Target output (e.g., "iron-plate:100")')
-  .option('--input <item:amount>', 'Constrained input (e.g., "raw-coal:15")')
+  .option('--input <item:amount...>', 'Constrained input(s), repeatable (e.g., --input "iron-ore:15" --input "copper-ore:5")')
   .option('--time <seconds>', 'Time base in seconds (default: 60)', '60')
   .option('--factory <recipe:entity...>', 'Factory override (e.g., "iron-plate:stone-furnace")')
   .option('--fuel <recipe:item...>', 'Fuel override for burner factories (e.g., "iron-plate:coal")')

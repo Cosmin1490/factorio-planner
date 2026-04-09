@@ -40,7 +40,7 @@ export interface ConstraintSpec {
 export interface SolveInput {
   recipes: RecipeSpec[];
   target?: { name: string; amount: number };
-  input?: { name: string; amount: number };
+  inputs?: { name: string; amount: number }[];
   time: number;
   solver?: SolverMode;
   constraints?: ConstraintSpec[];

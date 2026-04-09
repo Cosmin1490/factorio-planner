@@ -224,10 +224,12 @@ function buildMatrix(data: PrototypeData, input: SolveInput): SolverMatrix {
     const targetCol = findColumn(colIndex, input.target.name);
     if (targetCol == null) throw new Error(`Target "${input.target.name}" not found in recipe products/ingredients`);
     Z[targetCol] = -input.target.amount;
-  } else if (input.input) {
-    const inputCol = findColumn(colIndex, input.input.name);
-    if (inputCol == null) throw new Error(`Input "${input.input.name}" not found in recipe products/ingredients`);
-    Z[inputCol] = input.input.amount;
+  } else if (input.inputs?.length) {
+    for (const inp of input.inputs) {
+      const inputCol = findColumn(colIndex, inp.name);
+      if (inputCol == null) throw new Error(`Input "${inp.name}" not found in recipe products/ingredients`);
+      Z[inputCol] = inp.amount;
+    }
   }
 
   return { matrix, columns, colIndex, resolved, Z, numRows, numCols };
@@ -239,7 +241,7 @@ function solveAlgebra(m: SolverMatrix, input: SolveInput): number[] {
   const { matrix, Z, numRows, numCols, resolved } = m;
   const recipeCounts = new Array(numRows).fill(0);
   const maxPasses = numRows + 1;
-  const isInputMode = !!input.input && !input.target;
+  const isInputMode = !!input.inputs?.length && !input.target;
 
   // Build constraint lookup: recipeName → ConstraintSpec[]
   const constraintMap = new Map<string, ConstraintSpec[]>();
@@ -343,7 +345,7 @@ interface SimplexTableau {
 
 function simplexPrepare(m: SolverMatrix, input: SolveInput): SimplexTableau {
   const { matrix, Z, numRows, numCols } = m;
-  const isInputMode = !!input.input && !input.target;
+  const isInputMode = !!input.inputs?.length && !input.target;
 
   // Deep copy matrix rows and Z
   // In input mode, negate the matrix (Helmod uses factor=-1 for by_product=false)

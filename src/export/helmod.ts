@@ -160,13 +160,15 @@ function buildHelmodModel(input: SolveInput, result: SolveResult, data: Prototyp
       input: input.target.amount,
     };
   }
-  if (input.input) {
-    const itemType = data.items[input.input.name] ? 'item' : 'fluid';
-    blockIngredients[input.input.name] = {
-      name: input.input.name,
-      type: itemType,
-      input: input.input.amount,
-    };
+  if (input.inputs?.length) {
+    for (const inp of input.inputs) {
+      const itemType = data.items[inp.name] ? 'item' : 'fluid';
+      blockIngredients[inp.name] = {
+        name: inp.name,
+        type: itemType,
+        input: inp.amount,
+      };
+    }
   }
 
   return {
@@ -179,7 +181,7 @@ function buildHelmodModel(input: SolveInput, result: SolveResult, data: Prototyp
       name: blockName,
       type: '',
       owner: '',
-      by_product: !input.input,
+      by_product: !input.inputs?.length,
       by_factory: false,
       solver: false,
       children,

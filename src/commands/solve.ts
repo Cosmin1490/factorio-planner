@@ -195,8 +195,8 @@ export function solveCommand(protoPath: string, options: SolveOptions) {
     solveInput.target = spec;
   }
   if (options.input) {
-    const spec = parseAmountSpec(options.input);
-    solveInput.input = spec;
+    const rawInputs = Array.isArray(options.input) ? options.input : [options.input];
+    solveInput.inputs = rawInputs.map(parseAmountSpec);
   }
 
   console.error('Running solver...');

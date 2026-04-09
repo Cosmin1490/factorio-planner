@@ -36,7 +36,7 @@ describe('acetylene pipeline (14-recipe, simplex input mode)', () => {
 
   const input: SolveInput = {
     recipes,
-    input: { name: 'raw-coal', amount: 15 },
+    inputs: [{ name: 'raw-coal', amount: 15 }],
     time: 1,
     solver: 'simplex',
   };

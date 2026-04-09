@@ -64,19 +64,7 @@ Pipeline: `luaSerialize(model)` → `zlib.deflateSync()` → `base64` — **NO v
 - For input mode: `by_product=false, by_factory=false`. `by_factory=true` is a separate mode (fixed factory count) that skips reading `.input` values.
 - Export reverses recipe order so output recipe is R1 (index 0), matching Helmod's top-to-bottom algebraic solver.
 
-## Pipeline design preferences
-
-- **Use electric factories**: Prefer `automated-factory-mk01` (crafting), `advanced-foundry-mk01` (smelting) over stone-furnace / assembling-machine-1/2/3 which are all burners in Pyanodon and couple fuel→ash.
-- **Exclude constraints for byproducts**: When a recipe produces a byproduct that drives over-scaling (e.g., stone from crushers), use `--constraint "recipe:product:exclude"`.
-- **Use `--max-import item:0` for intermediates**: Forces internal production. Cascading deficits push to raw materials. Use for items like iron-gear-wheel, iron-plate, grade-1-copper, grade-2-copper.
-- **Recycle byproducts**: Add recycling recipes + `--max-import "item:0"` to force byproducts through the loop (e.g., grade-1-copper → crush → grade-2-copper → copper-plate).
-- **Target mode for complex chains**: Input mode lets simplex freely import intermediates. Use target mode + binary search the target to fit input budgets (e.g., keep iron-ore under 15/s).
-- **Ash is free**: Treat ash as a readily available input. Don't let it drive scaling.
-- **Void solid byproducts**: Stone can be voided via `saline-water` recipe (10 stone + 100 water → 50 water-saline).
-- **Import deep commodities for large runs**: For 50+ recipe solver runs, import items with deep/expensive chains (battery-mk01, rubber, creosote, plastic-bar) instead of producing them inline. Recipes with high input:output ratios are cascade magnifiers (carbon-black 50:1, battery-mk01 30:1 cyanic-acid). Exclude byproducts at EVERY cascade link — breaking one link isn't enough if the solver imports the intermediate.
-- **Check sub-factory energy self-sufficiency**: After splitting a pipeline into sub-factories, check if byproduct fluids (syngas, pitch, gasoline) can fuel oil boilers to cover the sub-factory's own steam needs. Example: rubber sub-factory's syngas (177/s) + pitch (44.8/s) can fuel oil boilers for its 32/s steam at 250°C+, making it energy self-sufficient — even though its 120/s steam byproduct at 150°C is waste.
-
-## Recipe alternative evaluation
+## Pipeline methodology
 
 ### Comparing alternatives
 1. **Identify the bottleneck** — most expensive input (deep chain, slow buildings, rare ores, animal husbandry).
@@ -85,44 +73,50 @@ Pipeline: `luaSerialize(model)` → `zlib.deflateSync()` → `base64` — **NO v
 4. **Rank by:** efficiency (raw materials/output) > complexity (recipes/buildings) > convenience. Watch for "later game" recipes that exist to consume excess byproducts — traps at early tech.
 
 ### Byproduct management
-5. **Classify before linking** — (a) convertible to fluid/gas → add consumer, (b) solid-to-solid → low value unless needed, (c) no conversion → waste (ash). Only invest recipes in (a).
+5. **Classify before linking** — (a) convertible to fluid/gas → add consumer, (b) solid-to-solid → low value unless needed, (c) no conversion → waste (ash, stone). Only invest recipes in (a). Void stone via `saline-water` recipe (10 stone + 100 water → 50 water-saline).
 6. **Match the limiting reagent** — don't force the abundant byproduct to zero; that over-scales the consumer and imports the scarce one. Let the scarce one set the pace. Use `--constraint "recipe:product:exclude"` + `--max-import "scarce-input:0"`.
 7. **Recycle intermediates through every producing step** — when multiple recipes produce the target as byproduct (coal chain: raw-coal → coal → coke → coal-gas all produce tar), force intermediates back with `--max-import item:0`. Coal chain: 3x raw-material reduction (33 → 11/s for 100 tar/s).
 
 ### Power & energy
 8. **Account for power cost, use unlocked tiers** — total MW = count × energy_usage × 60. Electric boilers (25 MW each) often dominate. Always `--factory` with unlocked tiers — solver auto-picks mk04 which are usually locked.
-9. **Burn byproduct fluids instead of electric boilers** — oil boiler mk01: effectivity=2, 0 MW electrical. `fuel_rate = (steam_rate × heat_capacity × ΔT) / (fuel_value × effectivity)`. Pyanodon water heat_capacity=2,100, ΔT=235. Fluid fuel_value in `data.fluids` not `data.items`. Recycling byproducts (syngas, gasoline) often cover most steam needs.
+9. **Burn byproduct fluids for steam** — oil boiler mk01: effectivity=2, 0 MW electrical. `fuel_rate = (steam_rate × heat_capacity × ΔT) / (fuel_value × effectivity)`. Pyanodon water heat_capacity=2,100, ΔT=235. Fluid fuel_value in `data.fluids` not `data.items`. After splitting into sub-factories, check if byproduct fluids (syngas, pitch, gasoline) cover the sub-factory's own boiler needs — often they do (rubber sub-factory: syngas 177/s + pitch 44.8/s covers its 32/s steam at 250°C+).
 
 ### Pipeline decomposition
-10. **Decompose at commodity boundaries** — ask "how much tar for 140 pitch?" (100/s) before "how much raw-coal for 100 tar?" Split at handoff points, optimize each stage independently. When multiple end products share deep infrastructure, split by shared system (auog farm, plasmids, bio commons) not by end product. Map all dependencies first, identify natural service layers, then build bottom-up.
+10. **Decompose at commodity boundaries** — split at natural handoff points, optimize each stage independently. When multiple end products share deep infrastructure, split by shared system (auog farm, plasmids, bio commons) not by end product. Map all dependencies first, identify natural service layers, then build bottom-up.
 11. **Design for explicit handoff** — track exports/imports between pipelines. Surpluses become fuel (syngas → oil boiler) or feed parallel consumers. Deficits identify where to add recipes or accept imports.
 
-### Commodity boundary selection
+### Boundary selection
 A good boundary is an item where you'd naturally put a train stop. Score candidates on:
 
 12. **Consumer count** — items consumed by many unlocked recipes are natural bus items. Empirical counts (Pyanodon, current unlock):
     - **Tier A (20+)**: small-parts-01 (126), iron-plate (105), electronic-circuit (96), steel-plate (93), glass (39), stone-brick (35), copper-plate (25), titanium-plate (24), copper-cable (20)
     - **Tier B (10-19)**: iron-stick (14), battery-mk01 (12), plastic-bar (12), tin-plate (11), coke (10), bolts (10)
     - **Tier C (4-9)**: petri-dish (9), tar (7), rubber (6), pitch (6), middle-oil (5), ceramic (5), creosote (5)
-    - **Tier D (1-3)**: light-oil (4), syngas (4), lab-instrument (4), latex (3), iron-gear-wheel (2)
-    Items in Tier A/B are almost always good boundaries. Tier C/D items are intermediates — only boundary-worthy if they also have deep chains or cascade risk.
+    - **Tier D (1-3)**: light-oil, syngas, lab-instrument (4 each), latex (3), iron-gear-wheel (2)
+    Tier A/B are almost always good boundaries. Tier C/D only if they also have deep chains or cascade risk.
 
-13. **Chain depth below** — deep chains (5+ recipes) or chains containing cascade magnifiers (high input:output ratio) justify splitting. Battery-mk01 (antimony + zinc + lead + cyanic-acid 30:1) and rubber (coal → tar → syngas → aromatics → polybutadiene) are worth splitting even at 12 and 6 consumers. Iron-plate from ore is only 2-3 recipes — not worth splitting on its own.
+13. **Chain depth & cascade risk** — deep chains (5+ recipes) or chains containing cascade magnifiers (high input:output ratio) justify splitting even at low consumer counts. Battery-mk01 (12 consumers, 30:1 cyanic-acid cascade) and rubber (6 consumers, deep petrochemical chain) are worth splitting. Iron-plate from ore is only 2-3 recipes — not worth splitting on its own. For 50+ recipe solver runs, identify and import these items as commodities. Exclude byproducts at EVERY cascade link — breaking one link is not enough if the solver imports the intermediate.
 
-14. **Context-dependent depth** — the boundary moves based on what you're solving. Making circuits? Iron-plate is a boundary (import it). Making iron-plate itself? Ore is the boundary. Rule: **import from the highest tier that's below your current target**.
+14. **Context-dependent depth** — the boundary moves based on what you're solving. Making circuits? Iron-plate is a boundary (import it). Making iron-plate itself? Ore is the boundary. Rule: **import from the highest tier below your current target**.
 
-15. **Stable physical properties** — good boundaries have uniform properties across consumers. Iron-plate at X/s is iron-plate regardless of consumer. Steam is a BAD boundary because temperature matters (150°C ≠ 250°C) and the solver doesn't distinguish them.
+15. **Stable physical properties** — good boundaries have uniform properties across consumers. Iron-plate at X/s is iron-plate regardless of consumer. Steam is a BAD boundary because temperature matters (150°C ≠ 250°C) and the solver treats all steam as fungible.
 
-16. **Cascade isolation** — importing an item eliminates its entire production chain from the solver. Prioritize boundaries that remove cascade magnifiers: battery-mk01 (30:1 cyanic-acid), carbon-black (50:1 anthracene-oil), rubber (deep petrochemical chain).
+16. **Transport density** — prefer the densest form of an item as the boundary. If a high-consumer item is trivially crafted (1 step, fast) from a precursor with equal or better stack density, the precursor is the better boundary. Copper-cable (20 consumers) is made 2:1 from copper-plate, both stack to 200 — plates move 2x material per slot. Same for iron-stick, iron-gear-wheel. The boundary is what goes on the train; the derivative is crafted on-site.
 
-17. **Transport density** — prefer the densest form of an item as the boundary. If a high-consumer item is trivially crafted from a precursor with equal or better stack density, the precursor is the better boundary. Example: copper-cable (20 consumers) is made 2:1 from copper-plate, both stack to 200 — transporting plates moves 2x the effective material per slot. Same logic applies to iron-stick, iron-gear-wheel, and similar 1-step derivatives. The boundary should be the item you'd put on a train, not the item you'd craft on-site.
+### Solver setup checklist
+- **Use electric factories** — `automated-factory-mk01` (crafting), `advanced-foundry-mk01` (smelting). All vanilla assembling-machines are burners in Pyanodon and couple fuel→ash.
+- **Exclude byproducts that drive scaling** — `--constraint "recipe:product:exclude"` for every byproduct that could cascade.
+- **Force internal production** — `--max-import "item:0"` for intermediates (iron-gear-wheel, iron-plate, grade-1-copper, grade-2-copper). Cascading deficits push to raw materials.
+- **Recycle byproducts** — add recycling recipes + `--max-import "item:0"` to force items through the loop.
+- **Target mode for complex chains** — input mode lets simplex freely import intermediates. Use target mode + binary search the target to fit input budgets.
+- **Ash is free** — treat as readily available input, don't let it drive scaling.
 
 ### Examples
 - stopper-2 (rubber): same formic-acid cost as stopper, rubber just adds overhead.
 - Aromatics-to-plastic: forcing syngas to zero imported 18.71/s light-oil. Matching the limiter (aromatics) gave 1.14 plastic/s with zero imports.
 - Pitch pipeline: 3 electric boilers = 75 MW / 111.5 MW total. Oil boiler burning gasoline (28.79/s for 140 steam/s) saves 75 MW.
 - Coal chain recycling: 11 raw-coal/s → 100 tar/s + 113.65 syngas/s (vs 33/s without). Syngas covers 77% of steam needs.
-- Logistic science pack: 4 ingredients share auog farming (slaughter + manure), plasmids, petri/agar/seaweed, and native-flora. Splitting by shared system (7 pipelines) instead of by product (4) reveals the real architecture and avoids duplicate infrastructure.
+- Logistic science pack: 11,506 → 110 buildings by importing battery/rubber/creosote at commodity boundaries, excluding byproducts at every cascade link, and adding bio modules. Splitting by shared system (7 pipelines) not by product (4).
 
 ## Pyanodon module tricks
 

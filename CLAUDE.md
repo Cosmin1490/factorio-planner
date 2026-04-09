@@ -61,6 +61,43 @@ Pipeline: `luaSerialize(model)` → `zlib.deflateSync()` → `base64` — **NO v
 - For input mode: `by_product=false, by_factory=false`. `by_factory=true` is a separate mode (fixed factory count) that skips reading `.input` values.
 - Export reverses recipe order so output recipe is R1 (index 0), matching Helmod's top-to-bottom algebraic solver.
 
+## Pipeline design preferences
+
+- **Use electric factories**: Prefer `automated-factory-mk01` (crafting), `advanced-foundry-mk01` (smelting) over stone-furnace / assembling-machine-1/2/3 which are all burners in Pyanodon and couple fuel→ash.
+- **Exclude constraints for byproducts**: When a recipe produces a byproduct that drives over-scaling (e.g., stone from crushers), use `--constraint "recipe:product:exclude"`.
+- **Use `--max-import item:0` for intermediates**: Forces internal production. Cascading deficits push to raw materials. Use for items like iron-gear-wheel, iron-plate, grade-1-copper, grade-2-copper.
+- **Recycle byproducts**: Add recycling recipes + `--max-import "item:0"` to force byproducts through the loop (e.g., grade-1-copper → crush → grade-2-copper → copper-plate).
+- **Target mode for complex chains**: Input mode lets simplex freely import intermediates. Use target mode + binary search the target to fit input budgets (e.g., keep iron-ore under 15/s).
+- **Ash is free**: Treat ash as a readily available input. Don't let it drive scaling.
+- **Void solid byproducts**: Stone can be voided via `saline-water` recipe (10 stone + 100 water → 50 water-saline).
+
+## Pyanodon module tricks
+
+Some Pyanodon buildings use items (not standard modules) as modules:
+
+- **Seaweed farms** (`seaweed-crop-mk01`): 10 module slots, category `seaweed`. Use `seaweed` item as module (+100% speed each = 11x total). Without modules, speed is 0.09 — unusable.
+- **Sap extractors** (`sap-extractor-mk01`): 2 module slots, categories `sap-mk01..04`. Use `sap-tree` (+100% speed each = 3x total). Without modules, speed is 0.33.
+- Other biological buildings likely have similar item-as-module patterns — check `allowed_module_categories` and search for items with `module_effects` matching that category.
+
+## Recipe tree tips
+
+Pyanodon's recipe graph is extremely dense. For practical use:
+
+- Always use `--unlocked` to filter locked recipes
+- Use `--ignore` for commodity items: `water steam carbon-dioxide soil muddy-sludge compost oxygen hydrogen ash coke limestone`
+- Add `wood moss raw-coal` to ignore list for deeper chains
+- Use `--depth 2-3` for focused exploration, full depth only with aggressive ignore lists
+- Without ignore, even simple items like acetylene produce 6000+ lines
+
+## Pipeline summary format
+
+When showing pipeline summaries, use:
+
+1. Header: `<recipe> — <rate>/s, <N> buildings`
+2. ASCII box table (┌─┬─┐ │ ├─┼─┤ └─┴─┘) with columns: Recipe, Factory, Count (right-aligned)
+3. Inputs on one line, comma-separated: `item rate/s, item rate/s, ...`
+4. Byproducts on one line, same format
+
 ## TODO
 
 - [ ] `--electric` / `--no-burner`: auto-select best electric (non-burner) factory per recipe

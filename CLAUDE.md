@@ -18,6 +18,7 @@ No build step needed for dev. The 16MB prototype JSON loads in ~0.6 seconds.
 - `src/export/helmod.ts` — Helmod import string export (Lua serializer + zlib + base64)
 - `src/commands/solve.ts` — solve command (target/input modes, factory/module/beacon/fuel overrides)
 - `src/commands/recipes.ts` — recipe query commands (--produces, --consumes, --unlocked)
+- `src/commands/recipeTree.ts` — recipe graph traversal (--needs backward, --produces-from forward, --ignore, --unlocked)
 - `src/commands/techs.ts` — technology lookup (--unlocks)
 - `data/helmod-web-prototypes.json` — all recipe/entity/item/force/technology data (16MB, exported from Factorio)
 - `export-mod/` — Factorio mod that dumps prototype + force + technology data to JSON
@@ -45,6 +46,8 @@ No build step needed for dev. The 16MB prototype JSON loads in ~0.6 seconds.
 - Module effects are per-quality: `item.module_effects.normal.speed`
 - Coal `burnt_result` is ash (Pyanodon-specific). Solver models this — stone furnaces burning coal auto-produce ash as intermediate.
 - Force data (`force.recipes`) tracks unlock state per recipe. Technology data tracks researched techs and their recipe unlocks.
+- Some recipes have `ingredients: {}` (empty object) instead of `[]` — same `Array.isArray()` guard as products
+- Pyanodon's recipe graph is extremely dense: even with `--unlocked` filtering, `recipe-tree --needs acetylene` produces 6000+ lines. Commodity items (water, steam, soil, coke, ash, limestone, muddy-sludge, carbon-dioxide, oxygen, hydrogen, compost) fan out to hundreds of recipes each. Use `--ignore` to prune them and `--depth 2-3` for focused exploration.
 
 ## Helmod export format
 
@@ -61,7 +64,7 @@ Pipeline: `luaSerialize(model)` → `zlib.deflateSync()` → `base64` — **NO v
 ## TODO
 
 - [ ] `--electric` / `--no-burner`: auto-select best electric (non-burner) factory per recipe
-- [ ] `--recipe-tree <item>`: trace full ingredient tree showing all recipe options with unlock status
+- [x] `--recipe-tree`: ingredient/product graph traversal with --needs, --produces-from, --ignore, --unlocked
 - [x] Multi-input constraints: support multiple `--input` flags simultaneously
 - [x] `--max-import`: cap intermediate imports, force internal production
 - [ ] Temperature-linked fluids: conversion rows for fluids at different temperatures (steam 165C vs 250C vs 500C)

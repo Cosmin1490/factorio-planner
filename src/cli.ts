@@ -7,6 +7,7 @@ import { recipesCommand, recipeInfoCommand } from './commands/recipes.js';
 import { factoriesCommand } from './commands/factories.js';
 import { itemsCommand } from './commands/items.js';
 import { solveCommand } from './commands/solve.js';
+import { techsCommand } from './commands/techs.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '..');
@@ -25,9 +26,10 @@ program
   .description('List recipes that produce or consume an item')
   .option('--produces <item>', 'Show recipes that produce this item')
   .option('--consumes <item>', 'Show recipes that consume this item')
+  .option('--unlocked', 'Only show recipes unlocked in your save')
   .option('--proto <path>', 'Path to prototype JSON', DEFAULT_PROTO_PATH)
   .action((opts) => {
-    recipesCommand(opts.proto, { produces: opts.produces, consumes: opts.consumes });
+    recipesCommand(opts.proto, { produces: opts.produces, consumes: opts.consumes, unlocked: opts.unlocked });
   });
 
 program
@@ -70,6 +72,7 @@ program
   .option('--solver <mode>', 'Solver algorithm: algebra or simplex (default: algebra, input mode defaults to simplex)')
   .option('--constraint <spec...>', 'Recipe constraint (e.g., "iron-plate:iron-plate:master")')
   .option('--export <format>', 'Export as Helmod import string (format: helmod)')
+  .option('--unlocked', 'Warn if any recipe is not unlocked in your save')
   .option('--json', 'Output raw JSON result')
   .option('--proto <path>', 'Path to prototype JSON', DEFAULT_PROTO_PATH)
   .action((opts) => {
@@ -86,7 +89,17 @@ program
       constraint: opts.constraint,
       export: opts.export,
       json: opts.json,
+      unlocked: opts.unlocked,
     });
+  });
+
+program
+  .command('techs')
+  .description('Show which technology unlocks a recipe')
+  .requiredOption('--unlocks <recipe>', 'Recipe name to look up')
+  .option('--proto <path>', 'Path to prototype JSON', DEFAULT_PROTO_PATH)
+  .action((opts) => {
+    techsCommand(opts.proto, { unlocks: opts.unlocks });
   });
 
 program.parse();

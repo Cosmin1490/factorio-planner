@@ -1,4 +1,4 @@
-import { loadPrototypes, pickFactory } from '../data/PrototypeLoader.js';
+import { loadPrototypes, pickFactory, isRecipeUnlocked } from '../data/PrototypeLoader.js';
 import { solve } from '../solver/MatrixSolver.js';
 import { exportHelmod } from '../export/helmod.js';
 import type { RecipeSpec, SolveInput, ModuleSpec, BeaconSpec, SolverMode, ConstraintSpec } from '../solver/types.js';
@@ -16,6 +16,7 @@ interface SolveOptions {
   json?: boolean;
   solver?: string;
   constraint?: string[];
+  unlocked?: boolean;
 }
 
 function parseAmountSpec(spec: string): { name: string; amount: number } {
@@ -118,6 +119,10 @@ export function solveCommand(protoPath: string, options: SolveOptions) {
         process.exit(1);
       }
       factoryName = factory.name;
+    }
+
+    if (options.unlocked && !isRecipeUnlocked(data, recipeName)) {
+      console.error(`Warning: recipe "${recipeName}" is not unlocked in your save`);
     }
 
     recipeSpecs.push({

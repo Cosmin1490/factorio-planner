@@ -1,16 +1,21 @@
-import { loadPrototypes, buildProducerIndex, type PrototypeData } from '../data/PrototypeLoader.js';
+import { loadPrototypes, buildProducerIndex, isRecipeUnlocked, type PrototypeData } from '../data/PrototypeLoader.js';
 
-export function recipesCommand(protoPath: string, options: { produces?: string; consumes?: string }) {
+export function recipesCommand(protoPath: string, options: { produces?: string; consumes?: string; unlocked?: boolean }) {
   const data = loadPrototypes(protoPath);
+  const filterUnlocked = options.unlocked ?? false;
 
   if (options.produces) {
     const index = buildProducerIndex(data);
-    const recipes = index.get(options.produces);
+    let recipes = index.get(options.produces);
     if (!recipes || recipes.length === 0) {
       console.log(`No recipes produce "${options.produces}"`);
       return;
     }
-    console.log(`Recipes that produce "${options.produces}" (${recipes.length}):\n`);
+    if (filterUnlocked) {
+      recipes = recipes.filter(r => isRecipeUnlocked(data, r.name));
+    }
+    const label = filterUnlocked ? ' (unlocked only)' : '';
+    console.log(`Recipes that produce "${options.produces}" (${recipes.length})${label}:\n`);
     for (const r of recipes) {
       const ingredients = r.ingredients.map(i => `${i.amount ?? '?'}x ${i.name}`).join(', ');
       const products = r.products.map(p => `${p.amount ?? '?'}x ${p.name}`).join(', ');
@@ -22,14 +27,19 @@ export function recipesCommand(protoPath: string, options: { produces?: string; 
   }
 
   if (options.consumes) {
-    const results: typeof data.recipes[string][] = [];
+    let results: typeof data.recipes[string][] = [];
     for (const recipe of Object.values(data.recipes)) {
       if (recipe.hidden) continue;
-      if (recipe.ingredients.some(i => i.name === options.consumes)) {
+      const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+      if (ingredients.some(i => i.name === options.consumes)) {
         results.push(recipe);
       }
     }
-    console.log(`Recipes that consume "${options.consumes}" (${results.length}):\n`);
+    if (filterUnlocked) {
+      results = results.filter(r => isRecipeUnlocked(data, r.name));
+    }
+    const label = filterUnlocked ? ' (unlocked only)' : '';
+    console.log(`Recipes that consume "${options.consumes}" (${results.length})${label}:\n`);
     for (const r of results) {
       const ingredients = r.ingredients.map(i => `${i.amount ?? '?'}x ${i.name}`).join(', ');
       const products = r.products.map(p => `${p.amount ?? '?'}x ${p.name}`).join(', ');

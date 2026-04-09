@@ -448,14 +448,34 @@ local function export_force(player)
         recipes = {},
     }
     for name, recipe in pairs(force.recipes) do
-        if recipe.productivity_bonus and recipe.productivity_bonus > 0 then
-            force_data.recipes[name] = {
-                productivity_bonus = recipe.productivity_bonus,
-                enabled = recipe.enabled,
-            }
-        end
+        force_data.recipes[name] = {
+            enabled = recipe.enabled,
+            productivity_bonus = recipe.productivity_bonus > 0 and recipe.productivity_bonus or nil,
+        }
     end
     return force_data
+end
+
+local function export_technologies(player)
+    local techs = {}
+    for name, tech in pairs(player.force.technologies) do
+        if tech.researched then
+            local unlocks = {}
+            for _, effect in pairs(tech.prototype.effects) do
+                if effect.type == "unlock-recipe" then
+                    table.insert(unlocks, effect.recipe)
+                end
+            end
+            if #unlocks > 0 then
+                techs[name] = {
+                    name = name,
+                    researched = true,
+                    unlocks = unlocks,
+                }
+            end
+        end
+    end
+    return techs
 end
 
 -- Chunk the JSON output since helpers.write_file has limits
@@ -497,6 +517,9 @@ commands.add_command("helmod-web-export", "Export prototype data for Helmod Web"
 
     player.print("Exporting force data...")
     data.force = export_force(player)
+
+    player.print("Exporting technologies...")
+    data.technologies = export_technologies(player)
 
     player.print("Converting to JSON...")
     local json = helpers.table_to_json(data)

@@ -79,11 +79,29 @@ export interface Fluid {
   order?: string;
 }
 
+export interface ForceRecipe {
+  enabled: boolean;
+  productivity_bonus?: number;
+}
+
+export interface Technology {
+  name: string;
+  researched: boolean;
+  unlocks: string[];  // recipe names
+}
+
+export interface ForceData {
+  recipes: Record<string, ForceRecipe>;
+  [key: string]: unknown;
+}
+
 export interface PrototypeData {
   recipes: Record<string, Recipe>;
   entities: Record<string, Entity>;
   items: Record<string, Item>;
   fluids: Record<string, Fluid>;
+  force?: ForceData;
+  technologies?: Record<string, Technology>;
 }
 
 /** Map from item/fluid name to recipes that produce it */
@@ -100,8 +118,36 @@ export function loadPrototypes(jsonPath: string): PrototypeData {
     entities: raw.entities ?? {},
     items: raw.items ?? {},
     fluids: raw.fluids ?? {},
+    force: raw.force ?? undefined,
+    technologies: raw.technologies ?? undefined,
   };
   return cachedData;
+}
+
+/**
+ * Check if a recipe is unlocked in the player's save.
+ * Returns true if no force data is available (backwards compat).
+ */
+export function isRecipeUnlocked(data: PrototypeData, recipeName: string): boolean {
+  const forceRecipes = data.force?.recipes;
+  if (!forceRecipes || Object.keys(forceRecipes).length === 0) return true;
+  const fr = forceRecipes[recipeName];
+  if (!fr) {
+    // Not in force.recipes — fall back to prototype enabled field
+    return data.recipes[recipeName]?.enabled ?? false;
+  }
+  return fr.enabled;
+}
+
+/**
+ * Find which technology unlocks a recipe.
+ */
+export function findTechForRecipe(data: PrototypeData, recipeName: string): Technology | null {
+  if (!data.technologies) return null;
+  for (const tech of Object.values(data.technologies)) {
+    if (tech.unlocks.includes(recipeName)) return tech;
+  }
+  return null;
 }
 
 /**

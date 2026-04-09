@@ -32,6 +32,7 @@ No build step needed for dev. The 16MB prototype JSON loads in ~0.6 seconds.
 - Module/beacon effects computed and exposed via `--modules` and `--beacons` CLI flags
 - Fuel consumption modeled in matrix: burner factories consume fuel and produce `burnt_result` (e.g., coal→ash). This creates automatic intermediate linking but can cause degenerate scaling — prefer electric factories or use exclude constraints.
 - `--constraint "recipe:product:exclude"` prevents a recipe's byproduct from driving solver scaling (works in both algebraic and simplex)
+- `--max-import "item:amount"` caps how much of an item can be imported. `amount=0` forces full internal production. Post-processing pass scales up producer/consumer recipes to close balance gaps, cascading deficits to raw materials. Works with both solver modes.
 - Helmod export reverses recipe order (output recipe first) to match Helmod's top-to-bottom processing
 
 ## Prototype data quirks
@@ -61,5 +62,6 @@ Pipeline: `luaSerialize(model)` → `zlib.deflateSync()` → `base64` — **NO v
 
 - [ ] `--electric` / `--no-burner`: auto-select best electric (non-burner) factory per recipe
 - [ ] `--recipe-tree <item>`: trace full ingredient tree showing all recipe options with unlock status
-- [ ] Multi-input constraints: support multiple `--input` flags simultaneously
+- [x] Multi-input constraints: support multiple `--input` flags simultaneously
+- [x] `--max-import`: cap intermediate imports, force internal production
 - [ ] Temperature-linked fluids: conversion rows for fluids at different temperatures (steam 165C vs 250C vs 500C)

@@ -77,7 +77,8 @@ function classifyItems(
   for (const recipe of recipes) {
     const products = Array.isArray(recipe.products) ? recipe.products : [];
     for (const p of products) producedBy.add(itemKey(p));
-    for (const ing of recipe.ingredients) consumedBy.add(`${ing.name}:${ing.type}`);
+    const ings = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+    for (const ing of ings) consumedBy.add(`${ing.name}:${ing.type}`);
   }
 
   const result = new Map<string, { name: string; type: 'item' | 'fluid'; temperature?: number; state: ItemState }>();
@@ -97,7 +98,8 @@ function classifyItems(
   for (const recipe of recipes) {
     const products = Array.isArray(recipe.products) ? recipe.products : [];
     for (const p of products) addItem(p.name, p.type, p.temperature);
-    for (const ing of recipe.ingredients) addItem(ing.name, ing.type);
+    const ings2 = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+    for (const ing of ings2) addItem(ing.name, ing.type);
   }
   for (const key of extraConsumed) {
     const [name, type] = key.split(':');
@@ -196,7 +198,8 @@ function buildMatrix(data: PrototypeData, input: SolveInput): SolverMatrix {
       const ci = colIndex.get(itemKey(p));
       if (ci != null) matrix[r][ci] += elementAmount(p) * productivity * cyclesPerTime;
     }
-    for (const ing of recipe.ingredients) {
+    const matIngs = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+    for (const ing of matIngs) {
       const ci = colIndex.get(`${ing.name}:${ing.type}`);
       if (ci != null) matrix[r][ci] -= elementAmount(ing) * cyclesPerTime;
     }

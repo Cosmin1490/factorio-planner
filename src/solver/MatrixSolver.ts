@@ -278,9 +278,13 @@ function solveAlgebra(m: SolverMatrix, input: SolveInput): number[] {
         if (bestCol < 0) continue;
 
         const scale = Z[bestCol] / (-matrix[r][bestCol]);
+        if (scale < 1e-10) continue;
+
         recipeCounts[r] += scale;
         changed = true;
-        for (let c = 0; c < numCols; c++) Z[c] += matrix[r][c] * scale;
+        for (let c = 0; c < numCols; c++) {
+          Z[c] += matrix[r][c] * scale;
+        }
       }
       if (!changed) break;
     }

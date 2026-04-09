@@ -28,7 +28,7 @@ No build step needed for dev. The 16MB prototype JSON loads in ~0.6 seconds.
 - Native TypeScript solver (no Lua dependency)
 - Items produced by one recipe and consumed by another in the same block are classified as intermediates (state=0) and linked internally
 - **Algebraic solver**: Multi-pass Gaussian elimination. Default for target mode. Supports `--constraint` (master/exclude). Breaks on large chains (12+ recipes — gives astronomical numbers).
-- **Simplex solver**: Linear programming. Default for input mode. Supports `--constraint exclude` (zeroes out production coefficients in working copy). Handles complex chains with competing consumers. Always use simplex for blocks with many recipes.
+- **Simplex solver**: Linear programming. Default for input mode. Supports `--constraint exclude` (zeroes out production coefficients in working copy). Handles complex chains with competing consumers. Always use simplex for blocks with many recipes. **Caveat**: simplex finds ANY feasible solution, not the minimum one. Unconstrained byproducts cascade wildly in large runs (100+ recipes → 11,500 buildings). Fix: import deep commodities (battery, rubber) and exclude byproducts at every cascade link.
 - Input mode defaults to simplex because algebraic greedy pass can't balance competing consumers
 - Module/beacon effects computed and exposed via `--modules` and `--beacons` CLI flags
 - Fuel consumption modeled in matrix: burner factories consume fuel and produce `burnt_result` (e.g., coal→ash). This creates automatic intermediate linking but can cause degenerate scaling — prefer electric factories or use exclude constraints.
@@ -72,6 +72,7 @@ Pipeline: `luaSerialize(model)` → `zlib.deflateSync()` → `base64` — **NO v
 - **Target mode for complex chains**: Input mode lets simplex freely import intermediates. Use target mode + binary search the target to fit input budgets (e.g., keep iron-ore under 15/s).
 - **Ash is free**: Treat ash as a readily available input. Don't let it drive scaling.
 - **Void solid byproducts**: Stone can be voided via `saline-water` recipe (10 stone + 100 water → 50 water-saline).
+- **Import deep commodities for large runs**: For 50+ recipe solver runs, import items with deep/expensive chains (battery-mk01, rubber, creosote, plastic-bar) instead of producing them inline. Recipes with high input:output ratios are cascade magnifiers (carbon-black 50:1, battery-mk01 30:1 cyanic-acid). Exclude byproducts at EVERY cascade link — breaking one link isn't enough if the solver imports the intermediate.
 
 ## Recipe alternative evaluation
 
@@ -103,11 +104,21 @@ Pipeline: `luaSerialize(model)` → `zlib.deflateSync()` → `base64` — **NO v
 
 ## Pyanodon module tricks
 
-Some Pyanodon buildings use items (not standard modules) as modules:
+All Pyanodon biological buildings use items (not standard modules) as modules with +100% speed each:
 
-- **Seaweed farms** (`seaweed-crop-mk01`): 10 module slots, category `seaweed`. Use `seaweed` item as module (+100% speed each = 11x total). Without modules, speed is 0.09 — unusable.
-- **Sap extractors** (`sap-extractor-mk01`): 2 module slots, categories `sap-mk01..04`. Use `sap-tree` (+100% speed each = 3x total). Without modules, speed is 0.33.
-- Other biological buildings likely have similar item-as-module patterns — check `allowed_module_categories` and search for items with `module_effects` matching that category.
+| Building | Slots | Module item | Speed multiplier |
+|---|---|---|---|
+| `moss-farm-mk01` | 15 | `moss` | 16x |
+| `moondrop-greenhouse-mk01` | 16 | `moondrop` | 17x |
+| `ralesia-plantation-mk01` | 12 | `ralesia` | 13x |
+| `prandium-lab-mk01` (cottongut) | 20 | `cottongut-mk01` | 21x |
+| `vrauks-paddock-mk01` | 10 | `vrauks` | 11x |
+| `auog-paddock-mk01` | 4 | `auog` | 5x |
+| `rc-mk01` (breeding center) | 2 | matching animal | 3x |
+| `seaweed-crop-mk01` | 10 | `seaweed` | 11x |
+| `sap-extractor-mk01` | 2 | `sap-tree` | 3x |
+
+**ALWAYS add `--modules` for every biological recipe.** Without modules, bio farms are unusably slow and dominate building count (757→110 buildings for logistic science pack). mk02/mk03/mk04 tiers exist with 2x/3x/4x speed bonus per slot.
 
 ## Recipe tree tips
 

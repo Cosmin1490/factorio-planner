@@ -48,6 +48,8 @@ No build step needed for dev. The 16MB prototype JSON loads in ~0.6 seconds.
 - Force data (`force.recipes`) tracks unlock state per recipe. Technology data tracks researched techs and their recipe unlocks.
 - Some recipes have `ingredients: {}` (empty object) instead of `[]` — same `Array.isArray()` guard as products
 - Pyanodon's recipe graph is extremely dense: even with `--unlocked` filtering, `recipe-tree --needs acetylene` produces 6000+ lines. Commodity items (water, steam, soil, coke, ash, limestone, muddy-sludge, carbon-dioxide, oxygen, hydrogen, compost) fan out to hundreds of recipes each. Use `--ignore` to prune them and `--depth 2-3` for focused exploration.
+- Pyanodon water `heat_capacity` is **2,100 J/unit/°C** (vanilla is 200). This is 10.5× higher and affects all steam/boiler calculations. Always read from `data.fluids["water"].heat_capacity`, don't hardcode.
+- Fluid `fuel_value` is in `data.fluids`, not `data.items`. Oil boiler mk01 `fluid_energy_source.effectivity=2` doubles fuel efficiency.
 
 ## Helmod export format
 
@@ -85,11 +87,12 @@ When comparing recipe alternatives, don't assume "more complex = more efficient"
 8. **Classify byproducts before linking** — (a) convertible to fluid/gas → add consumer, (b) only converts to solid → low value unless needed, (c) no conversion → accept as waste (e.g., ash). Only invest recipes in category (a).
 9. **Account for power cost** — electric boilers are 25 MW each and often dominate the power budget (67% in the pitch pipeline). Compute total MW: count × energy_usage × 60. Steam is never free.
 10. **Use unlocked factory tiers** — solver auto-picks mk04 but those are usually locked. Always specify `--factory` with actual unlocked tiers. mk01 uses less power per building but needs 4x more buildings.
+11. **Prefer burning byproduct fluids over electric boilers** — when a pipeline produces burnable fluids (gasoline, naphthalene-oil, syngas), use an oil boiler instead of electric boilers. Oil boiler mk01: effectivity=2 (double fuel efficiency), burns any fluid with fuel_value, 0 MW electrical. Math: `fuel_rate = (steam_rate × heat_capacity × ΔT) / (fuel_value × effectivity)`. Pyanodon water heat_capacity=2,100 J/unit/°C (not vanilla 200), ΔT=235 (250-15). `max_energy_usage` is J/tick (×60 for watts). Fluid `fuel_value` is in `data.fluids`, not `data.items`.
 
 Examples:
 - stopper-2 (rubber) looks like an upgrade over stopper, but both need 0.5 latex/stopper (same formic-acid cost). Rubber just adds carbon-black + polybutadiene + titanium for no benefit.
 - Forcing syngas to zero through aromatics-to-plastic imported 18.71/s light-oil because aromatics (57/s) was the limiter vs syngas (151/s). Matching the limiter gave 1.14 plastic/s with zero imports.
-- Pitch pipeline: 3 electric boilers = 75 MW out of 111.5 MW total. Steam production is the biggest power cost.
+- Pitch pipeline: 3 electric boilers = 75 MW out of 111.5 MW total. Switching to oil boiler burning gasoline (28.79/s for 140 steam/s, effectivity=2) saves 75 MW electrical.
 
 ## Pyanodon module tricks
 

@@ -70,12 +70,21 @@ export interface RecipeResult {
   energyUsage: number;
 }
 
+/** Per-intermediate routing: who produces it and who consumes it */
+export interface IntermediateDetail {
+  name: string;
+  type: 'item' | 'fluid';
+  totalFlow: number;
+  producers: { recipeName: string; amount: number }[];
+  consumers: { recipeName: string; amount: number }[];
+}
+
 /** Full solver output */
 export interface SolveResult {
   recipes: RecipeResult[];
   products: ItemFlow[];
   ingredients: ItemFlow[];
-  intermediates: ItemFlow[];
+  intermediates: IntermediateDetail[];
 }
 
 /** Computed module/beacon effects for a single recipe */

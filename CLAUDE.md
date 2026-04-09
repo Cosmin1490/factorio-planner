@@ -94,9 +94,10 @@ Pyanodon's recipe graph is extremely dense. For practical use:
 When showing pipeline summaries, use:
 
 1. Header: `<recipe> — <rate>/s, <N> buildings`
-2. ASCII box table (┌─┬─┐ │ ├─┼─┤ └─┴─┘) with columns: Recipe, Factory, Count (right-aligned)
+2. Recipe table — ASCII box-drawing (┌─┬─┐ │ ├─┼─┤ └─┴─┘) with columns: Recipe, Factory, Count (right-aligned), Modules (shown when any recipe has modules)
 3. Inputs on one line, comma-separated: `item rate/s, item rate/s, ...`
 4. Byproducts on one line, same format
+5. Intermediates table — ASCII box-drawing with columns: Item, Rate, Producer, Consumer (per-recipe routing for belt/pipe planning)
 
 ## TODO
 

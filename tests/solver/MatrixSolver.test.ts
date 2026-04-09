@@ -76,9 +76,13 @@ describe('acetylene pipeline (14-recipe, simplex input mode)', () => {
     expect(counts.get('lime')).toBeCloseTo(3.10, 1);
   });
 
-  it('has no unexpected intermediates (all should be linked)', () => {
+  it('all intermediates are balanced (no net surplus/deficit)', () => {
     const result = solve(data, input);
-    expect(result.intermediates).toHaveLength(0);
+    for (const im of result.intermediates) {
+      const produced = im.producers.reduce((s, p) => s + p.amount, 0);
+      const consumed = im.consumers.reduce((s, c) => s + c.amount, 0);
+      expect(Math.abs(produced - consumed)).toBeLessThan(0.01);
+    }
   });
 });
 

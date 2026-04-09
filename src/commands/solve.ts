@@ -220,14 +220,47 @@ export function solveCommand(protoPath: string, options: SolveOptions) {
 
   // Pretty-print results
   console.log(`\nResults (time base: ${time}s):\n`);
-  console.log('Recipe                          Factory                    Count    Speed');
-  console.log('─'.repeat(80));
 
-  for (const r of result.recipes) {
-    console.log(
-      `${r.recipeName.padEnd(32)}${r.factoryName.padEnd(27)}${Math.ceil(r.factoryCount).toString().padStart(5)}    ${r.effectiveSpeed.toFixed(2)}`
-    );
+  // Build module string lookup from recipeSpecs
+  const modulesByRecipe = new Map<string, string>();
+  for (const spec of recipeSpecs) {
+    if (spec.modules && spec.modules.length > 0) {
+      const parts = spec.modules.map(m => `${m.count}x ${m.name}`);
+      modulesByRecipe.set(spec.recipeName, parts.join(', '));
+    }
   }
+
+  const hasModules = modulesByRecipe.size > 0;
+  const recipeRows = result.recipes.map(r => ({
+    recipe: r.recipeName,
+    factory: r.factoryName,
+    count: Math.ceil(r.factoryCount).toString(),
+    modules: modulesByRecipe.get(r.recipeName) ?? '',
+  }));
+
+  const rW = Math.max(6, ...recipeRows.map(r => r.recipe.length));
+  const fW = Math.max(7, ...recipeRows.map(r => r.factory.length));
+  const cW = Math.max(5, ...recipeRows.map(r => r.count.length));
+  const mW = hasModules ? Math.max(7, ...recipeRows.map(r => r.modules.length)) : 0;
+
+  const rLine = (l: string, m: string, r: string) => {
+    const cols = [`─`.repeat(rW + 2), `─`.repeat(fW + 2), `─`.repeat(cW + 2)];
+    if (hasModules) cols.push(`─`.repeat(mW + 2));
+    return `${l}${cols.join(m)}${r}`;
+  };
+  const rRow = (recipe: string, factory: string, count: string, modules: string) => {
+    const cols = [` ${recipe.padEnd(rW)} `, ` ${factory.padEnd(fW)} `, ` ${count.padStart(cW)} `];
+    if (hasModules) cols.push(` ${modules.padEnd(mW)} `);
+    return `│${cols.join('│')}│`;
+  };
+
+  console.log(rLine('┌', '┬', '┐'));
+  console.log(rRow('Recipe', 'Factory', 'Count', 'Modules'));
+  console.log(rLine('├', '┼', '┤'));
+  for (const r of recipeRows) {
+    console.log(rRow(r.recipe, r.factory, r.count, r.modules));
+  }
+  console.log(rLine('└', '┴', '┘'));
 
   const visibleProducts = result.products.filter(p => p.amount >= 0.01);
   const visibleIngredients = result.ingredients.filter(i => i.amount >= 0.01);
@@ -244,5 +277,32 @@ export function solveCommand(protoPath: string, options: SolveOptions) {
     for (const ing of visibleIngredients) {
       console.log(`  ${ing.name}: ${ing.amount.toFixed(2)}/${time}s`);
     }
+  }
+
+  if (result.intermediates.length > 0) {
+    console.log('\nIntermediates:');
+
+    // Build rows: [item, rate, producer(s), consumer(s)]
+    const imRows: [string, string, string, string][] = [];
+    for (const im of result.intermediates) {
+      const prodStr = im.producers.map(p => `${p.recipeName} ${p.amount.toFixed(2)}/${time}s`).join(' + ');
+      const consStr = im.consumers.map(c => `${c.recipeName} ${c.amount.toFixed(2)}/${time}s`).join(', ');
+      imRows.push([im.name, `${im.totalFlow.toFixed(2)}/${time}s`, prodStr, consStr]);
+    }
+
+    const headers = ['Item', 'Rate', 'Producer', 'Consumer'];
+    const widths = headers.map((h, i) => Math.max(h.length, ...imRows.map(r => r[i].length)));
+
+    const pad = (s: string, w: number, right = false) => right ? s.padStart(w) : s.padEnd(w);
+    const line = (l: string, m: string, r: string) =>
+      `${l}${widths.map(w => '─'.repeat(w + 2)).join(m)}${r}`;
+
+    console.log(line('┌', '┬', '┐'));
+    console.log(`│ ${headers.map((h, i) => pad(h, widths[i])).join(' │ ')} │`);
+    console.log(line('├', '┼', '┤'));
+    for (const row of imRows) {
+      console.log(`│ ${row.map((cell, i) => pad(cell, widths[i], i === 1)).join(' │ ')} │`);
+    }
+    console.log(line('└', '┴', '┘'));
   }
 }

@@ -11,7 +11,7 @@
 
 import type { PrototypeData, Recipe, Entity, Item, RecipeElement } from '../data/PrototypeLoader.js';
 import { computeEffects, effectiveSpeed, effectiveProductivity } from './ModuleEffects.js';
-import { ItemState, type SolveInput, type SolveResult, type RecipeResult, type ItemFlow, type EffectTotals, type ConstraintSpec } from './types.js';
+import { ItemState, type SolveInput, type SolveResult, type RecipeResult, type ItemFlow, type IntermediateDetail, type EffectTotals, type ConstraintSpec } from './types.js';
 
 // ── Internal types ──────────────────────────────────────────────────────────
 
@@ -601,11 +601,29 @@ function extractResults(m: SolverMatrix, recipeCounts: number[]): SolveResult {
 
   const products: ItemFlow[] = [];
   const ingredients: ItemFlow[] = [];
-  const intermediates: ItemFlow[] = [];
+  const intermediates: IntermediateDetail[] = [];
 
   for (let c = 0; c < numCols; c++) {
     const col = columns[c];
     if (col.state === ItemState.Intermediate) {
+      // Build per-recipe routing for this intermediate
+      const producers: { recipeName: string; amount: number }[] = [];
+      const consumers: { recipeName: string; amount: number }[] = [];
+      for (let r = 0; r < numRows; r++) {
+        const flow = matrix[r][c] * recipeCounts[r];
+        if (flow > 0.0001) producers.push({ recipeName: resolved[r].recipeName, amount: flow });
+        else if (flow < -0.0001) consumers.push({ recipeName: resolved[r].recipeName, amount: -flow });
+      }
+      if (producers.length > 0 || consumers.length > 0) {
+        intermediates.push({
+          name: col.name,
+          type: col.type,
+          totalFlow: totalProduction[c],
+          producers,
+          consumers,
+        });
+      }
+
       const net = totalProduction[c] - totalConsumption[c];
       if (Math.abs(net) < 0.0001) continue;
       const flow: ItemFlow = { name: col.name, type: col.type, amount: Math.abs(net), state: col.state };

@@ -103,6 +103,13 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
 
 16. **Transport density** — prefer the densest form of an item as the boundary. If a high-consumer item is trivially crafted (1 step, fast) from a precursor with equal or better stack density, the precursor is the better boundary. Copper-cable (20 consumers) is made 2:1 from copper-plate, both stack to 200 — plates move 2x material per slot. Same for iron-stick, iron-gear-wheel. The boundary is what goes on the train; the derivative is crafted on-site.
 
+17. **City block space budget** — in train-based city block architectures, each block has finite space split between factories and train stations (1 station per item, input or output). Three tools to fit a sub-factory into a block:
+    - **Import** — 1 station, 0 buildings. Use for high-volume bus items.
+    - **Inline** — 0 stations, N buildings. Use for cheap-to-produce items (1-2 buildings) to save a station.
+    - **New boundary** — 1 station, but absorbs multiple imports into a separate block. Use when producing an item inline would require importing 3+ of its own ingredients. Example: pcb1 has only 4 consumers but producing it inline means importing formica, copper-plate, vacuum, plus formica's chain (treated-wood, sap, fiber, methanal, creosote) — 5+ stations vs 1 for pcb1.
+    
+    When a sub-factory has many buildings, aggressively inline cheap imports to save stations. When it has few buildings, more stations are fine. The balance point depends on block size and station footprint.
+
 ### Solver setup checklist
 - **Use electric factories** — `automated-factory-mk01` (crafting), `advanced-foundry-mk01` (smelting). All vanilla assembling-machines are burners in Pyanodon and couple fuel→ash.
 - **Exclude byproducts that drive scaling** — `--constraint "recipe:product:exclude"` for every byproduct that could cascade.

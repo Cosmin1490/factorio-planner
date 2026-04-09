@@ -44,6 +44,7 @@ export interface SolveInput {
   time: number;
   solver?: SolverMode;
   constraints?: ConstraintSpec[];
+  maxImports?: { name: string; amount: number }[];
 }
 
 /** Item/fluid flow in solver results */

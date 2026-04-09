@@ -71,6 +71,7 @@ program
   .option('--beacons <recipe:beacon:module:mCount:bCount...>', 'Beacons (e.g., "iron-plate:beacon:speed-module-3:2:8")')
   .option('--solver <mode>', 'Solver algorithm: algebra or simplex (default: algebra, input mode defaults to simplex)')
   .option('--constraint <spec...>', 'Recipe constraint (e.g., "iron-plate:iron-plate:master")')
+  .option('--max-import <item:amount...>', 'Cap import of item (amount=0 = produce internally)')
   .option('--export <format>', 'Export as Helmod import string (format: helmod)')
   .option('--unlocked', 'Warn if any recipe is not unlocked in your save')
   .option('--json', 'Output raw JSON result')
@@ -87,6 +88,7 @@ program
       beacons: opts.beacons,
       solver: opts.solver,
       constraint: opts.constraint,
+      maxImport: opts.maxImport,
       export: opts.export,
       json: opts.json,
       unlocked: opts.unlocked,

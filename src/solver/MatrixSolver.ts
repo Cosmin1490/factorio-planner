@@ -622,11 +622,81 @@ function extractResults(m: SolverMatrix, recipeCounts: number[]): SolveResult {
   return { recipes: recipeResults, products, ingredients, intermediates };
 }
 
+// ── Balance adjustment (post-processing) ──────────────────────────────────
+
+/**
+ * Balance intermediates by pushing deficits/surpluses through the recipe chain.
+ * For items importing more than allowed: scale up the production recipe.
+ * For items exporting when cap=0: scale up the consumption recipe.
+ * Cascading changes propagate until they reach uncapped items (raw materials).
+ */
+function adjustForBalance(
+  m: SolverMatrix,
+  recipeCounts: number[],
+  maxImports: Map<string, number>,
+): void {
+  const { matrix, columns, numRows, numCols } = m;
+  const maxPasses = 10;
+
+  for (let pass = 0; pass < maxPasses; pass++) {
+    // Compute net flow per item
+    const netFlow = new Array(numCols).fill(0);
+    for (let r = 0; r < numRows; r++) {
+      for (let c = 0; c < numCols; c++) {
+        netFlow[c] += matrix[r][c] * recipeCounts[r];
+      }
+    }
+
+    let adjusted = false;
+    for (let c = 0; c < numCols; c++) {
+      const cap = maxImports.get(columns[c].name);
+      if (cap == null) continue; // no cap on this item
+
+      const importAmount = -netFlow[c]; // positive if importing
+      if (importAmount > cap + 1e-8) {
+        // Importing too much — scale up the best producer
+        let bestRow = -1;
+        let bestRate = 0;
+        for (let r = 0; r < numRows; r++) {
+          if (matrix[r][c] > bestRate) {
+            bestRate = matrix[r][c];
+            bestRow = r;
+          }
+        }
+        if (bestRow < 0) continue; // no producer — stays as import
+
+        const deficit = importAmount - cap;
+        recipeCounts[bestRow] += deficit / bestRate;
+        adjusted = true;
+      } else if (cap === 0 && netFlow[c] > 1e-8) {
+        // Exporting when it should balance — scale up the best consumer
+        let bestRow = -1;
+        let bestRate = 0;
+        for (let r = 0; r < numRows; r++) {
+          if (-matrix[r][c] > bestRate) { // negative = consumption
+            bestRate = -matrix[r][c];
+            bestRow = r;
+          }
+        }
+        if (bestRow < 0) continue; // no consumer — stays as output
+
+        recipeCounts[bestRow] += netFlow[c] / bestRate;
+        adjusted = true;
+      }
+    }
+
+    if (!adjusted) break;
+  }
+}
+
 // ── Public API ──────────────────────────────────────────────────────────────
 
 export function solve(data: PrototypeData, input: SolveInput): SolveResult {
   const m = buildMatrix(data, input);
   const solver = input.solver ?? 'algebra';
   const recipeCounts = solver === 'simplex' ? solveSimplex(m, input) : solveAlgebra(m, input);
+  if (input.maxImports?.length) {
+    adjustForBalance(m, recipeCounts, new Map(input.maxImports.map(i => [i.name, i.amount])));
+  }
   return extractResults(m, recipeCounts);
 }

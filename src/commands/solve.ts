@@ -16,6 +16,7 @@ interface SolveOptions {
   json?: boolean;
   solver?: string;
   constraint?: string[];
+  maxImport?: string[];
   unlocked?: boolean;
 }
 
@@ -197,6 +198,10 @@ export function solveCommand(protoPath: string, options: SolveOptions) {
   if (options.input) {
     const rawInputs = Array.isArray(options.input) ? options.input : [options.input];
     solveInput.inputs = rawInputs.map(parseAmountSpec);
+  }
+  if (options.maxImport) {
+    const rawMaxImports = Array.isArray(options.maxImport) ? options.maxImport : [options.maxImport];
+    solveInput.maxImports = rawMaxImports.map(parseAmountSpec);
   }
 
   console.error('Running solver...');

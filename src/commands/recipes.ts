@@ -66,12 +66,14 @@ export function recipeInfoCommand(protoPath: string, recipeName: string) {
   console.log(`Enabled: ${recipe.enabled}`);
   console.log();
   console.log('Ingredients:');
-  for (const i of recipe.ingredients) {
+  const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+  for (const i of ingredients) {
     console.log(`  ${i.amount ?? '?'}x ${i.name} (${i.type})`);
   }
   console.log();
   console.log('Products:');
-  for (const p of recipe.products) {
+  const products = Array.isArray(recipe.products) ? recipe.products : [];
+  for (const p of products) {
     const prob = p.probability != null && p.probability < 1 ? ` (${p.probability * 100}%)` : '';
     console.log(`  ${p.amount ?? '?'}x ${p.name} (${p.type})${prob}`);
   }

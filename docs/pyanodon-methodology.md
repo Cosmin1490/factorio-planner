@@ -40,7 +40,7 @@ Multi-product recipes stall completely when ANY output buffer is full. Every pro
 
 ## Pipeline decomposition
 
-10. **Re-derive demand before designing** — when revisiting a sub-factory, trace demand from the current plan, not saved targets. Targets go stale as the overall pipeline evolves (e.g., vrauks sized for 0.2/s rubber turned out to need only 0.117/s for animal-sample-01 after rubber became a commodity import). Wrong demand -> wrong sizing -> wasted buildings or misleading bottleneck analysis.
+10. **Re-derive demand before designing** — when revisiting a sub-factory, trace demand from the current plan, not saved targets. Targets go stale as the overall pipeline evolves (e.g., vrauks sized for 0.2/s rubber turned out to need only 0.117/s for animal-sample-01 after rubber became a commodity import). Wrong demand -> wrong sizing -> wasted buildings or misleading bottleneck analysis. **Start from the recipe's actual output count** — multi-output recipes (e.g., 12 science packs per craft) change demand by an order of magnitude. The math downstream can be internally consistent yet completely wrong if the root output count is assumed rather than checked.
 11. **Decompose at commodity boundaries** — split at natural handoff points, optimize each stage independently. When multiple end products share deep infrastructure, split by shared system (auog farm, plasmids, bio commons) not by end product. Map all dependencies first, identify natural service layers, then build bottom-up.
 12. **Design for explicit handoff** — track exports/imports between pipelines. Surpluses become fuel (syngas -> oil boiler) or feed parallel consumers. Deficits identify where to add recipes or accept imports.
 
@@ -48,14 +48,14 @@ Multi-product recipes stall completely when ANY output buffer is full. Every pro
 
 A good boundary is an item where you'd naturally put a train stop. Score candidates on:
 
-13. **Consumer count** — items consumed by many unlocked recipes are natural bus items. Empirical counts (Pyanodon, current unlock):
-    - **Tier A (20+)**: small-parts-01 (126), iron-plate (105), electronic-circuit (96), steel-plate (93), glass (39), stone-brick (35), copper-plate (25), titanium-plate (24), copper-cable (20)
-    - **Tier B (10-19)**: iron-stick (14), battery-mk01 (12), plastic-bar (12), tin-plate (11), coke (10), bolts (10)
-    - **Tier C (4-9)**: petri-dish (9), tar (7), rubber (6), pitch (6), middle-oil (5), ceramic (5), creosote (5)
-    - **Tier D (1-3)**: light-oil, syngas, lab-instrument (4 each), latex (3), iron-gear-wheel (2)
+13. **Consumer count** — items consumed by many unlocked recipes are natural bus items. Empirical counts (Pyanodon, current unlock, 2026-04-10):
+    - **Tier A (20+)**: small-parts-01 (375), iron-plate (312), electronic-circuit (285), steel-plate (276), glass (114), stone-brick (102), copper-plate (72), lead-plate (66), native-flora (60), copper-cable (57), iron-stick (39)
+    - **Tier B (10-19)**: battery-mk01 (33), coke (30), tin-plate (30), bolts (27), solder (27), petri-dish (24), ralesia-seeds (21), tar (18), rubber (15), petri-dish-bacteria (15), pitch (15), pcb1 (12), creosote (12), melamine (12), fenxsb-alloy (12), fawogae-substrate (12), cottongut (12), urea (12), middle-oil (12)
+    - **Tier C (4-9)**: plasmids (9), graphite (9), cyanic-acid (9), ammonia (9), sb-oxide (9), zinc-plate (6), formic-acid (6), latex (6), stopper (6), rich-clay (6), bonemeal (6), boron-trioxide (6), depolymerized-organics (6)
+    - **Tier D (1-3)**: pbsb-alloy (3), nexelit-plate (3)
     Tier A/B are almost always good boundaries. Tier C/D only if they also have deep chains or cascade risk.
 
-14. **Chain depth & cascade risk** — deep chains (5+ recipes) or chains containing cascade magnifiers (high input:output ratio) justify splitting even at low consumer counts. Battery-mk01 (12 consumers, 30:1 cyanic-acid cascade) and rubber (6 consumers, deep petrochemical chain) are worth splitting. Iron-plate from ore is only 2-3 recipes — not worth splitting on its own. For 50+ recipe solver runs, identify and import these items as commodities. Exclude byproducts at EVERY cascade link — breaking one link is not enough if the solver imports the intermediate.
+14. **Chain depth & cascade risk** — deep chains (5+ recipes) or chains containing cascade magnifiers (high input:output ratio) justify splitting even at low consumer counts. Battery-mk01 (33 consumers, 30:1 cyanic-acid cascade) and rubber (15 consumers, deep petrochemical chain) are worth splitting. Iron-plate from ore is only 2-3 recipes — not worth splitting on its own. For 50+ recipe solver runs, identify and import these items as commodities. Exclude byproducts at EVERY cascade link — breaking one link is not enough if the solver imports the intermediate.
 
 15. **Context-dependent depth** — the boundary moves based on what you're solving. Making circuits? Iron-plate is a boundary (import it). Making iron-plate itself? Ore is the boundary. Rule: **import from the highest tier below your current target**.
 

@@ -188,6 +188,10 @@ All Pyanodon biological buildings use items (not standard modules) as modules wi
 
 Without modules, bio farms are unusably slow and dominate building count (757 -> 110 buildings for logistic science pack). mk02/mk03/mk04 tiers exist with 2x/3x/4x speed bonus per slot.
 
+**Effective speed formula:** `effective_speed = base_crafting_speed × (1 + N_modules × module_bonus)`. Example: auog-paddock-mk01 (base 0.4) with 4 auog modules (+100% each): `0.4 × (1 + 4×1.0) = 2.0`. The "5x" in the table means full slots give 5x the base speed, not 5x some other number. Always compute effective craft time as `recipe_time / effective_speed` when sizing buildings.
+
+**Variable-output recipes:** Some bio recipes produce a range (e.g., auog-pooping-1 yields 3-8 manure). Use the **average** `(min+max)/2` for throughput calculations — variance averages out over time. When sizing for a hard minimum guarantee (e.g., a critical-path item with no buffer), use `amount_min` instead and note the conservative assumption.
+
 ### Bootstrap + self-sustaining loops
 
 Bio organisms follow a two-phase pattern: (1) **Bootstrap** — a one-time setup to get the first organisms. Two routes: **world harvest** (moss, seaweed, fish — pick up from the map, trivial) or **codex route** (ralesia, vrauks, auog, fawogae, moondrop — creature-chamber/nursery recipe using a codex + earth-sample, yields only 1-2 organisms per run, slow and expensive). (2) **Steady-state** — a self-sustaining loop where output exceeds input, running forever on commodity inputs.

@@ -80,9 +80,9 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
     - **Iron**: direct 8:1 -> crush+smelt 5:1 -> BOF casting 1.4:1 (needs borax/oxygen/sand-casting)
     - **Copper**: direct 8:1 -> screen+crush 4.2:1 (no extra inputs, stone byproduct)
     - **Tin**: direct 10:1 -> screen+crush 3.75:1 (no extra inputs, stone byproduct)
-    - **Lead**: direct 6:1 -> screen+smelt 2:1 (5 ore → 1 grade-1 → 2.5 plate)
-    - **Zinc**: direct 10:1 -> crush+screen+smelt 3.3:1 (5 ore → 1 g1 → 1 g2 → 1.5 plate; needs iron-stick)
-    - **Titanium**: direct 10:1 -> screen+recycle+smelt 1.9:1 (5 ore → 2 g1 → 1.33 g3 → 2.67 plate; ti-rejects recycled)
+    - **Lead**: direct 6:1 -> screen+smelt 2:1 (5 ore -> 1 grade-1 -> 2.5 plate)
+    - **Zinc**: direct 10:1 -> crush+screen+smelt 3.3:1 (5 ore -> 1 g1 -> 1 g2 -> 1.5 plate; needs iron-stick)
+    - **Titanium**: direct 10:1 -> screen+recycle+smelt 1.9:1 (5 ore -> 2 g1 -> 1.33 g3 -> 2.67 plate; ti-rejects recycled)
     
     **Volume exception:** at niche volumes (< ~0.5/s plate), dedicating a full city block per metal wastes space. Combine low-volume metals that share the same ore source or mining fluid into one block — e.g., lead + zinc + tin + titanium smelting when each needs only a few furnaces. The "one block per plate" rule applies at bus-scale (Tier A/B consumers, multiple belts of throughput).
     

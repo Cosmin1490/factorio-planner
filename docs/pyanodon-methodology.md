@@ -57,6 +57,8 @@ When planning a major expansion (new science tier, new end product), the macro-l
 13. **Validate existing capacity against total demand** — after computing the block delta, sum ALL imports from each existing block across every new consumer and verify it can handle the total. This check is easy to skip because each new block's design looks fine in isolation — the failure only appears when you aggregate.
     
     Example: seaweed farm produces 6.4/s. Rubber needs 2/s (sodium-alginate), py-science needs 2.4/s (agar), logistic needs 0.5/s -> total 4.9/s, fits. But a fourth consumer pushing to 7/s means you need a second stamp. Also validate bus fluids: if acetylene serves iron smelting + lead mining + titanium mining, the fuel block must be sized for the total, not just its own iron consumption.
+    
+    **When capacity falls short, stamp before redesigning.** A second copy of an existing block costs zero design time (rule 27) — just paste the blueprint and connect trains. A new block design costs human+Claude time to derive ratios, pick recipes, run the solver, and validate. Stamping two copies of a proven block is almost always cheaper than designing one new block to cover the same throughput, even if the stamp is "wasteful" in building count. Only redesign when the existing block's recipe choices are fundamentally wrong for the new demand (different ore, different chain), not just when throughput is insufficient.
 
 ## Pipeline decomposition
 

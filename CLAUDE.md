@@ -110,12 +110,12 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
     
     When a sub-factory has many buildings, aggressively inline cheap imports to save stations. When it has few buildings, more stations are fine. The balance point depends on block size and station footprint.
 
-18. **Single-item smelting** — never mix metals in one sub-factory. Each plate (iron, copper, tin, etc.) gets its own city block from its own ore. One ore input + one plate output = 2 stations, leaving maximum space for furnaces. Smelting is high-volume/low-complexity — the ideal city block workload.
+18. **Single-item smelting** — never mix metals in one sub-factory. Each plate (iron, copper, tin, etc.) gets its own city block from its own ore. Prefer steel-furnace (2x2, speed 4, fluid-burning) over advanced-foundry (6x6, speed 1, electric) — 33x more plates per tile. Smelting blocks take: ore in, fluid fuel in, plate out = 3 stations. Design fuel-agnostically — specify demand as "X/s of 1.0 MJ fluid fuel" and let factory-level logistics decide the source (coke-oven-gas from coke byproduct, acetylene from calcium-carbide, etc.).
 
-19. **Size for general use** — Tier A/B bus items (plates, small-parts, glass, electronic-circuit, etc.) serve dozens to hundreds of consumers across multiple science packs and building recipes. Size these sub-factories for the bus, not for one consumer. Fill the city block with furnaces/factories, and the throughput becomes the supply budget for all downstream blocks. Only size to a specific consumer when the item is niche (Tier C/D, 1-3 consumers).
+19. **Size for general use, constrained by input throughput** — Tier A/B bus items (plates, small-parts, glass, electronic-circuit, etc.) serve dozens to hundreds of consumers. Size these sub-factories for the bus, not for one consumer. However, the binding constraint is usually input throughput (belts/pipes), not block space. At current tech, 2-4 yellow belts (30-60 items/s) per input is realistic. Size the block to match what you can actually feed it, not how many buildings fit. Only size to a specific consumer when the item is niche (Tier C/D, 1-3 consumers).
 
 ### Solver setup checklist
-- **Use electric factories** — `automated-factory-mk01` (crafting), `advanced-foundry-mk01` (smelting). All vanilla assembling-machines are burners in Pyanodon and couple fuel→ash.
+- **Use electric factories for crafting** — `automated-factory-mk01` (crafting). All vanilla assembling-machines are burners in Pyanodon and couple fuel→ash. For smelting, prefer `steel-furnace` (2x2, speed 4, fluid fuel) in city blocks — solver can use `advanced-foundry-mk01` for simplicity but real builds should use steel-furnace for density.
 - **Exclude byproducts that drive scaling** — `--constraint "recipe:product:exclude"` for every byproduct that could cascade.
 - **Force internal production** — `--max-import "item:0"` for intermediates (iron-gear-wheel, iron-plate, grade-1-copper, grade-2-copper). Cascading deficits push to raw materials.
 - **Recycle byproducts** — add recycling recipes + `--max-import "item:0"` to force items through the loop.

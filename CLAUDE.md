@@ -110,7 +110,14 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
     
     When a sub-factory has many buildings, aggressively inline cheap imports to save stations. When it has few buildings, more stations are fine. The balance point depends on block size and station footprint.
 
-18. **Single-item smelting** — never mix metals in one sub-factory. Each plate (iron, copper, tin, etc.) gets its own city block from its own ore. Prefer steel-furnace (2x2, speed 4, fluid-burning) over advanced-foundry (6x6, speed 1, electric) — 33x more plates per tile. Smelting blocks take: ore in, fluid fuel in, plate out = 3 stations. Design fuel-agnostically — specify demand as "X/s of 1.0 MJ fluid fuel" and let factory-level logistics decide the source (coke-oven-gas from coke byproduct, acetylene from calcium-carbide, etc.).
+18. **Single-item smelting** — never mix metals in one sub-factory. Each plate gets its own city block. Prefer steel-furnace (2x2, speed 4, fluid-burning) over advanced-foundry (6x6, speed 1, electric) — 33x more plates per tile. Design fuel-agnostically — specify demand as "X/s of 1.0 MJ fluid fuel" and let factory-level logistics decide the source (coke-oven-gas, acetylene, etc.).
+    
+    **On-site vs centralized:** compare ore:plate ratio across unlocked chains. High ratio (8:1 direct iron) → smelt on-site at the ore patch, train plates. Low ratio (1.4:1 BOF casting) → centralize, ore and plates are nearly equal volume. Middle ground (5:1 crush+smelt) → on-site still wins. Rule of thumb: if ore:plate > 3:1, on-site saves significant belt/train capacity. If the efficient chain needs extra imports (borax, oxygen), centralized makes more sense so you can share that infrastructure.
+    
+    Iron smelting chains (Pyanodon, current tech):
+    - Direct: 8 ore → 1 plate (1 recipe, on-site ideal)
+    - Crush + low-grade: 5 ore → 1 plate (2 recipes, stone byproduct, on-site good)
+    - Crush + BOF + casting: 1.4 ore → 1 plate (3+ recipes, needs borax/oxygen/sand-casting, centralize)
 
 19. **Size for general use, constrained by input throughput** — Tier A/B bus items (plates, small-parts, glass, electronic-circuit, etc.) serve dozens to hundreds of consumers. Size these sub-factories for the bus, not for one consumer. However, the binding constraint is usually input throughput (belts/pipes), not block space. Check the highest unlocked belt tier (yellow 15/s, red 30/s, blue 45/s) to determine per-belt capacity, then budget 2-4 belts per input — beyond that, logistics inside the block become unwieldy. Size the block to match what you can actually feed it, not how many buildings fit. Only size to a specific consumer when the item is niche (Tier C/D, 1-3 consumers).
 

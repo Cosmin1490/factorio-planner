@@ -1,0 +1,189 @@
+# Pyanodon Pipeline Methodology
+
+A framework for designing production pipelines in Factorio with the [Pyanodon modpack](https://mods.factorio.com/user/pyanodon). Developed through iterative play using Claude as a solver copilot — describing what to produce, exploring recipe alternatives, running the solver with constraints, and refining until the numbers work.
+
+Most of these principles apply to any complex Factorio overhaul mod (SeaBlock, Space Exploration, etc.), but the specific examples, numbers, and data quirks are Pyanodon-specific.
+
+---
+
+## Comparing alternatives
+
+1. **Identify the bottleneck** — most expensive input (deep chain, slow buildings, rare ores, animal husbandry). When the target depends on a key intermediate, search for chains that maximize production of that intermediate — don't just compare recipes that directly produce the target. Example: acetylene needs coke; the tar refining chain yields 6x more coke per raw-coal than coke-coal, making it the better fuel path despite not producing fuel directly.
+2. **Trace alternatives to the shared bottleneck** — compare per-unit consumption of the limiter. If both paths converge on the same expensive intermediate, the "upgrade" is a trap. **Exception**: if alternative B *consumes* a byproduct that alternative A must void, that's symbiosis, not convergence — explore it. A problematic byproduct becoming a useful input flips the economics.
+3. **Normalize to same output** — cost per 1 unit of output, not per craft. 4x output at 2 inputs beats 2x at 1.
+4. **Rank by:** efficiency (raw materials/output) > complexity (recipes/buildings) > convenience. Watch for "later game" recipes that exist to consume excess byproducts — traps at early tech. **Always run the numbers before eliminating** — two paths sharing an upstream input can have wildly different per-unit consumption. Don't dismiss on structural similarity alone; quantify first.
+
+## Byproduct management
+
+### Solver-level
+
+5. **Classify before linking** — (a) recyclable into the same chain -> recycle (reduces input demand, always check first), (b) valuable to another block -> export, (c) convertible to something valuable -> convert then export, (d) pure waste -> void (py-burner for non-fuel solids, sinkhole for liquids, exhaust for gases). Solid fuels (coal, coke, raw-coal, wood) require conversion to fluids before voiding. Prefer (a) > (b) > (c) > (d). Use overflow-to-void to combine: try to export, void only surplus. **Always check recycling before voiding** — if a byproduct converts back to an input of the same chain (even at a poor ratio), run the numbers. One extra building for 5-10% free efficiency is almost always worth it.
+6. **Match the limiting reagent** — don't force the abundant byproduct to zero; that over-scales the consumer and imports the scarce one. Let the scarce one set the pace. Use `--constraint "recipe:product:exclude"` + `--max-import "scarce-input:0"`.
+7. **Recycle intermediates through every producing step** — when multiple recipes produce the target as byproduct (coal chain: raw-coal -> coal -> coke -> coal-gas all produce tar), force intermediates back with `--max-import item:0`. Coal chain: 3x raw-material reduction (33 -> 11/s for 100 tar/s).
+
+### In-game
+
+Multi-product recipes stall completely when ANY output buffer is full. Every product must have somewhere to go.
+
+- **Voiding buildings**: sinkhole (liquids), exhaust pipe (gases), py-burner (non-fuel solids). The py-burner is a furnace that requires solid fuel (chemical/biomass category) and uses `*-pyvoid` recipes (category `py-incineration`, crafting_speed 5) to probabilistically destroy items — typically 80% destroyed per cycle (1 in -> 0.2 out at probability). One py-burner handles several items/s. **Solid fuels (coal, coke, raw-coal, wood) have NO pyvoid recipes and cannot be destroyed** — they are consumed as fuel by the burner, producing `burnt_result` (ash for coal/coke/raw-coal). To void a solid fuel, convert it to fluids first (e.g., `coal-gas-from-coke`: coke -> coal-gas + tar + ash), then void the fluids and pyvoid the ash.
+- **Ash loop pattern** — the py-burner's fuel produces ash as `burnt_result`, and ash has a pyvoid recipe. Feed the ash back into the same burner as the item to destroy: the burner consumes fuel (producing ash), destroys 80% of the ash input, and the 20% remainder recirculates. The loop converges to zero — each cycle destroys 80%, so residual ash shrinks exponentially. One py-burner handles both the primary waste item AND its own fuel ash with a single belt loop. Common pattern used in any block that produces non-fuel solid waste (e.g., aluminium block voids iron-oxide this way).
+- **Convert before voiding when the intermediate has value** — conversion captures value but has a cost: the conversion recipe must keep pace with production. Always compute the building ratio before committing — when conversion is too expensive, pyvoid directly instead. Viable example: `coal-gas-from-coke` (4 coke/s per distilator). Value-capture example: stone -> saline-water (10 stone + 100 water -> 50 water-saline) creates a useful intermediate; apply overflow-to-void on the saline-water, export what consumers need, sinkhole the rest.
+- **Overflow-to-void pattern**: don't void blindly — prioritize real consumption, only void surplus. Wire a pump or overflow valve with circuit condition: fill the load station buffer first, overflow excess to a sinkhole/exhaust. When a consumer eventually connects, trains pull from the station and less goes to void automatically. No block redesign needed. Example: tar refinery produces 280/s pitch with no current consumer — overflow valve after the pitch tank routes excess to sinkhole, block keeps running for creosote/gasoline/coke/middle-oil.
+- **Primary products can back up too** — not just byproducts. If the main export has no consumer and isn't voided, the entire block stalls, including internal chains that feed other exports. Example: aluminium block stalls entirely when plates back up — coal chain stops, no coal-gas for mining fluid, drilling halts. Apply overflow-to-void on primary products with intermittent demand, or ensure a consumer exists before building.
+
+## Power & energy
+
+**Steam producer throttling:** all boilers (electric and oil) stop when their steam output buffer is full. No steam draw -> no fuel/electricity consumed. Rated power is peak, not constant — actual cost tracks steam demand. Don't overestimate power budget based on rated values.
+
+8. **Account for power cost, use unlocked tiers** — total MW = count x energy_usage x 60. Electric boilers (25 MW rated) often dominate peak budget. Always `--factory` with unlocked tiers — solver auto-picks mk04 which are usually locked.
+9. **Burn byproduct fluids for steam** — oil boiler mk01: effectivity=2, 0 MW electrical. `fuel_rate = (steam_rate x heat_capacity x dT) / (fuel_value x effectivity)`. Pyanodon water heat_capacity=2,100, dT=235. Fluid fuel_value in `data.fluids` not `data.items`. After splitting into sub-factories, check if byproduct fluids (syngas, pitch, gasoline) cover the sub-factory's own boiler needs — often they do (rubber sub-factory: syngas 177/s + pitch 44.8/s covers its 32/s steam at 250C+).
+
+## Pipeline decomposition
+
+10. **Re-derive demand before designing** — when revisiting a sub-factory, trace demand from the current plan, not saved targets. Targets go stale as the overall pipeline evolves (e.g., vrauks sized for 0.2/s rubber turned out to need only 0.117/s for animal-sample-01 after rubber became a commodity import). Wrong demand -> wrong sizing -> wasted buildings or misleading bottleneck analysis.
+11. **Decompose at commodity boundaries** — split at natural handoff points, optimize each stage independently. When multiple end products share deep infrastructure, split by shared system (auog farm, plasmids, bio commons) not by end product. Map all dependencies first, identify natural service layers, then build bottom-up.
+12. **Design for explicit handoff** — track exports/imports between pipelines. Surpluses become fuel (syngas -> oil boiler) or feed parallel consumers. Deficits identify where to add recipes or accept imports.
+
+## Boundary selection
+
+A good boundary is an item where you'd naturally put a train stop. Score candidates on:
+
+13. **Consumer count** — items consumed by many unlocked recipes are natural bus items. Empirical counts (Pyanodon, current unlock):
+    - **Tier A (20+)**: small-parts-01 (126), iron-plate (105), electronic-circuit (96), steel-plate (93), glass (39), stone-brick (35), copper-plate (25), titanium-plate (24), copper-cable (20)
+    - **Tier B (10-19)**: iron-stick (14), battery-mk01 (12), plastic-bar (12), tin-plate (11), coke (10), bolts (10)
+    - **Tier C (4-9)**: petri-dish (9), tar (7), rubber (6), pitch (6), middle-oil (5), ceramic (5), creosote (5)
+    - **Tier D (1-3)**: light-oil, syngas, lab-instrument (4 each), latex (3), iron-gear-wheel (2)
+    Tier A/B are almost always good boundaries. Tier C/D only if they also have deep chains or cascade risk.
+
+14. **Chain depth & cascade risk** — deep chains (5+ recipes) or chains containing cascade magnifiers (high input:output ratio) justify splitting even at low consumer counts. Battery-mk01 (12 consumers, 30:1 cyanic-acid cascade) and rubber (6 consumers, deep petrochemical chain) are worth splitting. Iron-plate from ore is only 2-3 recipes — not worth splitting on its own. For 50+ recipe solver runs, identify and import these items as commodities. Exclude byproducts at EVERY cascade link — breaking one link is not enough if the solver imports the intermediate.
+
+15. **Context-dependent depth** — the boundary moves based on what you're solving. Making circuits? Iron-plate is a boundary (import it). Making iron-plate itself? Ore is the boundary. Rule: **import from the highest tier below your current target**.
+
+16. **Stable physical properties** — good boundaries have uniform properties across consumers. Iron-plate at X/s is iron-plate regardless of consumer. Steam is a BAD boundary because temperature matters (150C != 250C) and the solver treats all steam as fungible.
+
+17. **Transport density** — prefer the densest form of an item as the boundary. If a high-consumer item is trivially crafted (1 step, fast) from a precursor with equal or better stack density, the precursor is the better boundary. Copper-cable (20 consumers) is made 2:1 from copper-plate, both stack to 200 — plates move 2x material per slot. Same for iron-stick, iron-gear-wheel. The boundary is what goes on the train; the derivative is crafted on-site.
+
+## Block design
+
+18. **City block space budget** — in train-based city block architectures, each block has finite space split between factories and train stations (1 station per item, input or output). Three tools to fit a sub-factory into a block:
+    - **Import** — 1 station, 0 buildings. Use for high-volume bus items.
+    - **Inline** — 0 stations, N buildings. Use for cheap-to-produce items (1-2 buildings) to save a station. Vacuum (no inputs, 1 pump) should always be inlined.
+    - **New boundary** — 1 station, but absorbs multiple imports into a separate block. Use when producing an item inline would require importing 3+ of its own ingredients. Example: pcb1 has only 4 consumers but producing it inline means importing formica, copper-plate, vacuum, plus formica's chain (treated-wood, sap, fiber, methanal, creosote) — 5+ stations vs 1 for pcb1.
+    
+    When a sub-factory has many buildings, aggressively inline cheap imports to save stations. When it has few buildings, more stations are fine. The balance point depends on block size and station footprint.
+
+19. **Single-item smelting** — never mix metals in one sub-factory. Each plate gets its own city block. Prefer steel-furnace (2x2, speed 4, fluid-burning) over advanced-foundry (6x6, speed 1, electric) — 33x more plates per tile. Steel-furnace burns any fluid fuel — consumption rate scales inversely with fuel value: `fuel_rate = 6 MW / fuel_value`. Higher-value fuels (gasoline 1.2 MJ, COG 1.0 MJ) need less throughput; low-value fuels (coal-gas 0.2 MJ) need 5x more, which has real infrastructure impact (pipe capacity, train trips, station sizing). Choose fuel based on both availability and throughput cost.
+    
+    **On-site vs centralized:** compare ore:plate ratio across unlocked chains. High ratio (8:1 direct iron) -> smelt on-site at the ore patch, train plates. Low ratio (1.4:1 BOF casting) -> centralize, ore and plates are nearly equal volume. Middle ground (5:1 crush+smelt) -> on-site still wins. Rule of thumb: if ore:plate > 3:1, on-site saves significant belt/train capacity. If the efficient chain needs extra imports (borax, oxygen), centralized makes more sense so you can share that infrastructure.
+    
+    Smelting chains (Pyanodon, current tech) — ore:plate ratio:
+    - **Iron**: direct 8:1 -> crush+smelt 5:1 -> BOF casting 1.4:1 (needs borax/oxygen/sand-casting)
+    - **Copper**: direct 8:1 -> screen+crush 4.2:1 (no extra inputs, stone byproduct)
+    - **Tin**: direct 10:1 -> screen+crush 3.75:1 (no extra inputs, stone byproduct)
+    
+    **Upgrade path:** see rule 20. Start with the simpler chain to get plates flowing (e.g., stone-furnace before steel-furnace); swap internals when better inputs are available — station layout stays the same.
+
+20. **Design for upgrade, build with what you have** — when higher-tier modules/buildings are unlocked but impractical to bootstrap (e.g., bio mk02 at 0.5% drop rate), design with the achievable tier but plan for the upgrade. Check **ratio stability**: (1) all buildings have matching tier upgrades -> ratios hold, just need more I/O; (2) only some upgrade -> ratios break, needs redesign; (3) no matching tier downstream -> bottleneck just moves. When ratios will break, consider **building to upgraded ratios now** — accept underproduction today for a drop-in module swap later with zero redesign.
+    
+    **Upgrade in place, never tear down** — when modules/buildings upgrade, keep existing buildings running. Swap modules and belts in place; don't demolish and rebuild. Overproduction from surplus buildings is harmless (overflow-to-void handles it). Tearing down costs build time, loses production during transition, and gains nothing — an idle building costs zero resources. Only redesign when the block physically can't accommodate the new layout (rare).
+    
+    **Design cost vs build cost:** design (re-deriving ratios, solver, layout) is always human+Claude time regardless of tech level. Build cost (placing entities, routing belts) decreases with tech (bots, blueprints). Design-for-upgrade avoids paying both costs again. This matters most early game when build cost is high; late game, cheap builds make redesign-then-rebuild acceptable, but design cost never goes away.
+
+21. **Size for general use, constrained by input throughput** — Tier A/B bus items (plates, small-parts, glass, electronic-circuit, etc.) serve dozens to hundreds of consumers. Size these sub-factories for the bus, not for one consumer. However, the binding constraint is usually input throughput (belts/pipes), not block space. Each train station can feed **1-2 belts** (check unlocked belt tier: yellow 15/s, red 30/s, blue 45/s). The real tradeoff is **stations vs factories** — a block has finite space for both. A smelting block with 1 input type can dedicate 4-5 stations to ore (4-10 belts), while a crafting block with 8 different inputs gets 1 station each (1-2 belts per input). Size the block to match what you can actually feed it, not how many buildings fit. Only size to a specific consumer when the item is niche (Tier C/D, 1-3 consumers).
+
+22. **Blocks are stamps** — in train city block architecture, each block is a self-contained unit connected only by train. Need more throughput than one block provides? Copy-paste the block. No redesign, no re-optimization — just stamp another copy and the train network absorbs it. Design each block once to maximize its output within the space/input constraints, then scale horizontally by stamping. This eliminates design cost on the second copy (the expensive human+Claude time to derive ratios, plan layout, solve constraints — paid once per block design). Build cost is the same each time. This is the core advantage of the city block pattern. **Belt coupling between adjacent blocks is debt** — it works as a temporary hack but creates spatial dependency (blocks must stay neighbors), prevents stamping, and defeats train-based decoupling. Always plan to replace with a train station.
+
+23. **Block capacity heuristic (bio farms)** — building tile footprint is the dominant factor for bio farm blocks. All bio buildings hit effective speed 1.0 with full modules, so per-farm output is recipe-determined, but how many fit is purely tile footprint vs block area. Actual block size is **~128x128 tiles** (16,384 tile^2), but rail perimeter, stations, belt bus, and pipe routing consume significant space — usable interior is smaller. Empirical data:
+    
+    | Building | Size | Farms/block | Output/block |
+    |---|---|---|---|
+    | moss-farm-mk01 | 6x6 | 60 | 12.0 moss/s (Moss-2) |
+    | seaweed-crop-mk01 | 13x13 | 32 | 6.4 seaweed/s |
+    
+    Small buildings (6x6) leave most of the block free — enough to inline supporting recipes (CO2 production, etc.). Large buildings (13x13) fill most of the usable interior, leaving room only for stations and logistics. When a block is space-constrained, stamp a second copy rather than trying to squeeze more in.
+
+24. **Fluid transport threshold** — one fluid wagon per minute defines the practical throughput ceiling for training fluids:
+    
+    | Wagon | Capacity | @1 wagon/min |
+    |---|---|---|
+    | fluid-wagon (mk01) | 25,000 | ~400/s |
+    | mk02-fluid-wagon | 50,000 | ~830/s |
+    | ht-generic (mk03) | 75,000 | ~1,250/s |
+    | mk04-fluid-wagon | 150,000 | ~2,500/s |
+    
+    Below the threshold: train the fluid in, block can go anywhere. Above: **build near a water body** (pipe directly, unlimited throughput, 0 stations) or inline the water consumer. Example: soil extraction needs 50 water per soil — a block making 12/s soil needs 600/s water, over mk01 limit but fine at mk02+. When a water-heavy recipe can be inlined in the consumer's block (e.g., soil extraction inside a ralesia farm at 60/s water), that avoids both the train limit and the placement constraint. Revisit "must build near water" decisions when upgrading wagon tiers.
+
+25. **Block design patterns** — all city blocks follow a standard template:
+    
+    **Size:** ~128x128 tiles. Rail perimeter loop consumes the outer ring; usable interior is smaller.
+    
+    **Station naming:**
+    - Input (unload): `[icon]Unload` — rich text icon identifies the item/fluid (e.g., `[fluid=water]Unload`, `[item=copper-plate]Unload`)
+    - Output (load): `[virtual-signal=signal-item-parameter]Load` — parameterized signal, reusable across blueprints. Actual item set per-instance.
+    
+    **Station circuit control:** Each station has a constant combinator setting three signals:
+    - `signal-L = 1` (train limit enable)
+    - `signal-P = 50` (priority)
+    - Item/fluid filter `= 1` (identifies what this station handles)
+    
+    **Multi-threshold train limiting:** A second constant combinator provides signal-2/3/4/5 at staggered thresholds = `N x (wagon_capacity + 1)` for N=1..4. A decider combinator compares current stock against these thresholds — each threshold exceeded emits `signal-L = -1`, reducing the train limit. More stock -> fewer trains dispatched. Threshold values by storage type:
+    - **Solid items:** wagon_capacity = `stack_size x 20` (mk1 cargo wagon has 20 slots). E.g., 100-stack items -> 2001/4001/6001/8001; 50-stack items -> 1001/2001/3001/4001.
+    - **Fluids:** py-tank-4000 capacity = 25,000 -> 25001/50001/75001/100001.
+    
+    **Infrastructure:** Rail perimeter loop with chain signals on entry, regular signals on exit. Medium electric poles for power grid. Pipe-to-ground for fluid distribution. Transport belts for item collection to load station.
+
+## Bio organisms
+
+### Module system
+
+All Pyanodon biological buildings use items (not standard modules) as modules with +100% speed each:
+
+| Building | Slots | Module item | Speed multiplier |
+|---|---|---|---|
+| `moss-farm-mk01` | 15 | `moss` | 16x |
+| `moondrop-greenhouse-mk01` | 16 | `moondrop` | 17x |
+| `ralesia-plantation-mk01` | 12 | `ralesia` | 13x |
+| `prandium-lab-mk01` (cottongut) | 20 | `cottongut-mk01` | 21x |
+| `vrauks-paddock-mk01` | 10 | `vrauks` | 11x |
+| `auog-paddock-mk01` | 4 | `auog` | 5x |
+| `rc-mk01` (breeding center) | 2 | matching animal | 3x |
+| `seaweed-crop-mk01` | 10 | `seaweed` | 11x |
+| `sap-extractor-mk01` | 2 | `sap-tree` | 3x |
+| `fwf-mk01` (wood farm) | 10 | `tree-mk01` | 11x |
+
+Without modules, bio farms are unusably slow and dominate building count (757 -> 110 buildings for logistic science pack). mk02/mk03/mk04 tiers exist with 2x/3x/4x speed bonus per slot.
+
+### Bootstrap + self-sustaining loops
+
+Bio organisms follow a two-phase pattern: (1) **Bootstrap** — a one-time setup to get the first organisms. Two routes: **world harvest** (moss, seaweed, fish — pick up from the map, trivial) or **codex route** (ralesia, vrauks, auog, fawogae, moondrop — creature-chamber/nursery recipe using a codex + earth-sample, yields only 1-2 organisms per run, slow and expensive). (2) **Steady-state** — a self-sustaining loop where output exceeds input, running forever on commodity inputs.
+
+**Bootstrap is gradual, not instant.** Bio buildings use organisms as modules, but you don't need full module slots to start — a single organism works, just very slowly. The codex gives you 1-2, you breed at base speed, load offspring as modules, each module accelerates the next cycle. It snowballs until all slots are filled. Plan build order accordingly: start bio bootstraps early so they're at full speed when needed.
+
+Once you have critical mass, only the steady-state matters for pipeline planning. Don't model the bootstrap in the solver — it's a manual setup step.
+
+| Organism | Bootstrap | Steady-state | Notes |
+|---|---|---|---|
+| Moss/seaweed | World harvest (trivial) | Farm + commodity inputs | Surplus loads more farms |
+| Moondrop | Codex/nursery | 5->7 seeds->4 moondrop | Net positive |
+| Ralesia | Codex/nursery or wild | 5->8 seeds->10 ralesia | +5/cycle, needs soil+water+hydrogen |
+| Fawogae | Codex (1 needed as module) | Free spores->7 fawogae | Self-sustaining once bootstrapped |
+| Vrauks | Codex/creature-chamber | Cocoons (commodity inputs)->vrauks | No vrauks consumed in loop |
+| Auog | Codex/creature-chamber | Pups (native-flora+moss)->mature | Permanent building modules |
+| Fish | Catch from water | 12->25 eggs->25 fish | Surplus loads more farms |
+| Native-flora | Mine (ore-bioreserve) | No loop — treat like ore | Bioreserve-farm locked |
+
+## Solver setup checklist
+
+- **Use electric factories for crafting** — `automated-factory-mk01` (crafting). For smelting, prefer `steel-furnace` (2x2, speed 4, fluid fuel) in city blocks — solver can use `advanced-foundry-mk01` for simplicity but real builds should use steel-furnace for density.
+- **Exclude byproducts that drive scaling** — `--constraint "recipe:product:exclude"` for every byproduct that could cascade.
+- **Force internal production** — `--max-import "item:0"` for intermediates (iron-gear-wheel, iron-plate, grade-1-copper, grade-2-copper). Cascading deficits push to raw materials.
+- **Recycle byproducts** — add recycling recipes + `--max-import "item:0"` to force items through the loop.
+- **Target mode for complex chains** — input mode lets simplex freely import intermediates. Use target mode + binary search the target to fit input budgets.
+- **Ash is free** — treat as readily available input, don't let it drive scaling.
+- **Always add `--modules` for biological recipes** — without modules, bio farms are unusably slow and dominate building count.
+
+## Examples
+
+- **Pitch pipeline**: 3 electric boilers = 75 MW / 111.5 MW total. Oil boiler burning gasoline (28.79/s for 140 steam/s) saves 75 MW.
+- **Coal chain recycling**: 11 raw-coal/s -> 100 tar/s + 113.65 syngas/s (vs 33/s without). Syngas covers 77% of steam needs.
+- **Logistic science pack**: 11,506 -> 110 buildings by importing battery/rubber/creosote at commodity boundaries, excluding byproducts at every cascade link, and adding bio modules. Splitting by shared system (7 pipelines) not by product (4).

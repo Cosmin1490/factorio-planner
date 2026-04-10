@@ -6,6 +6,19 @@ Designed to be driven by [Claude](https://claude.ai/) — you describe what you 
 
 Features a native TypeScript solver (algebraic + simplex), [Helmod](https://mods.factorio.com/mod/helmod) export for in-game import, and tech-level filtering from save data. The included prototype data is from a Pyanodon modpack save.
 
+## How it works with Claude
+
+The typical workflow loop:
+
+1. **Explore** — query recipes, trace ingredient trees, check what's unlocked at your tech level
+2. **Compare** — evaluate alternative recipe chains, identify bottlenecks and byproduct risks
+3. **Solve** — build a solver command with recipes, constraints, and module overrides; iterate until the numbers work
+4. **Export** — generate a Helmod import string and paste it into Factorio for in-game reference
+
+Claude drives the entire process — you describe what you want to produce ("I need electronic circuits at 1/s using only unlocked recipes"), and Claude explores the recipe graph, selects factories, adds constraints to tame byproduct cascades, and refines the solver input across multiple iterations. The [Pyanodon methodology](docs/pyanodon-methodology.md) documents the heuristics and patterns that emerged from this workflow.
+
+This approach is particularly valuable for overhaul mods like Pyanodon's where recipe chains are too deep and interconnected for manual calculation — a single end product can involve 100+ recipes across petrochemistry, biology, and metallurgy.
+
 ## Requirements
 
 - Node.js 22+
@@ -25,6 +38,7 @@ npm install
   - `src/data/` — Prototype data loader
 - `tests/` — Vitest test suite (solver validation, data loader tests)
 - `data/` — Prototype JSON export (recipes, entities, items, fluids from Factorio + mods)
+- `docs/` — [Pyanodon pipeline methodology](docs/pyanodon-methodology.md) (byproduct management, block design, boundary selection, bio modules)
 - `export-mod/` — Factorio mod that generates the prototype JSON export (includes force/technology data)
 
 ## Usage

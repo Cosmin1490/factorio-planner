@@ -114,10 +114,12 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
     
     **On-site vs centralized:** compare ore:plate ratio across unlocked chains. High ratio (8:1 direct iron) → smelt on-site at the ore patch, train plates. Low ratio (1.4:1 BOF casting) → centralize, ore and plates are nearly equal volume. Middle ground (5:1 crush+smelt) → on-site still wins. Rule of thumb: if ore:plate > 3:1, on-site saves significant belt/train capacity. If the efficient chain needs extra imports (borax, oxygen), centralized makes more sense so you can share that infrastructure.
     
-    Iron smelting chains (Pyanodon, current tech):
-    - Direct: 8 ore → 1 plate (1 recipe, on-site ideal)
-    - Crush + low-grade: 5 ore → 1 plate (2 recipes, stone byproduct, on-site good)
-    - Crush + BOF + casting: 1.4 ore → 1 plate (3+ recipes, needs borax/oxygen/sand-casting, centralize)
+    Smelting chains (Pyanodon, current tech) — ore:plate ratio:
+    - **Iron**: direct 8:1 → crush+smelt 5:1 → BOF casting 1.4:1 (needs borax/oxygen/sand-casting)
+    - **Copper**: direct 8:1 → screen+crush 4.2:1 (no extra inputs, stone byproduct)
+    - **Tin**: direct 10:1 → screen+crush 3.75:1 (no extra inputs, stone byproduct)
+    
+    **Upgrade path:** aim for the most efficient chain. If its extra inputs aren't available, start with the simpler chain — even if it under-supplies, it gets plates flowing. Leave room in the block to swap in the better chain later. The block layout (stations, belts) stays the same; only the internals change.
 
 19. **Size for general use, constrained by input throughput** — Tier A/B bus items (plates, small-parts, glass, electronic-circuit, etc.) serve dozens to hundreds of consumers. Size these sub-factories for the bus, not for one consumer. However, the binding constraint is usually input throughput (belts/pipes), not block space. Each train station can feed **1-2 belts** (check unlocked belt tier: yellow 15/s, red 30/s, blue 45/s). The real tradeoff is **stations vs factories** — a block has finite space for both. A smelting block with 1 input type can dedicate 4-5 stations to ore (4-10 belts), while a crafting block with 8 different inputs gets 1 station each (1-2 belts per input). Size the block to match what you can actually feed it, not how many buildings fit. Only size to a specific consumer when the item is niche (Tier C/D, 1-3 consumers).
 

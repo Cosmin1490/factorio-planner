@@ -125,6 +125,15 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
 
 20. **Blocks are stamps** — in train city block architecture, each block is a self-contained unit connected only by train. Need more throughput than one block provides? Copy-paste the block. No redesign, no re-optimization — just stamp another copy and the train network absorbs it. Design each block once to maximize its output within the space/input constraints, then scale horizontally by stamping. This is the core advantage of the city block pattern.
 
+21. **Block capacity heuristic (bio farms)** — building tile footprint is the dominant factor for bio farm blocks. All bio buildings hit effective speed 1.0 with full modules, so per-farm output is recipe-determined, but how many fit is purely tile footprint vs block area. Empirical data (100x100 blocks):
+    
+    | Building | Size | Farms/block | Area used | Output/block |
+    |---|---|---|---|---|
+    | moss-farm-mk01 | 6x6 | 60 | 22% | 4.8 moss/s |
+    | seaweed-crop-mk01 | 13x13 | 32 | 54% | 6.4 seaweed/s |
+    
+    Rough formula: **farms ≈ 10,000 / (size² × 1.8)** where the 1.8x overhead covers piping, inserters, walkways, and stations. Small buildings (6x6) leave 78% of the block free — enough to inline supporting recipes (CO2 production, etc.). Large buildings (13x13) fill over half the block, leaving room only for stations and logistics. When a block is space-constrained (>50% farm area), stamp a second copy rather than trying to squeeze more in.
+
 ### Solver setup checklist
 - **Use electric factories for crafting** — `automated-factory-mk01` (crafting). All vanilla assembling-machines are burners in Pyanodon and couple fuel→ash. For smelting, prefer `steel-furnace` (2x2, speed 4, fluid fuel) in city blocks — solver can use `advanced-foundry-mk01` for simplicity but real builds should use steel-furnace for density.
 - **Exclude byproducts that drive scaling** — `--constraint "recipe:product:exclude"` for every byproduct that could cascade.

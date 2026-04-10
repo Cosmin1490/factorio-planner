@@ -1,8 +1,10 @@
 # factorio-planner
 
-Node.js CLI tool for Factorio production planning. Designed to be driven by Claude — you describe what you want to produce, Claude resolves the recipe chain, invokes the solver, and iterates.
+Node.js CLI tool for Factorio production planning. Computes exact factory counts, material flows, and crafting speeds for arbitrarily complex recipe chains — particularly useful for overhaul mods like [Pyanodon's](https://mods.factorio.com/user/pyanodon) where manual ratio calculation is impractical.
 
-Features a native TypeScript solver (algebraic + simplex), Helmod export for in-game import, and tech-level filtering from save data.
+Designed to be driven by [Claude](https://claude.ai/) — you describe what you want to produce, Claude explores the recipe graph, builds the solver input, and iterates on constraints. Works with any Factorio mod set by re-exporting prototype data.
+
+Features a native TypeScript solver (algebraic + simplex), [Helmod](https://mods.factorio.com/mod/helmod) export for in-game import, and tech-level filtering from save data. The included prototype data is from a Pyanodon modpack save.
 
 ## Requirements
 
@@ -18,9 +20,10 @@ npm install
 
 - `src/` — TypeScript CLI source
   - `src/solver/` — Matrix solver (algebraic + simplex), module/beacon effects
-  - `src/commands/` — CLI command handlers
+  - `src/commands/` — CLI command handlers (solve, recipes, items, factories, techs, recipe-tree)
   - `src/export/` — Helmod import string generator
   - `src/data/` — Prototype data loader
+- `tests/` — Vitest test suite (solver validation, data loader tests)
 - `data/` — Prototype JSON export (recipes, entities, items, fluids from Factorio + mods)
 - `export-mod/` — Factorio mod that generates the prototype JSON export (includes force/technology data)
 
@@ -40,8 +43,14 @@ npx tsx src/cli.ts recipes --produces "iron-plate" --unlocked
 # Find recipes that consume an item
 npx tsx src/cli.ts recipes --consumes "coal"
 
-# Show full recipe details
+# Show full recipe details (ingredients, products, temperatures)
 npx tsx src/cli.ts recipe-info "iron-plate"
+
+# Detailed item info (stack size, fuel value, producer/consumer counts)
+npx tsx src/cli.ts item-info "iron-plate" --unlocked
+
+# Detailed factory info (speed, energy, module slots, categories)
+npx tsx src/cli.ts factory-info "automated-factory-mk01"
 
 # List factories for a recipe category
 npx tsx src/cli.ts factories --category "smelting"
@@ -51,6 +60,20 @@ npx tsx src/cli.ts items --search "coal"
 
 # Show which technology unlocks a recipe
 npx tsx src/cli.ts techs --unlocks "automation-science-pack"
+```
+
+### Recipe tree (trace ingredient/product graphs)
+
+```bash
+# What do I need to make this item? (backward traversal)
+npx tsx src/cli.ts recipe-tree --needs "electronic-circuit" --unlocked
+
+# What can I make from this item? (forward traversal)
+npx tsx src/cli.ts recipe-tree --produces-from "iron-plate" --unlocked
+
+# Limit depth and ignore commodity items to keep output manageable
+npx tsx src/cli.ts recipe-tree --needs "acetylene" --unlocked --depth 3 \
+  --ignore water steam carbon-dioxide soil ash coke limestone
 ```
 
 ### Solve command (compute production ratios)
@@ -80,6 +103,17 @@ npx tsx src/cli.ts solve --recipes "iron-plate" --target "iron-plate:100" \
   --modules "iron-plate:speed-module-3:4" \
   --beacons "iron-plate:beacon:speed-module-3:2:8"
 
+# Multiple inputs
+npx tsx src/cli.ts solve \
+  --recipes "iron-plate,copper-plate" \
+  --input "iron-ore:15" --input "copper-ore:10" --time 1
+
+# Cap imports — force internal production of intermediates
+npx tsx src/cli.ts solve \
+  --recipes "iron-gear-wheel,iron-plate" \
+  --target "iron-gear-wheel:10" --time 1 \
+  --max-import "iron-plate:0"
+
 # Warn if any recipe/factory/module is not unlocked
 npx tsx src/cli.ts solve --recipes "iron-plate" --target "iron-plate:100" --unlocked
 
@@ -106,7 +140,13 @@ The solver is a native TypeScript reimplementation. It computes exact factory co
 ## Solver modes
 
 - **Algebraic** (`--solver algebra`, default for target mode): Multi-pass Gaussian elimination. Fast, works well for simple chains. Breaks on large chains (12+ recipes).
-- **Simplex** (`--solver simplex`, default for input mode): Linear programming. Handles complex chains, competing consumers, and cyclic dependencies. Supports `--constraint` for excluding byproducts.
+- **Simplex** (`--solver simplex`, default for input mode): Linear programming. Handles complex chains, competing consumers, and cyclic dependencies.
+
+Key solver features:
+- `--constraint "recipe:product:exclude"` — prevent a byproduct from driving solver scaling
+- `--max-import "item:0"` — force full internal production of an intermediate (cascades deficits to raw materials)
+- `--modules` / `--beacons` — apply module and beacon effects to factory speed and productivity
+- `--export helmod` — generate a Helmod import string for pasting into Factorio
 
 ## Updating Prototype Data
 
@@ -123,6 +163,8 @@ The export includes `force.recipes` (unlock state) and `technologies` (researche
 ## TODO
 
 - [ ] `--electric` / `--no-burner` flag: auto-select best electric factory per recipe (avoid burnt-result coupling)
-- [ ] `--recipe-tree <item>`: trace full ingredient tree with unlock status
-- [ ] Multi-input constraints: `--input "iron-ore:15" --input "copper-ore:5"`
 - [ ] Temperature-linked fluids: conversion rows for steam at different temperatures
+
+## License
+
+MIT

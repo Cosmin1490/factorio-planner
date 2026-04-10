@@ -1,6 +1,13 @@
 {
   "name": "factorio-planner",
   "version": "0.1.0",
+  "description": "CLI tool for Factorio production planning with algebraic and simplex solvers",
+  "license": "MIT",
+  "author": "Radu-Cosmin Balan",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Cosmin1490/factorio-planner.git"
+  },
   "type": "module",
   "bin": {
     "factorio-planner": "./dist/cli.js"

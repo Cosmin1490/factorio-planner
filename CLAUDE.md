@@ -144,7 +144,7 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
     
     | Building | Size | Farms/block | Output/block |
     |---|---|---|---|
-    | moss-farm-mk01 | 6x6 | 60 | 4.8 moss/s |
+    | moss-farm-mk01 | 6x6 | 60 | 12.0 moss/s (Moss-2) |
     | seaweed-crop-mk01 | 13x13 | 32 | 6.4 seaweed/s |
     
     Small buildings (6x6) leave most of the block free — enough to inline supporting recipes (CO2 production, etc.). Large buildings (13x13) fill most of the usable interior, leaving room only for stations and logistics. When a block is space-constrained, stamp a second copy rather than trying to squeeze more in.

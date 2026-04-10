@@ -110,6 +110,8 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
     
     When a sub-factory has many buildings, aggressively inline cheap imports to save stations. When it has few buildings, more stations are fine. The balance point depends on block size and station footprint.
 
+18. **Single-item smelting** — never mix metals in one sub-factory. Each plate (iron, copper, tin, etc.) gets its own city block from its own ore. One ore input + one plate output = 2 stations, leaving maximum space for furnaces. Smelting is high-volume/low-complexity — the ideal city block workload.
+
 ### Solver setup checklist
 - **Use electric factories** — `automated-factory-mk01` (crafting), `advanced-foundry-mk01` (smelting). All vanilla assembling-machines are burners in Pyanodon and couple fuel→ash.
 - **Exclude byproducts that drive scaling** — `--constraint "recipe:product:exclude"` for every byproduct that could cascade.

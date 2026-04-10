@@ -21,6 +21,7 @@ No build step needed for dev. The 16MB prototype JSON loads in ~0.6 seconds.
 - `src/commands/recipeTree.ts` — recipe graph traversal (--needs backward, --produces-from forward, --ignore, --unlocked)
 - `src/commands/techs.ts` — technology lookup (--unlocks)
 - `data/helmod-web-prototypes.json` — all recipe/entity/item/force/technology data (16MB, exported from Factorio)
+- `data/saves/<name>.md` — per-save block inventories (what's built in-game, stations, rates). Ask which save before starting block design work.
 - `export-mod/` — Factorio mod that dumps prototype + force + technology data to JSON
 
 ## Solver notes

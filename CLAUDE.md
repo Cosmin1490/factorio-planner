@@ -104,35 +104,36 @@ Multi-product recipes stall completely when ANY output buffer is full. Every pro
 9. **Burn byproduct fluids for steam** — oil boiler mk01: effectivity=2, 0 MW electrical. `fuel_rate = (steam_rate × heat_capacity × ΔT) / (fuel_value × effectivity)`. Pyanodon water heat_capacity=2,100, ΔT=235. Fluid fuel_value in `data.fluids` not `data.items`. After splitting into sub-factories, check if byproduct fluids (syngas, pitch, gasoline) cover the sub-factory's own boiler needs — often they do (rubber sub-factory: syngas 177/s + pitch 44.8/s covers its 32/s steam at 250°C+).
 
 ### Pipeline decomposition
-10. **Decompose at commodity boundaries** — split at natural handoff points, optimize each stage independently. When multiple end products share deep infrastructure, split by shared system (auog farm, plasmids, bio commons) not by end product. Map all dependencies first, identify natural service layers, then build bottom-up.
-11. **Design for explicit handoff** — track exports/imports between pipelines. Surpluses become fuel (syngas → oil boiler) or feed parallel consumers. Deficits identify where to add recipes or accept imports.
+10. **Re-derive demand before designing** — when revisiting a sub-factory, trace demand from the current plan, not saved targets. Targets go stale as the overall pipeline evolves (e.g., vrauks sized for 0.2/s rubber turned out to need only 0.117/s for animal-sample-01 after rubber became a commodity import). Wrong demand → wrong sizing → wasted buildings or misleading bottleneck analysis.
+11. **Decompose at commodity boundaries** — split at natural handoff points, optimize each stage independently. When multiple end products share deep infrastructure, split by shared system (auog farm, plasmids, bio commons) not by end product. Map all dependencies first, identify natural service layers, then build bottom-up.
+12. **Design for explicit handoff** — track exports/imports between pipelines. Surpluses become fuel (syngas → oil boiler) or feed parallel consumers. Deficits identify where to add recipes or accept imports.
 
 ### Boundary selection
 A good boundary is an item where you'd naturally put a train stop. Score candidates on:
 
-12. **Consumer count** — items consumed by many unlocked recipes are natural bus items. Empirical counts (Pyanodon, current unlock):
+13. **Consumer count** — items consumed by many unlocked recipes are natural bus items. Empirical counts (Pyanodon, current unlock):
     - **Tier A (20+)**: small-parts-01 (126), iron-plate (105), electronic-circuit (96), steel-plate (93), glass (39), stone-brick (35), copper-plate (25), titanium-plate (24), copper-cable (20)
     - **Tier B (10-19)**: iron-stick (14), battery-mk01 (12), plastic-bar (12), tin-plate (11), coke (10), bolts (10)
     - **Tier C (4-9)**: petri-dish (9), tar (7), rubber (6), pitch (6), middle-oil (5), ceramic (5), creosote (5)
     - **Tier D (1-3)**: light-oil, syngas, lab-instrument (4 each), latex (3), iron-gear-wheel (2)
     Tier A/B are almost always good boundaries. Tier C/D only if they also have deep chains or cascade risk.
 
-13. **Chain depth & cascade risk** — deep chains (5+ recipes) or chains containing cascade magnifiers (high input:output ratio) justify splitting even at low consumer counts. Battery-mk01 (12 consumers, 30:1 cyanic-acid cascade) and rubber (6 consumers, deep petrochemical chain) are worth splitting. Iron-plate from ore is only 2-3 recipes — not worth splitting on its own. For 50+ recipe solver runs, identify and import these items as commodities. Exclude byproducts at EVERY cascade link — breaking one link is not enough if the solver imports the intermediate.
+14. **Chain depth & cascade risk** — deep chains (5+ recipes) or chains containing cascade magnifiers (high input:output ratio) justify splitting even at low consumer counts. Battery-mk01 (12 consumers, 30:1 cyanic-acid cascade) and rubber (6 consumers, deep petrochemical chain) are worth splitting. Iron-plate from ore is only 2-3 recipes — not worth splitting on its own. For 50+ recipe solver runs, identify and import these items as commodities. Exclude byproducts at EVERY cascade link — breaking one link is not enough if the solver imports the intermediate.
 
-14. **Context-dependent depth** — the boundary moves based on what you're solving. Making circuits? Iron-plate is a boundary (import it). Making iron-plate itself? Ore is the boundary. Rule: **import from the highest tier below your current target**.
+15. **Context-dependent depth** — the boundary moves based on what you're solving. Making circuits? Iron-plate is a boundary (import it). Making iron-plate itself? Ore is the boundary. Rule: **import from the highest tier below your current target**.
 
-15. **Stable physical properties** — good boundaries have uniform properties across consumers. Iron-plate at X/s is iron-plate regardless of consumer. Steam is a BAD boundary because temperature matters (150°C ≠ 250°C) and the solver treats all steam as fungible.
+16. **Stable physical properties** — good boundaries have uniform properties across consumers. Iron-plate at X/s is iron-plate regardless of consumer. Steam is a BAD boundary because temperature matters (150°C ≠ 250°C) and the solver treats all steam as fungible.
 
-16. **Transport density** — prefer the densest form of an item as the boundary. If a high-consumer item is trivially crafted (1 step, fast) from a precursor with equal or better stack density, the precursor is the better boundary. Copper-cable (20 consumers) is made 2:1 from copper-plate, both stack to 200 — plates move 2x material per slot. Same for iron-stick, iron-gear-wheel. The boundary is what goes on the train; the derivative is crafted on-site.
+17. **Transport density** — prefer the densest form of an item as the boundary. If a high-consumer item is trivially crafted (1 step, fast) from a precursor with equal or better stack density, the precursor is the better boundary. Copper-cable (20 consumers) is made 2:1 from copper-plate, both stack to 200 — plates move 2x material per slot. Same for iron-stick, iron-gear-wheel. The boundary is what goes on the train; the derivative is crafted on-site.
 
-17. **City block space budget** — in train-based city block architectures, each block has finite space split between factories and train stations (1 station per item, input or output). Three tools to fit a sub-factory into a block:
+18. **City block space budget** — in train-based city block architectures, each block has finite space split between factories and train stations (1 station per item, input or output). Three tools to fit a sub-factory into a block:
     - **Import** — 1 station, 0 buildings. Use for high-volume bus items.
     - **Inline** — 0 stations, N buildings. Use for cheap-to-produce items (1-2 buildings) to save a station. Vacuum (no inputs, 1 pump) should always be inlined.
     - **New boundary** — 1 station, but absorbs multiple imports into a separate block. Use when producing an item inline would require importing 3+ of its own ingredients. Example: pcb1 has only 4 consumers but producing it inline means importing formica, copper-plate, vacuum, plus formica's chain (treated-wood, sap, fiber, methanal, creosote) — 5+ stations vs 1 for pcb1.
     
     When a sub-factory has many buildings, aggressively inline cheap imports to save stations. When it has few buildings, more stations are fine. The balance point depends on block size and station footprint.
 
-18. **Single-item smelting** — never mix metals in one sub-factory. Each plate gets its own city block. Prefer steel-furnace (2x2, speed 4, fluid-burning) over advanced-foundry (6x6, speed 1, electric) — 33x more plates per tile. Steel-furnace burns any fluid fuel — consumption rate scales inversely with fuel value: `fuel_rate = 6 MW / fuel_value`. Higher-value fuels (gasoline 1.2 MJ, COG 1.0 MJ) need less throughput; low-value fuels (coal-gas 0.2 MJ) need 5x more, which has real infrastructure impact (pipe capacity, train trips, station sizing). Choose fuel based on both availability and throughput cost.
+19. **Single-item smelting** — never mix metals in one sub-factory. Each plate gets its own city block. Prefer steel-furnace (2x2, speed 4, fluid-burning) over advanced-foundry (6x6, speed 1, electric) — 33x more plates per tile. Steel-furnace burns any fluid fuel — consumption rate scales inversely with fuel value: `fuel_rate = 6 MW / fuel_value`. Higher-value fuels (gasoline 1.2 MJ, COG 1.0 MJ) need less throughput; low-value fuels (coal-gas 0.2 MJ) need 5x more, which has real infrastructure impact (pipe capacity, train trips, station sizing). Choose fuel based on both availability and throughput cost.
     
     **On-site vs centralized:** compare ore:plate ratio across unlocked chains. High ratio (8:1 direct iron) → smelt on-site at the ore patch, train plates. Low ratio (1.4:1 BOF casting) → centralize, ore and plates are nearly equal volume. Middle ground (5:1 crush+smelt) → on-site still wins. Rule of thumb: if ore:plate > 3:1, on-site saves significant belt/train capacity. If the efficient chain needs extra imports (borax, oxygen), centralized makes more sense so you can share that infrastructure.
     
@@ -143,11 +144,19 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
     
     **Upgrade path:** aim for the most efficient chain. If its extra inputs aren't available, start with the simpler chain — even if it under-supplies, it gets plates flowing (e.g., stone-furnace direct smelting before steel-furnace is available). Leave room in the block to swap in the better chain later. The block layout (stations, belts) stays the same; only the internals change.
 
-19. **Size for general use, constrained by input throughput** — Tier A/B bus items (plates, small-parts, glass, electronic-circuit, etc.) serve dozens to hundreds of consumers. Size these sub-factories for the bus, not for one consumer. However, the binding constraint is usually input throughput (belts/pipes), not block space. Each train station can feed **1-2 belts** (check unlocked belt tier: yellow 15/s, red 30/s, blue 45/s). The real tradeoff is **stations vs factories** — a block has finite space for both. A smelting block with 1 input type can dedicate 4-5 stations to ore (4-10 belts), while a crafting block with 8 different inputs gets 1 station each (1-2 belts per input). Size the block to match what you can actually feed it, not how many buildings fit. Only size to a specific consumer when the item is niche (Tier C/D, 1-3 consumers).
+20. **Design for upgrade, build with what you have** — when higher-tier modules or buildings are unlocked but impractical to bootstrap (e.g., bio mk02 modules with 0.5% drop rate = hours to fill slots), design with the achievable tier. But plan for the upgrade:
+    
+    **(a) Check ratio stability** — upgrading one building type changes its throughput relative to connected buildings. Three outcomes: (1) all buildings in the block have matching tier upgrades → ratios hold, throughput scales uniformly, just need more I/O capacity; (2) only some buildings upgrade → ratios break, internal balance needs redesign; (3) downstream/upstream has no matching tier → upgraded building outpaces its neighbors, bottleneck just moves.
+    
+    **(b) Consider building to upgraded ratios now** — when ratios will change on upgrade, it may be better to lay out the block with upgraded-tier building counts today, even though current-tier modules mean underproduction. Short-term output is lower, but when you upgrade modules it's a drop-in swap with zero redesign. The tradeoff: accept temporary inefficiency vs. save a full block rebuild later.
+    
+    **(c) Rebuild cost decreases with tech level** — early game (first logistics science), rebuilding is expensive: manual teardown, slow belts, no bots. This is when design-for-upgrade pays off most. Late game with construction bots and fast logistics, rebuilds are nearly free — optimizing for current tier becomes acceptable. Weight the design-for-upgrade tradeoff by how expensive a rebuild would be at your current tech.
 
-20. **Blocks are stamps** — in train city block architecture, each block is a self-contained unit connected only by train. Need more throughput than one block provides? Copy-paste the block. No redesign, no re-optimization — just stamp another copy and the train network absorbs it. Design each block once to maximize its output within the space/input constraints, then scale horizontally by stamping. This is the core advantage of the city block pattern. **Belt coupling between adjacent blocks is debt** — it works as a temporary hack but creates spatial dependency (blocks must stay neighbors), prevents stamping, and defeats train-based decoupling. Always plan to replace with a train station.
+21. **Size for general use, constrained by input throughput** — Tier A/B bus items (plates, small-parts, glass, electronic-circuit, etc.) serve dozens to hundreds of consumers. Size these sub-factories for the bus, not for one consumer. However, the binding constraint is usually input throughput (belts/pipes), not block space. Each train station can feed **1-2 belts** (check unlocked belt tier: yellow 15/s, red 30/s, blue 45/s). The real tradeoff is **stations vs factories** — a block has finite space for both. A smelting block with 1 input type can dedicate 4-5 stations to ore (4-10 belts), while a crafting block with 8 different inputs gets 1 station each (1-2 belts per input). Size the block to match what you can actually feed it, not how many buildings fit. Only size to a specific consumer when the item is niche (Tier C/D, 1-3 consumers).
 
-21. **Block capacity heuristic (bio farms)** — building tile footprint is the dominant factor for bio farm blocks. All bio buildings hit effective speed 1.0 with full modules, so per-farm output is recipe-determined, but how many fit is purely tile footprint vs block area. Actual block size is **~128x128 tiles** (16,384 tile²), but rail perimeter, stations, belt bus, and pipe routing consume significant space — usable interior is smaller. Empirical data:
+22. **Blocks are stamps** — in train city block architecture, each block is a self-contained unit connected only by train. Need more throughput than one block provides? Copy-paste the block. No redesign, no re-optimization — just stamp another copy and the train network absorbs it. Design each block once to maximize its output within the space/input constraints, then scale horizontally by stamping. This is the core advantage of the city block pattern. **Belt coupling between adjacent blocks is debt** — it works as a temporary hack but creates spatial dependency (blocks must stay neighbors), prevents stamping, and defeats train-based decoupling. Always plan to replace with a train station.
+
+23. **Block capacity heuristic (bio farms)** — building tile footprint is the dominant factor for bio farm blocks. All bio buildings hit effective speed 1.0 with full modules, so per-farm output is recipe-determined, but how many fit is purely tile footprint vs block area. Actual block size is **~128x128 tiles** (16,384 tile²), but rail perimeter, stations, belt bus, and pipe routing consume significant space — usable interior is smaller. Empirical data:
     
     | Building | Size | Farms/block | Output/block |
     |---|---|---|---|
@@ -156,7 +165,7 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
     
     Small buildings (6x6) leave most of the block free — enough to inline supporting recipes (CO2 production, etc.). Large buildings (13x13) fill most of the usable interior, leaving room only for stations and logistics. When a block is space-constrained, stamp a second copy rather than trying to squeeze more in.
 
-22. **Fluid transport threshold** — one fluid wagon per minute defines the practical throughput ceiling for training fluids. The threshold scales with wagon tier:
+24. **Fluid transport threshold** — one fluid wagon per minute defines the practical throughput ceiling for training fluids. The threshold scales with wagon tier:
     
     | Wagon | Capacity | @1 wagon/min |
     |---|---|---|
@@ -167,7 +176,7 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
     
     Below the threshold: train the fluid in, block can go anywhere. Above: **build near a water body** (pipe directly, unlimited throughput, 0 stations) or inline the water consumer. Example: soil extraction needs 50 water per soil — a block making 12/s soil needs 600/s water, over mk01 limit but fine at mk02+. When a water-heavy recipe can be inlined in the consumer's block (e.g., soil extraction inside a ralesia farm at 60/s water), that avoids both the train limit and the placement constraint. Revisit "must build near water" decisions when upgrading wagon tiers.
 
-23. **Block design patterns** — all city blocks follow a standard template:
+25. **Block design patterns** — all city blocks follow a standard template:
     
     **Size:** ~128x128 tiles. Rail perimeter loop consumes the outer ring; usable interior is smaller.
     

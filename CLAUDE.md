@@ -89,6 +89,13 @@ Pipeline: `luaSerialize(model)` → `zlib.deflateSync()` → `base64` — **NO v
 6. **Match the limiting reagent** — don't force the abundant byproduct to zero; that over-scales the consumer and imports the scarce one. Let the scarce one set the pace. Use `--constraint "recipe:product:exclude"` + `--max-import "scarce-input:0"`.
 7. **Recycle intermediates through every producing step** — when multiple recipes produce the target as byproduct (coal chain: raw-coal → coal → coke → coal-gas all produce tar), force intermediates back with `--max-import item:0`. Coal chain: 3x raw-material reduction (33 → 11/s for 100 tar/s).
 
+### In-game byproduct handling
+Multi-product recipes stall completely when ANY output buffer is full. Every product must have somewhere to go.
+
+- **Voiding buildings**: sinkhole (liquids), exhaust pipe (gases), burner (any solid — requires fuel like coal, produces ash; loop ash back into the burner or void separately).
+- **Convert before voiding when the intermediate has value** — stone can be burned directly, but converting to saline-water (10 stone + 100 water → 50 water-saline) creates a useful intermediate. Apply the overflow-to-void pattern on the saline-water: export what consumers need, sinkhole the rest. Example: copper block converts stone → saline-water, exports it for EC block, voids only surplus.
+- **Overflow-to-void pattern**: don't void blindly — prioritize real consumption, only void surplus. Wire a pump or overflow valve with circuit condition: fill the load station buffer first, overflow excess to a sinkhole/exhaust. When a consumer eventually connects, trains pull from the station and less goes to void automatically. No block redesign needed. Example: tar refinery produces 280/s pitch with no current consumer — overflow valve after the pitch tank routes excess to sinkhole, block keeps running for creosote/gasoline/coke/middle-oil.
+
 ### Power & energy
 8. **Account for power cost, use unlocked tiers** — total MW = count × energy_usage × 60. Electric boilers (25 MW each) often dominate. Always `--factory` with unlocked tiers — solver auto-picks mk04 which are usually locked.
 9. **Burn byproduct fluids for steam** — oil boiler mk01: effectivity=2, 0 MW electrical. `fuel_rate = (steam_rate × heat_capacity × ΔT) / (fuel_value × effectivity)`. Pyanodon water heat_capacity=2,100, ΔT=235. Fluid fuel_value in `data.fluids` not `data.items`. After splitting into sub-factories, check if byproduct fluids (syngas, pitch, gasoline) cover the sub-factory's own boiler needs — often they do (rubber sub-factory: syngas 177/s + pitch 44.8/s covers its 32/s steam at 250°C+).

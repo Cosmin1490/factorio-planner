@@ -33,9 +33,7 @@ No build step needed for dev. The 16MB prototype JSON loads in ~0.6 seconds.
 - Input mode defaults to simplex because algebraic greedy pass can't balance competing consumers
 - Module/beacon effects computed and exposed via `--modules` and `--beacons` CLI flags
 - Fuel consumption modeled in matrix: burner factories consume fuel and produce `burnt_result` (e.g., coal→ash). This creates automatic intermediate linking but can cause degenerate scaling — prefer electric factories or use exclude constraints.
-- `--constraint "recipe:product:exclude"` prevents a recipe's byproduct from driving solver scaling (works in both algebraic and simplex)
 - `--max-import "item:amount"` caps how much of an item can be imported. `amount=0` forces full internal production. Post-processing pass scales up producer/consumer recipes to close balance gaps, cascading deficits to raw materials. Works with both solver modes.
-- Helmod export reverses recipe order (output recipe first) to match Helmod's top-to-bottom processing
 - **Solver is purely algebraic — no physical validation**: Does not model fluid temperatures, belt throughput, or energy. All steam is treated as one item regardless of temperature. Example: polybutadiene produces steam at 150°C, but tar-refining needs 250°C+ — solver links them anyway. Always verify `recipe.products[].temperature` and `recipe.ingredients[].minimum_temperature` for steam after solver runs.
 
 ## Prototype data quirks
@@ -49,7 +47,6 @@ No build step needed for dev. The 16MB prototype JSON loads in ~0.6 seconds.
 - Coal `burnt_result` is ash (Pyanodon-specific). Solver models this — stone furnaces burning coal auto-produce ash as intermediate.
 - Force data (`force.recipes`) tracks unlock state per recipe. Technology data tracks researched techs and their recipe unlocks.
 - Some recipes have `ingredients: {}` (empty object) instead of `[]` — same `Array.isArray()` guard as products
-- Pyanodon's recipe graph is extremely dense: even with `--unlocked` filtering, `recipe-tree --needs acetylene` produces 6000+ lines. Commodity items (water, steam, soil, coke, ash, limestone, muddy-sludge, carbon-dioxide, oxygen, hydrogen, compost) fan out to hundreds of recipes each. Use `--ignore` to prune them and `--depth 2-3` for focused exploration.
 - Pyanodon water `heat_capacity` is **2,100 J/unit/°C** (vanilla is 200). This is 10.5× higher and affects all steam/boiler calculations. Always read from `data.fluids["water"].heat_capacity`, don't hardcode.
 - Fluid `fuel_value` is in `data.fluids`, not `data.items`. Oil boiler mk01 `fluid_energy_source.effectivity=2` doubles fuel efficiency.
 - **Mineable items without recipes** — many items that appear to have "no producers" in recipe-tree are actually mined from resource patches with dedicated miners. These won't show up in `buildProducerIndex`. Key examples: `native-flora` (ore-bioreserve → flora-collector), wild plants like `ralesia`, `rennea`, `grod`, `tuuphra`, `yotoi`, `mova`, `kicalk`, `cadaveric-arum` (all → harvester), plus Pyanodon-specific ore variants (coal-rock, iron-rock, copper-rock, etc. with dedicated mines). Check `data.entities` for resources with `mineable_properties` when an item appears to have no recipe producers.
@@ -134,7 +131,7 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
     - **Copper**: direct 8:1 → screen+crush 4.2:1 (no extra inputs, stone byproduct)
     - **Tin**: direct 10:1 → screen+crush 3.75:1 (no extra inputs, stone byproduct)
     
-    **Upgrade path:** aim for the most efficient chain. If its extra inputs aren't available, start with the simpler chain — even if it under-supplies, it gets plates flowing. Leave room in the block to swap in the better chain later. The block layout (stations, belts) stays the same; only the internals change.
+    **Upgrade path:** aim for the most efficient chain. If its extra inputs aren't available, start with the simpler chain — even if it under-supplies, it gets plates flowing (e.g., stone-furnace direct smelting before steel-furnace is available). Leave room in the block to swap in the better chain later. The block layout (stations, belts) stays the same; only the internals change.
 
 19. **Size for general use, constrained by input throughput** — Tier A/B bus items (plates, small-parts, glass, electronic-circuit, etc.) serve dozens to hundreds of consumers. Size these sub-factories for the bus, not for one consumer. However, the binding constraint is usually input throughput (belts/pipes), not block space. Each train station can feed **1-2 belts** (check unlocked belt tier: yellow 15/s, red 30/s, blue 45/s). The real tradeoff is **stations vs factories** — a block has finite space for both. A smelting block with 1 input type can dedicate 4-5 stations to ore (4-10 belts), while a crafting block with 8 different inputs gets 1 station each (1-2 belts per input). Size the block to match what you can actually feed it, not how many buildings fit. Only size to a specific consumer when the item is niche (Tier C/D, 1-3 consumers).
 
@@ -180,7 +177,7 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
     **Infrastructure:** Rail perimeter loop with chain signals on entry, regular signals on exit. Medium electric poles for power grid. Pipe-to-ground for fluid distribution. Transport belts for item collection to load station.
 
 ### Solver setup checklist
-- **Use electric factories for crafting** — `automated-factory-mk01` (crafting). All vanilla assembling-machines are burners in Pyanodon and couple fuel→ash. For smelting, prefer `steel-furnace` (2x2, speed 4, fluid fuel) in city blocks — solver can use `advanced-foundry-mk01` for simplicity but real builds should use steel-furnace for density.
+- **Use electric factories for crafting** — `automated-factory-mk01` (crafting). For smelting, prefer `steel-furnace` (2x2, speed 4, fluid fuel) in city blocks — solver can use `advanced-foundry-mk01` for simplicity but real builds should use steel-furnace for density.
 - **Exclude byproducts that drive scaling** — `--constraint "recipe:product:exclude"` for every byproduct that could cascade.
 - **Force internal production** — `--max-import "item:0"` for intermediates (iron-gear-wheel, iron-plate, grade-1-copper, grade-2-copper). Cascading deficits push to raw materials.
 - **Recycle byproducts** — add recycling recipes + `--max-import "item:0"` to force items through the loop.
@@ -188,8 +185,6 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
 - **Ash is free** — treat as readily available input, don't let it drive scaling.
 
 ### Examples
-- stopper-2 (rubber): same formic-acid cost as stopper, rubber just adds overhead.
-- Aromatics-to-plastic: forcing syngas to zero imported 18.71/s light-oil. Matching the limiter (aromatics) gave 1.14 plastic/s with zero imports.
 - Pitch pipeline: 3 electric boilers = 75 MW / 111.5 MW total. Oil boiler burning gasoline (28.79/s for 140 steam/s) saves 75 MW.
 - Coal chain recycling: 11 raw-coal/s → 100 tar/s + 113.65 syngas/s (vs 33/s without). Syngas covers 77% of steam needs.
 - Logistic science pack: 11,506 → 110 buildings by importing battery/rubber/creosote at commodity boundaries, excluding byproducts at every cascade link, and adding bio modules. Splitting by shared system (7 pipelines) not by product (4).
@@ -209,6 +204,7 @@ All Pyanodon biological buildings use items (not standard modules) as modules wi
 | `rc-mk01` (breeding center) | 2 | matching animal | 3x |
 | `seaweed-crop-mk01` | 10 | `seaweed` | 11x |
 | `sap-extractor-mk01` | 2 | `sap-tree` | 3x |
+| `fwf-mk01` (wood farm) | 10 | `fawogae` | 11x |
 
 **ALWAYS add `--modules` for every biological recipe.** Without modules, bio farms are unusably slow and dominate building count (757→110 buildings for logistic science pack). mk02/mk03/mk04 tiers exist with 2x/3x/4x speed bonus per slot.
 
@@ -235,7 +231,4 @@ When showing pipeline summaries, use:
 ## TODO
 
 - [ ] `--electric` / `--no-burner`: auto-select best electric (non-burner) factory per recipe
-- [x] `--recipe-tree`: ingredient/product graph traversal with --needs, --produces-from, --ignore, --unlocked
-- [x] Multi-input constraints: support multiple `--input` flags simultaneously
-- [x] `--max-import`: cap intermediate imports, force internal production
 - [ ] Temperature-linked fluids: conversion rows for fluids at different temperatures (steam 165C vs 250C vs 500C)

@@ -54,6 +54,7 @@ No build step needed for dev. The 16MB prototype JSON loads in ~0.6 seconds.
 - Pyanodon water `heat_capacity` is **2,100 J/unit/°C** (vanilla is 200). This is 10.5× higher and affects all steam/boiler calculations. Always read from `data.fluids["water"].heat_capacity`, don't hardcode.
 - Fluid `fuel_value` is in `data.fluids`, not `data.items`. Oil boiler mk01 `fluid_energy_source.effectivity=2` doubles fuel efficiency.
 - **Mineable items without recipes** — many items that appear to have "no producers" in recipe-tree are actually mined from resource patches with dedicated miners. These won't show up in `buildProducerIndex`. Key examples: `native-flora` (ore-bioreserve → flora-collector), wild plants (`ralesia`, `rennea`, etc. → harvester), Pyanodon ore variants (coal-rock, iron-rock, etc. → dedicated mines). Check `data.entities` for resources with `mineable_properties` when an item appears to have no recipe producers.
+- **Multi-output mining** — some resource patches yield multiple items. Stone mining produces both `stone` and `kerogen` (a tar/crude oil precursor). Check `mineable_properties.products` for co-products. Many ores also require a specific fluid to mine (see methodology rule 20) — check `mineable_properties.required_fluid`.
 
 ## Helmod export format
 

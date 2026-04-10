@@ -112,6 +112,8 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
 
 18. **Single-item smelting** — never mix metals in one sub-factory. Each plate (iron, copper, tin, etc.) gets its own city block from its own ore. One ore input + one plate output = 2 stations, leaving maximum space for furnaces. Smelting is high-volume/low-complexity — the ideal city block workload.
 
+19. **Size for general use** — Tier A/B bus items (plates, small-parts, glass, electronic-circuit, etc.) serve dozens to hundreds of consumers across multiple science packs and building recipes. Size these sub-factories for the bus, not for one consumer. Fill the city block with furnaces/factories, and the throughput becomes the supply budget for all downstream blocks. Only size to a specific consumer when the item is niche (Tier C/D, 1-3 consumers).
+
 ### Solver setup checklist
 - **Use electric factories** — `automated-factory-mk01` (crafting), `advanced-foundry-mk01` (smelting). All vanilla assembling-machines are burners in Pyanodon and couple fuel→ash.
 - **Exclude byproducts that drive scaling** — `--constraint "recipe:product:exclude"` for every byproduct that could cascade.

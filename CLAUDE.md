@@ -139,14 +139,14 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
 
 20. **Blocks are stamps** — in train city block architecture, each block is a self-contained unit connected only by train. Need more throughput than one block provides? Copy-paste the block. No redesign, no re-optimization — just stamp another copy and the train network absorbs it. Design each block once to maximize its output within the space/input constraints, then scale horizontally by stamping. This is the core advantage of the city block pattern.
 
-21. **Block capacity heuristic (bio farms)** — building tile footprint is the dominant factor for bio farm blocks. All bio buildings hit effective speed 1.0 with full modules, so per-farm output is recipe-determined, but how many fit is purely tile footprint vs block area. Empirical data (100x100 blocks):
+21. **Block capacity heuristic (bio farms)** — building tile footprint is the dominant factor for bio farm blocks. All bio buildings hit effective speed 1.0 with full modules, so per-farm output is recipe-determined, but how many fit is purely tile footprint vs block area. Actual block size is **~128x128 tiles** (16,384 tile²), but rail perimeter, stations, belt bus, and pipe routing consume significant space — usable interior is smaller. Empirical data:
     
-    | Building | Size | Farms/block | Area used | Output/block |
-    |---|---|---|---|---|
-    | moss-farm-mk01 | 6x6 | 60 | 22% | 4.8 moss/s |
-    | seaweed-crop-mk01 | 13x13 | 32 | 54% | 6.4 seaweed/s |
+    | Building | Size | Farms/block | Output/block |
+    |---|---|---|---|
+    | moss-farm-mk01 | 6x6 | 60 | 4.8 moss/s |
+    | seaweed-crop-mk01 | 13x13 | 32 | 6.4 seaweed/s |
     
-    Rough formula: **farms ≈ 10,000 / (size² × 1.8)** where the 1.8x overhead covers piping, inserters, walkways, and stations. Small buildings (6x6) leave 78% of the block free — enough to inline supporting recipes (CO2 production, etc.). Large buildings (13x13) fill over half the block, leaving room only for stations and logistics. When a block is space-constrained (>50% farm area), stamp a second copy rather than trying to squeeze more in.
+    Small buildings (6x6) leave most of the block free — enough to inline supporting recipes (CO2 production, etc.). Large buildings (13x13) fill most of the usable interior, leaving room only for stations and logistics. When a block is space-constrained, stamp a second copy rather than trying to squeeze more in.
 
 22. **Fluid transport threshold** — one fluid wagon per minute defines the practical throughput ceiling for training fluids. The threshold scales with wagon tier:
     
@@ -158,6 +158,25 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
     | mk04-fluid-wagon | 150,000 | ~2,500/s |
     
     Below the threshold: train the fluid in, block can go anywhere. Above: **build near a water body** (pipe directly, unlimited throughput, 0 stations) or inline the water consumer. Example: soil extraction needs 50 water per soil — a block making 12/s soil needs 600/s water, over mk01 limit but fine at mk02+. When a water-heavy recipe can be inlined in the consumer's block (e.g., soil extraction inside a ralesia farm at 60/s water), that avoids both the train limit and the placement constraint. Revisit "must build near water" decisions when upgrading wagon tiers.
+
+23. **Block design patterns** — all city blocks follow a standard template:
+    
+    **Size:** ~128x128 tiles. Rail perimeter loop consumes the outer ring; usable interior is smaller.
+    
+    **Station naming:**
+    - Input (unload): `[icon]Unload` — rich text icon identifies the item/fluid (e.g., `[fluid=water]Unload`, `[item=copper-plate]Unload`)
+    - Output (load): `[virtual-signal=signal-item-parameter]Load` — parameterized signal, reusable across blueprints. Actual item set per-instance.
+    
+    **Station circuit control:** Each station has a constant combinator setting three signals:
+    - `signal-L = 1` (train limit enable)
+    - `signal-P = 50` (priority)
+    - Item/fluid filter `= 1` (identifies what this station handles)
+    
+    **Multi-threshold train limiting:** A second constant combinator provides signal-2/3/4/5 at staggered thresholds = `N × (wagon_capacity + 1)` for N=1..4. A decider combinator compares current stock against these thresholds — each threshold exceeded emits `signal-L = -1`, reducing the train limit. More stock → fewer trains dispatched. Threshold values by storage type:
+    - **Solid items:** wagon_capacity = `stack_size × 20` (mk1 cargo wagon has 20 slots). E.g., 100-stack items → 2001/4001/6001/8001; 50-stack items → 1001/2001/3001/4001.
+    - **Fluids:** py-tank-4000 capacity = 25,000 → 25001/50001/75001/100001.
+    
+    **Infrastructure:** Rail perimeter loop with chain signals on entry, regular signals on exit. Medium electric poles for power grid. Pipe-to-ground for fluid distribution. Transport belts for item collection to load station.
 
 ### Solver setup checklist
 - **Use electric factories for crafting** — `automated-factory-mk01` (crafting). All vanilla assembling-machines are burners in Pyanodon and couple fuel→ash. For smelting, prefer `steel-furnace` (2x2, speed 4, fluid fuel) in city blocks — solver can use `advanced-foundry-mk01` for simplicity but real builds should use steel-furnace for density.

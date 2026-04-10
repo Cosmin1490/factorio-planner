@@ -148,6 +148,17 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
     
     Rough formula: **farms ≈ 10,000 / (size² × 1.8)** where the 1.8x overhead covers piping, inserters, walkways, and stations. Small buildings (6x6) leave 78% of the block free — enough to inline supporting recipes (CO2 production, etc.). Large buildings (13x13) fill over half the block, leaving room only for stations and logistics. When a block is space-constrained (>50% farm area), stamp a second copy rather than trying to squeeze more in.
 
+22. **Fluid transport threshold** — one fluid wagon per minute defines the practical throughput ceiling for training fluids. The threshold scales with wagon tier:
+    
+    | Wagon | Capacity | @1 wagon/min |
+    |---|---|---|
+    | fluid-wagon (mk01) | 25,000 | ~400/s |
+    | mk02-fluid-wagon | 50,000 | ~830/s |
+    | ht-generic (mk03) | 75,000 | ~1,250/s |
+    | mk04-fluid-wagon | 150,000 | ~2,500/s |
+    
+    Below the threshold: train the fluid in, block can go anywhere. Above: **build near a water body** (pipe directly, unlimited throughput, 0 stations) or inline the water consumer. Example: soil extraction needs 50 water per soil — a block making 12/s soil needs 600/s water, over mk01 limit but fine at mk02+. When a water-heavy recipe can be inlined in the consumer's block (e.g., soil extraction inside a ralesia farm at 60/s water), that avoids both the train limit and the placement constraint. Revisit "must build near water" decisions when upgrading wagon tiers.
+
 ### Solver setup checklist
 - **Use electric factories for crafting** — `automated-factory-mk01` (crafting). All vanilla assembling-machines are burners in Pyanodon and couple fuel→ash. For smelting, prefer `steel-furnace` (2x2, speed 4, fluid fuel) in city blocks — solver can use `advanced-foundry-mk01` for simplicity but real builds should use steel-furnace for density.
 - **Exclude byproducts that drive scaling** — `--constraint "recipe:product:exclude"` for every byproduct that could cascade.

@@ -80,9 +80,9 @@ Pipeline: `luaSerialize(model)` → `zlib.deflateSync()` → `base64` — **NO v
 
 ### Comparing alternatives
 1. **Identify the bottleneck** — most expensive input (deep chain, slow buildings, rare ores, animal husbandry).
-2. **Trace alternatives to the shared bottleneck** — compare per-unit consumption of the limiter. If both paths converge on the same expensive intermediate, the "upgrade" is a trap.
+2. **Trace alternatives to the shared bottleneck** — compare per-unit consumption of the limiter. If both paths converge on the same expensive intermediate, the "upgrade" is a trap. **Exception**: if alternative B *consumes* a byproduct that alternative A must void, that's symbiosis, not convergence — explore it. A problematic byproduct becoming a useful input flips the economics.
 3. **Normalize to same output** — cost per 1 unit of output, not per craft. 4x output at 2 inputs beats 2x at 1.
-4. **Rank by:** efficiency (raw materials/output) > complexity (recipes/buildings) > convenience. Watch for "later game" recipes that exist to consume excess byproducts — traps at early tech.
+4. **Rank by:** efficiency (raw materials/output) > complexity (recipes/buildings) > convenience. Watch for "later game" recipes that exist to consume excess byproducts — traps at early tech. **Always run the numbers before eliminating** — two paths sharing an upstream input can have wildly different per-unit consumption. Don't dismiss on structural similarity alone; quantify first.
 
 ### Byproduct management
 5. **Classify before linking** — (a) valuable to another block → export, (b) convertible to something valuable → convert then export, (c) pure waste → void (py-burner for non-fuel solids, sinkhole for liquids, exhaust for gases). Solid fuels (coal, coke, raw-coal, wood) require conversion to fluids before voiding. Prefer (a) > (b) > (c). Use overflow-to-void to combine: try to export, void only surplus.

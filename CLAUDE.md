@@ -204,7 +204,7 @@ All Pyanodon biological buildings use items (not standard modules) as modules wi
 | `rc-mk01` (breeding center) | 2 | matching animal | 3x |
 | `seaweed-crop-mk01` | 10 | `seaweed` | 11x |
 | `sap-extractor-mk01` | 2 | `sap-tree` | 3x |
-| `fwf-mk01` (wood farm) | 10 | `fawogae` | 11x |
+| `fwf-mk01` (wood farm) | 10 | `tree-mk01` | 11x |
 
 **ALWAYS add `--modules` for every biological recipe.** Without modules, bio farms are unusably slow and dominate building count (757→110 buildings for logistic science pack). mk02/mk03/mk04 tiers exist with 2x/3x/4x speed bonus per slot.
 

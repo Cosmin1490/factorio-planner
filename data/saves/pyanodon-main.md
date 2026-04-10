@@ -11,6 +11,7 @@
 | PCB1 | pcb1 | 0.125/s | 5 (creosote, log, methanal, copper-plate in; pcb1 out) | 50 sap-extractor (sap-01), 7 wpu (fiber-01), 1 wpu (log-wood-fast), 3 pulp-mill (formica), 1 tar-processing (treated-wood), 1 pcb-factory (pcb1), 1 vacuum-pump | 2 sap-tree modules each, sap-limited |
 | Tar refinery | middle-oil 60/s, creosote 48/s, gasoline 60/s, coke 15/s, pitch 280/s | 200/s tar in | 8 (tar, water in; 5 outputs + anthracene consumed) | 10 tar-processing (tar-refining), 12 distilator (anthracene-gasoline-cracking), 4 oil-boiler, 1 py-electric-boiler | Anthracene fully cracked to gasoline+coke, self-powered via oil boilers |
 | Copper plate | copper-plate | 3.2/s | 3 (water, raw-coal in; copper-plate out) | 8 electric-mining-drill, 10 screener (grade-2-copper), 6 jaw-crusher (grade-1-copper-crush), 6 washer (saline-water), 6 stone-furnace (copper-plate-4) | On-site at ore patch, washers for stone disposal, mining-limited |
+| Aluminium plate | aluminium-plate | ~1.0/s (ore-limited, 1.33/s foundry capacity) | 2 (aluminium-plate out, coal-gas out) | 10 fluid-drill-mk02, 8 advanced-foundry (aluminium-plate-1), 3 distilator (distilled-raw-coal), 2 distilator (coal-gas), 1 distilator (coal-gas-from-coke), 1 sinkhole, 1 burner, 1 tailings-pond | On-site at ore patch, raw-coal belted in (hack — needs cleanup), coal chain produces coal-gas export + mining fluid, tar/iron-oxide voided |
 
 ## Designed (not yet built)
 

@@ -38,6 +38,7 @@ No build step needed for dev. The 16MB prototype JSON loads in ~0.6 seconds.
 - Module/beacon effects computed and exposed via `--modules` and `--beacons` CLI flags
 - Fuel consumption modeled in matrix: burner factories consume fuel and produce `burnt_result` (e.g., coal→ash). This creates automatic intermediate linking but can cause degenerate scaling — prefer electric factories or use exclude constraints.
 - `--max-import "item:amount"` caps how much of an item can be imported. `amount=0` forces full internal production. Post-processing pass scales up producer/consumer recipes to close balance gaps, cascading deficits to raw materials. Works with both solver modes.
+- **Solver lacks minimization objective**: Unlike YAFC (which uses Google OR-Tools with cost-weighted LP), our simplex finds any feasible solution, not the cheapest. This means unconstrained byproducts cascade wildly in large runs. Current workaround: manual `--constraint exclude` + `--max-import` at every cascade link. A cost-weighted objective function would fix this systemically — see TODO.
 - **Solver is purely algebraic — no physical validation**: Does not model fluid temperatures, belt throughput, or energy. All steam is treated as one item regardless of temperature. Example: polybutadiene produces steam at 150°C, but tar-refining needs 250°C+ — solver links them anyway. Always verify `recipe.products[].temperature` and `recipe.ingredients[].minimum_temperature` for steam after solver runs.
 
 ## Prototype data quirks
@@ -92,3 +93,4 @@ When showing pipeline summaries, use:
 
 - [ ] `--electric` / `--no-burner`: auto-select best electric (non-burner) factory per recipe
 - [ ] Temperature-linked fluids: conversion rows for fluids at different temperatures (steam 165C vs 250C vs 500C)
+- [ ] **Minimization objective for simplex**: current simplex finds ANY feasible solution, not the minimum-cost one. This causes cascade blowup on large runs (100+ recipes → 11,500 buildings) unless manually constrained with `--constraint exclude` at every link. Fix: add `minimize(sum of recipe_rate × cost_weight)` to the objective row, where cost_weight = chain depth from raw ore (or similar heuristic). This is the technique YAFC (Yet Another Factorio Calculator) uses via Google OR-Tools — cost-weighted LP naturally suppresses overproduction cascades. Would eliminate the most labor-intensive part of the current workflow.

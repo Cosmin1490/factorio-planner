@@ -42,6 +42,8 @@ No build step needed for dev. The 16MB prototype JSON loads in ~0.6 seconds.
 - **Temperature-linked fluids**: solver models fluid temperatures for fluids where at least one consumer has explicit `minimum_temperature` or `maximum_temperature` constraints. For these fluids, temperature-specific columns are created (e.g., `coke-oven-gas:fluid:250`, `coke-oven-gas:fluid:100`). Fluids without temp-constrained consumers share one column (old behavior). Example: `warm-stone-brick-1` degrades coke-oven-gas from 250°C→100°C — the solver correctly treats the 100°C output as waste, not recyclable into recipes needing 250°C+. Unconstrained fluids (steam without explicit temp requirements) still share one column — verify manually for those.
 - **Power modeling**: solver computes `totalPowerMW` and per-recipe `energyUsage` for electric factories. Burner factories (with `burner_prototype`) report 0. `fluid_energy_source` entities (e.g., steel-furnace) are NOT modeled as burners — their fuel consumption is silently ignored.
 - **No belt/pipe throughput modeling**: solver is algebraic — does not model belt limits, pipe capacity, or physical layout. Manual verification still needed for logistics.
+- **Time base**: `--target "item:N"` means N per time base (default `--time 60` = 60 seconds). For per-second targets, use `--time 1`. The output labels show `/<time>s` (e.g., `80.00/1s` or `80.00/60s`).
+- **Entity naming**: base-tier entities use bare names (`distilator`, `tar-processing-unit`), not `-mk01`. Higher tiers use `-mk02`/`-mk03`/`-mk04`. The solver errors with "Factory not found" on wrong names. Check `data.entities` keys if unsure.
 
 ## Prototype data quirks
 

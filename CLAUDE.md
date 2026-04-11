@@ -38,8 +38,10 @@ No build step needed for dev. The 16MB prototype JSON loads in ~0.6 seconds.
 - Module/beacon effects computed and exposed via `--modules` and `--beacons` CLI flags
 - Fuel consumption modeled in matrix: burner factories consume fuel and produce `burnt_result` (e.g., coal→ash). This creates automatic intermediate linking but can cause degenerate scaling — prefer electric factories or use exclude constraints.
 - `--max-import "item:amount"` caps how much of an item can be imported. `amount=0` forces full internal production. Post-processing pass scales up producer/consumer recipes to close balance gaps, cascading deficits to raw materials. Works with both solver modes.
-- **Solver lacks minimization objective**: simplex finds any feasible solution, not the cheapest. Unconstrained byproducts cascade wildly in large runs (100+ recipes → 11,500 buildings). Current workaround: manual `--constraint exclude` + `--max-import` at every cascade link. YAFC solves this with cost-weighted LP via Google OR-Tools — see TODO.
-- **Solver is purely algebraic — no physical validation**: Does not model fluid temperatures, belt throughput, or energy. All steam is treated as one item regardless of temperature. Example: polybutadiene produces steam at 150°C, but tar-refining needs 250°C+ — solver links them anyway. Always verify `recipe.products[].temperature` and `recipe.ingredients[].minimum_temperature` for steam after solver runs.
+- **Cost-weighted simplex pivot selection**: simplex uses BFS-depth cost weights to bias toward solutions that minimize deep cascade chains. Shallow items (closer to raw inputs) get higher pivot priority. This reduces but does not eliminate cascade blowup — still use `--constraint exclude` + `--max-import` for large runs (100+ recipes). Full minimization objective (YAFC-style) remains a TODO.
+- **Temperature-linked fluids**: solver models fluid temperatures for fluids where at least one consumer has explicit `minimum_temperature` or `maximum_temperature` constraints. For these fluids, temperature-specific columns are created (e.g., `coke-oven-gas:fluid:250`, `coke-oven-gas:fluid:100`). Fluids without temp-constrained consumers share one column (old behavior). Example: `warm-stone-brick-1` degrades coke-oven-gas from 250°C→100°C — the solver correctly treats the 100°C output as waste, not recyclable into recipes needing 250°C+. Unconstrained fluids (steam without explicit temp requirements) still share one column — verify manually for those.
+- **Power modeling**: solver computes `totalPowerMW` and per-recipe `energyUsage` for electric factories. Burner factories (with `burner_prototype`) report 0. `fluid_energy_source` entities (e.g., steel-furnace) are NOT modeled as burners — their fuel consumption is silently ignored.
+- **No belt/pipe throughput modeling**: solver is algebraic — does not model belt limits, pipe capacity, or physical layout. Manual verification still needed for logistics.
 
 ## Prototype data quirks
 
@@ -95,9 +97,9 @@ Prioritized by impact per effort. Items 1-3 are solver code changes that compoun
 
 ### P0 — Solver correctness (batch together)
 
-1. [ ] **Minimization objective for simplex**: add `minimize(sum of recipe_rate × cost_weight)` to the objective row, where cost_weight = chain depth from raw ore (or similar heuristic). Would eliminate manual cascade isolation (`--constraint exclude` at every link) — the most labor-intensive part of the current workflow.
-2. [ ] **Temperature-linked fluids**: conversion rows for fluids at different temperatures (steam 165C vs 250C vs 500C). Hook point already identified in MatrixSolver.ts.
-3. [ ] **Power modeling in solver**: auto-compute total MW per solution (count × energy_usage × 60). Post-solve report initially; optionally a constraint (cap total power) later.
+1. [x] **Cost-weighted simplex pivot selection**: BFS-depth cost weights bias pivot selection toward shallow items. Reduces cascade blowup but does not eliminate it — not a full minimization objective. Full LP objective (YAFC-style `minimize(sum of recipe_rate × cost_weight)`) remains desirable for hands-off cascade isolation.
+2. [x] **Temperature-linked fluids**: conditional temp-specific columns for fluids with temp-constrained consumers. `findTempConstrainedFluids()` pre-scans ingredients; `findIngredientColumn()` does temp-aware matching. Fluids without constrained consumers share one column (backward compatible).
+3. [x] **Power modeling in solver**: `totalPowerMW` and per-recipe `energyUsage` in solver output. Electric factories only; burner factories report 0. CLI displays building count + power summary.
 
 ### P1 — Solver usability
 

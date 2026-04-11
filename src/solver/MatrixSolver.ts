@@ -87,11 +87,13 @@ function classifyItems(
     const key = temperature != null ? `${name}:${type}:${temperature}` : `${name}:${type}`;
     if (result.has(key)) return;
     const baseKey = `${name}:${type}`;
-    const isIntermediate = producedBy.has(baseKey) && consumedBy.has(baseKey);
+    // For temp-specific fluid columns: check if the base key is consumed by any ingredient.
+    // This enables intermediate detection between temp-specific products and no-temp ingredients.
+    const isConsumed = consumedBy.has(key) || consumedBy.has(baseKey);
     const isProduced = producedBy.has(key) || producedBy.has(baseKey);
     result.set(key, {
       name, type, temperature,
-      state: isIntermediate ? ItemState.Intermediate : (isProduced ? ItemState.Output : ItemState.Input),
+      state: (isProduced && isConsumed) ? ItemState.Intermediate : (isProduced ? ItemState.Output : ItemState.Input),
     });
   }
 
@@ -140,6 +142,42 @@ function resolveFuel(data: PrototypeData, factory: Entity, fuelName?: string): F
 
 function findColumn(colIndex: Map<string, number>, name: string): number | null {
   return colIndex.get(`${name}:item`) ?? colIndex.get(`${name}:fluid`) ?? null;
+}
+
+/**
+ * Find the column for a fluid ingredient, respecting temperature constraints.
+ * Ingredients may have minimum_temperature/maximum_temperature ranges.
+ * Products create temp-specific columns (e.g., steam:fluid:250).
+ * This function matches ingredients to the appropriate temp-specific column.
+ */
+function findIngredientColumn(
+  colIndex: Map<string, number>,
+  ing: RecipeElement,
+): number | null {
+  // For items, exact match only
+  if (ing.type !== 'fluid') {
+    return colIndex.get(`${ing.name}:${ing.type}`) ?? null;
+  }
+
+  // For fluids, prefer temp-specific columns that satisfy the ingredient's range
+  const minT = ing.minimum_temperature ?? -Infinity;
+  const maxT = ing.maximum_temperature ?? Infinity;
+  let bestCol: number | null = null;
+  let bestTemp = Infinity;
+
+  for (const [key, idx] of colIndex) {
+    if (!key.startsWith(`${ing.name}:fluid:`)) continue;
+    const temp = parseFloat(key.split(':')[2]);
+    if (temp < minT || temp > maxT) continue;
+    if (temp < bestTemp) {
+      bestTemp = temp;
+      bestCol = idx;
+    }
+  }
+  if (bestCol != null) return bestCol;
+
+  // Fall back to no-temp column
+  return colIndex.get(`${ing.name}:fluid`) ?? null;
 }
 
 // ── Matrix construction ─────────────────────────────────────────────────────
@@ -200,7 +238,7 @@ function buildMatrix(data: PrototypeData, input: SolveInput): SolverMatrix {
     }
     const matIngs = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
     for (const ing of matIngs) {
-      const ci = colIndex.get(`${ing.name}:${ing.type}`);
+      const ci = findIngredientColumn(colIndex, ing);
       if (ci != null) matrix[r][ci] -= elementAmount(ing) * cyclesPerTime;
     }
 

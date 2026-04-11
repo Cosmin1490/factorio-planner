@@ -201,3 +201,48 @@ describe('power modeling', () => {
     expect(result.recipes[0].energyUsage).toBe(0);
   });
 });
+
+describe('temperature-linked fluids', () => {
+  it('links steam@250 from boiler to tar-refining (needs >=250)', () => {
+    const input: SolveInput = {
+      recipes: [
+        { recipeName: 'tar-refining', factoryName: 'tar-processing-unit' },
+        { recipeName: 'electric-boiler-water-to-steam', factoryName: 'py-electric-boiler' },
+      ],
+      target: { name: 'pitch', amount: 60 },
+      time: 60,
+      solver: 'simplex',
+    };
+    const result = solve(data, input);
+    // Steam should be an intermediate (linked), not an import
+    const steamIntermediate = result.intermediates.find(i => i.name === 'steam');
+    expect(steamIntermediate, 'steam should be linked as intermediate').toBeDefined();
+    expect(steamIntermediate!.producers).toHaveLength(1);
+    expect(steamIntermediate!.consumers).toHaveLength(1);
+    // Boiler should have positive count
+    const boiler = result.recipes.find(r => r.recipeName === 'electric-boiler-water-to-steam');
+    expect(boiler!.factoryCount).toBeGreaterThan(0);
+  });
+
+  it('does NOT link steam@150 to tar-refining (needs >=250)', () => {
+    const input: SolveInput = {
+      recipes: [
+        { recipeName: 'tar-refining', factoryName: 'tar-processing-unit' },
+        { recipeName: 'polybutadiene', factoryName: 'cracker-mk01' },
+      ],
+      target: { name: 'pitch', amount: 60 },
+      time: 60,
+      solver: 'simplex',
+    };
+    const result = solve(data, input);
+    // Steam should NOT be an intermediate — polybutadiene's 150C doesn't satisfy >=250
+    const steamIntermediate = result.intermediates.find(i => i.name === 'steam');
+    const steamLinked = steamIntermediate?.producers.some(
+      p => p.recipeName === 'polybutadiene' && p.amount > 0.01
+    );
+    expect(steamLinked, 'steam@150 should not link to tar-refining').toBeFalsy();
+    // Steam should appear as an input (import needed)
+    const steamInput = result.ingredients.find(i => i.name === 'steam');
+    expect(steamInput, 'steam should be an unmet input').toBeDefined();
+  });
+});

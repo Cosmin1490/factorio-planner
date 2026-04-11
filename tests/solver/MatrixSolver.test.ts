@@ -245,4 +245,143 @@ describe('temperature-linked fluids', () => {
     const steamInput = result.ingredients.find(i => i.name === 'steam');
     expect(steamInput, 'steam should be an unmet input').toBeDefined();
   });
+
+  it('merges temps into one column when no consumer has temp constraints', () => {
+    // coke-coal produces coke-oven-gas@250, warm-stone-brick-1 consumes coke-oven-gas min_temp=250
+    // warm-stone-brick-1 also produces coke-oven-gas@100 (degraded)
+    // The degraded gas should be a separate column (output), not recycled
+    const input: SolveInput = {
+      recipes: [
+        { recipeName: 'coke-coal', factoryName: 'hpf' },
+        { recipeName: 'warm-stone-brick-1', factoryName: 'rhe' },
+      ],
+      target: { name: 'warm-stone-brick', amount: 60 },
+      time: 60,
+      solver: 'simplex',
+    };
+    const result = solve(data, input);
+    // coke-oven-gas at 100C should be an output (waste), not recycled
+    const cokeGasOutput = result.products.find(p => p.name === 'coke-oven-gas');
+    expect(cokeGasOutput, 'degraded coke-oven-gas@100 should be an output').toBeDefined();
+    // coke-coal should have positive count (providing the 250C gas)
+    const cokeCoal = result.recipes.find(r => r.recipeName === 'coke-coal');
+    expect(cokeCoal!.factoryCount).toBeGreaterThan(0);
+  });
+});
+
+describe('logistic science pack (100-recipe regression guard)', () => {
+  const recipeNames = 'logistic-science-pack,graphite,glass-2,hotair-molten-glass,crushing-quartz,lens,warm-air-1,warm-stone-brick-1,coke-coal,pressured-air,stone-brick,boron-trioxide,boric-acid,diborane,borax-washing,hydrogen,animal-sample-01,full-render-auogs,caged-auog,auog-maturing-1,auog-pup-breeding-1,auog-pooping-1,urea-from-liquid-manure,liquid-manure,plasmids,lab-instrument,equipment-chassi,fenxsb-alloy-2,electronic-circuit,battery-mk00,capacitor1,inductor1,resistor1,pcb1,vacuum-tube,solder-0,formica,treated-wood,fiber-01,methanal,sap-01,hotair-flask,stopper,creamy-latex,latex-slab,latex,sodium-alginate,seaweed-1,agar,petri-dish,hotair-empty-petri-dish,petri-dish-bacteria,zogna-bacteria,alien-sample01,bio-sample01,ground-sample01,rich-clay,bone-to-bonemeal-2,cottongut-science-red-seeds,fawogae-substrate,cellulose-00,depolymerized-organics,subcritical-water-01,pressured-water,biomass-wood,cottongut-cub-1,caged-cottongut-1,wood-seeds,moondrop-1,moondrop-seeds,ralesia-1,ralesia-seeds,vrauks-1,vrauks-cocoon-1,full-render-vrauks,caged-vrauks,Moss-1,distilled-raw-coal,coke-co2,iron-plate,copper-plate,steel-plate,tin-plate-1,titanium-plate-1,iron-stick,bolts,copper-cable,iron-gear-wheel,small-parts-01,small-lamp,barrel,water-barrel,saline-water,vacuum,ceramic,clay,soil,soil-separation-2,extract-limestone-01,methane-co2'.split(',');
+  const factoryMap: Record<string, string> = {
+    'logistic-science-pack': 'research-center-mk01', 'graphite': 'hpf', 'glass-2': 'glassworks-mk01',
+    'hotair-molten-glass': 'glassworks-mk01', 'crushing-quartz': 'jaw-crusher', 'lens': 'glassworks-mk01',
+    'warm-air-1': 'rhe', 'warm-stone-brick-1': 'rhe', 'coke-coal': 'hpf', 'pressured-air': 'vacuum-pump-mk01',
+    'stone-brick': 'advanced-foundry-mk01', 'boron-trioxide': 'hpf', 'boric-acid': 'electrolyzer-mk01',
+    'diborane': 'electrolyzer-mk01', 'borax-washing': 'washer', 'hydrogen': 'electrolyzer-mk01',
+    'animal-sample-01': 'genlab-mk01', 'full-render-auogs': 'slaughterhouse-mk01',
+    'caged-auog': 'automated-factory-mk01', 'auog-maturing-1': 'auog-paddock-mk01',
+    'auog-pup-breeding-1': 'rc-mk01', 'auog-pooping-1': 'auog-paddock-mk01',
+    'urea-from-liquid-manure': 'bio-reactor-mk01', 'liquid-manure': 'bio-reactor-mk01',
+    'plasmids': 'biofactory-mk01', 'lab-instrument': 'automated-factory-mk01',
+    'equipment-chassi': 'automated-factory-mk01', 'fenxsb-alloy-2': 'smelter-mk01',
+    'electronic-circuit': 'chipshooter-mk01', 'battery-mk00': 'automated-factory-mk01',
+    'capacitor1': 'electronics-factory-mk01', 'inductor1': 'electronics-factory-mk01',
+    'resistor1': 'electronics-factory-mk01', 'pcb1': 'pcb-factory-mk01',
+    'vacuum-tube': 'electronics-factory-mk01', 'solder-0': 'automated-factory-mk01',
+    'formica': 'pulp-mill-mk01', 'treated-wood': 'tar-processing-unit', 'fiber-01': 'wpu-mk01',
+    'methanal': 'hpf', 'sap-01': 'sap-extractor-mk01', 'hotair-flask': 'glassworks-mk01',
+    'stopper': 'automated-factory-mk01', 'creamy-latex': 'washer', 'latex-slab': 'distilator',
+    'latex': 'hpf', 'sodium-alginate': 'hpf', 'seaweed-1': 'seaweed-crop-mk01', 'agar': 'hpf',
+    'petri-dish': 'automated-factory-mk01', 'hotair-empty-petri-dish': 'glassworks-mk01',
+    'petri-dish-bacteria': 'micro-mine-mk01', 'zogna-bacteria': 'incubator-mk01',
+    'alien-sample01': 'automated-factory-mk01', 'bio-sample01': 'automated-factory-mk01',
+    'ground-sample01': 'automated-factory-mk01', 'rich-clay': 'automated-factory-mk01',
+    'bone-to-bonemeal-2': 'fbreactor-mk01', 'cottongut-science-red-seeds': 'incubator-mk01',
+    'fawogae-substrate': 'automated-factory-mk01', 'cellulose-00': 'hpf',
+    'depolymerized-organics': 'reformer-mk01', 'subcritical-water-01': 'py-heat-exchanger',
+    'pressured-water': 'vacuum-pump-mk01', 'biomass-wood': 'compost-plant-mk01',
+    'cottongut-cub-1': 'rc-mk01', 'caged-cottongut-1': 'prandium-lab-mk01',
+    'wood-seeds': 'automated-factory-mk01', 'moondrop-1': 'moondrop-greenhouse-mk01',
+    'moondrop-seeds': 'botanical-nursery', 'ralesia-1': 'ralesia-plantation-mk01',
+    'ralesia-seeds': 'botanical-nursery', 'vrauks-1': 'vrauks-paddock-mk01',
+    'vrauks-cocoon-1': 'rc-mk01', 'full-render-vrauks': 'slaughterhouse-mk01',
+    'caged-vrauks': 'automated-factory-mk01', 'Moss-1': 'moss-farm-mk01',
+    'distilled-raw-coal': 'distilator', 'coke-co2': 'hpf', 'iron-plate': 'advanced-foundry-mk01',
+    'copper-plate': 'advanced-foundry-mk01', 'steel-plate': 'advanced-foundry-mk01',
+    'tin-plate-1': 'advanced-foundry-mk01', 'titanium-plate-1': 'advanced-foundry-mk01',
+    'iron-stick': 'automated-factory-mk01', 'bolts': 'automated-factory-mk01',
+    'copper-cable': 'automated-factory-mk01', 'iron-gear-wheel': 'automated-factory-mk01',
+    'small-parts-01': 'automated-factory-mk01', 'small-lamp': 'automated-factory-mk01',
+    'barrel': 'automated-factory-mk01', 'water-barrel': 'barrel-machine-mk01',
+    'saline-water': 'washer', 'vacuum': 'vacuum-pump-mk01', 'ceramic': 'hpf',
+    'clay': 'clay-pit-mk01', 'soil': 'soil-extractor-mk01', 'soil-separation-2': 'solid-separator',
+    'extract-limestone-01': 'soil-extractor-mk01', 'methane-co2': 'moondrop-greenhouse-mk01',
+  };
+
+  const recipes: RecipeSpec[] = recipeNames.map(name => ({
+    recipeName: name,
+    factoryName: factoryMap[name],
+    modules: name === 'seaweed-1' ? [{ name: 'seaweed', count: 10 }] :
+      name === 'sap-01' ? [{ name: 'sap-tree', count: 2 }] :
+      name === 'Moss-1' ? [{ name: 'moss', count: 15 }] :
+      name === 'moondrop-1' ? [{ name: 'moondrop', count: 16 }] :
+      name === 'ralesia-1' ? [{ name: 'ralesia', count: 12 }] :
+      name === 'auog-maturing-1' ? [{ name: 'auog', count: 4 }] :
+      name === 'auog-pooping-1' ? [{ name: 'auog', count: 4 }] :
+      name === 'auog-pup-breeding-1' ? [{ name: 'auog', count: 2 }] :
+      name === 'vrauks-1' ? [{ name: 'vrauks', count: 10 }] :
+      name === 'vrauks-cocoon-1' ? [{ name: 'vrauks', count: 2 }] :
+      name === 'caged-cottongut-1' ? [{ name: 'cottongut-mk01', count: 20 }] :
+      name === 'cottongut-cub-1' ? [{ name: 'cottongut-mk01', count: 2 }] :
+      undefined,
+  }));
+
+  const input: SolveInput = {
+    recipes,
+    target: { name: 'logistic-science-pack', amount: 0.2 },
+    time: 1,
+    solver: 'simplex',
+    constraints: [
+      { recipeName: 'crushing-quartz', productName: 'stone', type: 'exclude' },
+      { recipeName: 'borax-washing', productName: 'muddy-sludge', type: 'exclude' },
+      { recipeName: 'soil-separation-2', productName: 'coarse', type: 'exclude' },
+      { recipeName: 'full-render-auogs', productName: 'cage', type: 'exclude' },
+      { recipeName: 'full-render-vrauks', productName: 'cage', type: 'exclude' },
+      { recipeName: 'full-render-vrauks', productName: 'meat', type: 'exclude' },
+      { recipeName: 'full-render-vrauks', productName: 'chitin', type: 'exclude' },
+      { recipeName: 'full-render-vrauks', productName: 'guts', type: 'exclude' },
+      { recipeName: 'full-render-vrauks', productName: 'brain', type: 'exclude' },
+      { recipeName: 'hydrogen', productName: 'oxygen', type: 'exclude' },
+      { recipeName: 'distilled-raw-coal', productName: 'coal-gas', type: 'exclude' },
+      { recipeName: 'distilled-raw-coal', productName: 'tar', type: 'exclude' },
+      { recipeName: 'distilled-raw-coal', productName: 'iron-oxide', type: 'exclude' },
+      { recipeName: 'auog-pooping-1', productName: 'manure', type: 'exclude' },
+      { recipeName: 'coke-co2', productName: 'ash', type: 'exclude' },
+    ],
+  };
+
+  it('produces 0.2 logistic-science-pack/s', () => {
+    const result = solve(data, input);
+    const science = result.products.find(p => p.name === 'logistic-science-pack');
+    expect(science).toBeDefined();
+    expect(science!.amount).toBeCloseTo(0.2, 2);
+  });
+
+  it('total buildings stay under 400 (cascade guard)', () => {
+    const result = solve(data, input);
+    const total = result.recipes.reduce((s, r) => s + Math.ceil(r.factoryCount), 0);
+    // Temperature-correct result: ~326 buildings (coke-oven-gas temp degradation adds load)
+    // Previously 177 on main (incorrectly recycled 100C gas as 250C input)
+    expect(total).toBeLessThan(400);
+    expect(total).toBeGreaterThan(200);
+  });
+
+  it('all 100 recipes present in result', () => {
+    const result = solve(data, input);
+    expect(result.recipes).toHaveLength(100);
+  });
+
+  it('reports positive totalPowerMW', () => {
+    const result = solve(data, input);
+    expect(result.totalPowerMW).toBeGreaterThan(0);
+  });
 });

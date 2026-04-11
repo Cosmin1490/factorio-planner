@@ -48,6 +48,7 @@ interface SolverMatrix {
   Z: number[];
   numRows: number;
   numCols: number;
+  itemCosts: number[];
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -66,17 +67,42 @@ function elementAmount(el: RecipeElement): number {
   return base * prob + extra;
 }
 
+/**
+ * Identify fluids where at least one consumer has explicit temperature constraints.
+ * Only these fluids need temp-specific matrix columns; others share one column.
+ */
+function findTempConstrainedFluids(recipes: Recipe[]): Set<string> {
+  const result = new Set<string>();
+  for (const recipe of recipes) {
+    const ings = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+    for (const ing of ings) {
+      if (ing.type === 'fluid' && (ing.minimum_temperature != null || ing.maximum_temperature != null)) {
+        result.add(ing.name);
+      }
+    }
+  }
+  return result;
+}
+
 function classifyItems(
   recipes: Recipe[],
   extraProduced: Set<string>,
   extraConsumed: Set<string>,
+  tempConstrainedFluids: Set<string>,
 ): Map<string, { name: string; type: 'item' | 'fluid'; temperature?: number; state: ItemState }> {
   const producedBy = new Set<string>(extraProduced);
   const consumedBy = new Set<string>(extraConsumed);
 
   for (const recipe of recipes) {
     const products = Array.isArray(recipe.products) ? recipe.products : [];
-    for (const p of products) producedBy.add(itemKey(p));
+    for (const p of products) {
+      // Only use temp-specific keys for fluids with temp-constrained consumers
+      if (p.type === 'fluid' && p.temperature != null && tempConstrainedFluids.has(p.name)) {
+        producedBy.add(itemKey(p));
+      } else {
+        producedBy.add(`${p.name}:${p.type}`);
+      }
+    }
     const ings = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
     for (const ing of ings) consumedBy.add(`${ing.name}:${ing.type}`);
   }
@@ -84,14 +110,16 @@ function classifyItems(
   const result = new Map<string, { name: string; type: 'item' | 'fluid'; temperature?: number; state: ItemState }>();
 
   function addItem(name: string, type: 'item' | 'fluid', temperature?: number) {
-    const key = temperature != null ? `${name}:${type}:${temperature}` : `${name}:${type}`;
+    // Only create temp-specific columns for fluids with temp-constrained consumers
+    const useTemp = type === 'fluid' && temperature != null && tempConstrainedFluids.has(name);
+    const key = useTemp ? `${name}:${type}:${temperature}` : `${name}:${type}`;
     if (result.has(key)) return;
     const baseKey = `${name}:${type}`;
-    const isIntermediate = producedBy.has(baseKey) && consumedBy.has(baseKey);
+    const isConsumed = consumedBy.has(key) || consumedBy.has(baseKey);
     const isProduced = producedBy.has(key) || producedBy.has(baseKey);
     result.set(key, {
-      name, type, temperature,
-      state: isIntermediate ? ItemState.Intermediate : (isProduced ? ItemState.Output : ItemState.Input),
+      name, type, temperature: useTemp ? temperature : undefined,
+      state: (isProduced && isConsumed) ? ItemState.Intermediate : (isProduced ? ItemState.Output : ItemState.Input),
     });
   }
 
@@ -142,6 +170,86 @@ function findColumn(colIndex: Map<string, number>, name: string): number | null 
   return colIndex.get(`${name}:item`) ?? colIndex.get(`${name}:fluid`) ?? null;
 }
 
+/**
+ * Find the column for a fluid ingredient, respecting temperature constraints.
+ * Only does temp-aware matching when the ingredient has explicit min/max temperature.
+ * For unconstrained ingredients, uses the base no-temp column.
+ */
+function findIngredientColumn(
+  colIndex: Map<string, number>,
+  ing: RecipeElement,
+): number | null {
+  // For items, exact match only
+  if (ing.type !== 'fluid') {
+    return colIndex.get(`${ing.name}:${ing.type}`) ?? null;
+  }
+
+  // Only do temp-aware matching when the ingredient has explicit temperature constraints
+  const hasTempConstraint = ing.minimum_temperature != null || ing.maximum_temperature != null;
+  if (hasTempConstraint) {
+    const minT = ing.minimum_temperature ?? -Infinity;
+    const maxT = ing.maximum_temperature ?? Infinity;
+    let bestCol: number | null = null;
+    let bestTemp = Infinity;
+
+    for (const [key, idx] of colIndex) {
+      if (!key.startsWith(`${ing.name}:fluid:`)) continue;
+      const temp = parseFloat(key.split(':')[2]);
+      if (temp < minT || temp > maxT) continue;
+      if (temp < bestTemp) {
+        bestTemp = temp;
+        bestCol = idx;
+      }
+    }
+    if (bestCol != null) return bestCol;
+  }
+
+  // Fall back to no-temp column
+  return colIndex.get(`${ing.name}:fluid`) ?? null;
+}
+
+/**
+ * Compute per-column cost weights via BFS depth from raw inputs.
+ * Shallow items (closer to raw materials) get higher cost → simplex prefers them,
+ * leading to solutions that minimize deep cascade chains.
+ */
+function computeItemCosts(
+  columns: MatrixColumn[],
+  matrix: number[][],
+  numRows: number,
+  numCols: number,
+): number[] {
+  const depth = new Array(numCols).fill(Infinity);
+  for (let c = 0; c < numCols; c++) {
+    if (columns[c].state === ItemState.Input) depth[c] = 0;
+  }
+
+  // Iterative relaxation: product depth = max(ingredient depths) + 1
+  for (let iter = 0; iter < numCols; iter++) {
+    let changed = false;
+    for (let r = 0; r < numRows; r++) {
+      let maxIngDepth = -1;
+      for (let c = 0; c < numCols; c++) {
+        if (matrix[r][c] < 0 && depth[c] < Infinity) {
+          maxIngDepth = Math.max(maxIngDepth, depth[c]);
+        }
+      }
+      if (maxIngDepth < 0) continue;
+      const prodDepth = maxIngDepth + 1;
+      for (let c = 0; c < numCols; c++) {
+        if (matrix[r][c] > 0 && prodDepth < depth[c]) {
+          depth[c] = prodDepth;
+          changed = true;
+        }
+      }
+    }
+    if (!changed) break;
+  }
+
+  // Shallow = high weight (preferred), deep = low weight
+  return depth.map(d => d === Infinity ? 0.01 : 1 / (1 + d));
+}
+
 // ── Matrix construction ─────────────────────────────────────────────────────
 
 function buildMatrix(data: PrototypeData, input: SolveInput): SolverMatrix {
@@ -171,7 +279,8 @@ function buildMatrix(data: PrototypeData, input: SolveInput): SolverMatrix {
       if (fuel.burntResult) extraProduced.add(`${fuel.burntResult}:item`);
     }
   }
-  const itemClassification = classifyItems(resolved.map(r => r.recipe), extraProduced, extraConsumed);
+  const tempConstrainedFluids = findTempConstrainedFluids(resolved.map(r => r.recipe));
+  const itemClassification = classifyItems(resolved.map(r => r.recipe), extraProduced, extraConsumed, tempConstrainedFluids);
 
   // Build column index
   const columns: MatrixColumn[] = [];
@@ -195,12 +304,15 @@ function buildMatrix(data: PrototypeData, input: SolveInput): SolverMatrix {
 
     const products = Array.isArray(recipe.products) ? recipe.products : [];
     for (const p of products) {
-      const ci = colIndex.get(itemKey(p));
+      // Only use temp-specific key for fluids with temp-constrained consumers
+      const useTemp = p.type === 'fluid' && p.temperature != null && tempConstrainedFluids.has(p.name);
+      const pKey = useTemp ? itemKey(p) : `${p.name}:${p.type}`;
+      const ci = colIndex.get(pKey);
       if (ci != null) matrix[r][ci] += elementAmount(p) * productivity * cyclesPerTime;
     }
     const matIngs = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
     for (const ing of matIngs) {
-      const ci = colIndex.get(`${ing.name}:${ing.type}`);
+      const ci = findIngredientColumn(colIndex, ing);
       if (ci != null) matrix[r][ci] -= elementAmount(ing) * cyclesPerTime;
     }
 
@@ -235,7 +347,8 @@ function buildMatrix(data: PrototypeData, input: SolveInput): SolverMatrix {
     }
   }
 
-  return { matrix, columns, colIndex, resolved, Z, numRows, numCols };
+  const itemCosts = computeItemCosts(columns, matrix, numRows, numCols);
+  return { matrix, columns, colIndex, resolved, Z, numRows, numCols, itemCosts };
 }
 
 // ── Algebraic solver ────────────────────────────────────────────────────────
@@ -344,6 +457,7 @@ interface SimplexTableau {
   numOrigRows: number;
   numOrigCols: number;
   totalCols: number;
+  itemCosts: number[];      // per-original-column cost weights for pivot selection
 }
 
 function simplexPrepare(m: SolverMatrix, input: SolveInput): SimplexTableau {
@@ -469,6 +583,7 @@ function simplexPrepare(m: SolverMatrix, input: SolveInput): SimplexTableau {
     numOrigRows: numRows,
     numOrigCols: numCols,
     totalCols,
+    itemCosts: m.itemCosts,
   };
 }
 
@@ -480,10 +595,15 @@ function simplexGetPivot(t: SimplexTableau): { found: boolean; xrow: number; xco
   let xcol = -1;
   let xrow = -1;
 
-  // Find column with highest positive Z-value (skip coefficient column at index 0)
+  // Find column with highest cost-weighted positive Z-value (skip coefficient column at index 0)
+  // Weighting by item cost biases pivot selection toward shallow (cheap) items,
+  // leading to solutions that minimize deep cascade chains.
   for (let c = 1; c < t.totalCols; c++) {
     const zVal = zRow[c] ?? 0;
-    if (zVal > maxZValue) {
+    const origCol = t.colMap[c];
+    const weight = origCol >= 0 && origCol < t.itemCosts.length ? t.itemCosts[origCol] : 1;
+    const weightedZ = zVal * weight;
+    if (weightedZ > maxZValue) {
       // Find best row for this column (ratio test)
       let bestRatio: number | null = null;
       let bestValue = 0;
@@ -503,7 +623,7 @@ function simplexGetPivot(t: SimplexTableau): { found: boolean; xrow: number; xco
       }
 
       if (candidateRow >= 0) {
-        maxZValue = zVal;
+        maxZValue = weightedZ;
         xcol = c;
         xrow = candidateRow;
       }
@@ -589,13 +709,22 @@ function extractResults(m: SolverMatrix, recipeCounts: number[]): SolveResult {
   }
 
   const recipeResults: RecipeResult[] = [];
+  let totalPowerWatts = 0;
   for (let r = 0; r < numRows; r++) {
+    let energyUsage = 0;
+    // Only electric factories contribute to grid power (burners consume fuel instead)
+    if (!resolved[r].fuel) {
+      const powerWatts = (resolved[r].factory.energy_usage ?? 0) * 60;
+      const consumptionEffect = 1 + resolved[r].effects.consumption;
+      energyUsage = powerWatts * consumptionEffect * recipeCounts[r];
+      totalPowerWatts += energyUsage;
+    }
     recipeResults.push({
       recipeName: resolved[r].recipeName,
       factoryName: resolved[r].factoryName,
       factoryCount: recipeCounts[r],
       effectiveSpeed: resolved[r].effectiveSpeed,
-      energyUsage: 0,
+      energyUsage,
     });
   }
 
@@ -640,7 +769,7 @@ function extractResults(m: SolverMatrix, recipeCounts: number[]): SolveResult {
     }
   }
 
-  return { recipes: recipeResults, products, ingredients, intermediates };
+  return { recipes: recipeResults, products, ingredients, intermediates, totalPowerMW: totalPowerWatts / 1e6 };
 }
 
 // ── Balance adjustment (post-processing) ──────────────────────────────────

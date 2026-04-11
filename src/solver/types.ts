@@ -85,6 +85,7 @@ export interface SolveResult {
   products: ItemFlow[];
   ingredients: ItemFlow[];
   intermediates: IntermediateDetail[];
+  totalPowerMW: number;
 }
 
 /** Computed module/beacon effects for a single recipe */

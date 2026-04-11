@@ -385,3 +385,108 @@ describe('logistic science pack (100-recipe regression guard)', () => {
     expect(result.totalPowerMW).toBeGreaterThan(0);
   });
 });
+
+describe('electronic circuit sub-factory (12 recipes, validated pipeline)', () => {
+  const input: SolveInput = {
+    recipes: [
+      { recipeName: 'electronic-circuit', factoryName: 'chipshooter-mk01' },
+      { recipeName: 'battery-mk00', factoryName: 'automated-factory-mk01' },
+      { recipeName: 'capacitor1', factoryName: 'electronics-factory-mk01' },
+      { recipeName: 'inductor1', factoryName: 'electronics-factory-mk01' },
+      { recipeName: 'resistor1', factoryName: 'electronics-factory-mk01' },
+      { recipeName: 'vacuum-tube', factoryName: 'electronics-factory-mk01' },
+      { recipeName: 'solder-0', factoryName: 'automated-factory-mk01' },
+      { recipeName: 'vacuum', factoryName: 'vacuum-pump-mk01' },
+      { recipeName: 'ceramic', factoryName: 'hpf' },
+      { recipeName: 'clay', factoryName: 'clay-pit-mk01' },
+      { recipeName: 'graphite', factoryName: 'hpf' },
+      { recipeName: 'copper-cable', factoryName: 'automated-factory-mk01' },
+    ],
+    target: { name: 'electronic-circuit', amount: 0.9 },
+    time: 1,
+    solver: 'simplex',
+  };
+
+  it('produces 0.9/s electronic-circuit with 28 buildings', () => {
+    const result = solve(data, input);
+    const ec = result.products.find(p => p.name === 'electronic-circuit');
+    expect(ec).toBeDefined();
+    expect(ec!.amount).toBeCloseTo(0.9, 2);
+    const total = result.recipes.reduce((s, r) => s + Math.ceil(r.factoryCount), 0);
+    expect(total).toBe(28);
+  });
+
+  it('imports key materials at expected rates', () => {
+    const result = solve(data, input);
+    const pcb = result.ingredients.find(i => i.name === 'pcb1');
+    expect(pcb!.amount).toBeCloseTo(0.3, 2);
+    const ws = result.ingredients.find(i => i.name === 'water-saline');
+    expect(ws!.amount).toBeCloseTo(75, 0);
+    const cp = result.ingredients.find(i => i.name === 'copper-plate');
+    expect(cp!.amount).toBeCloseTo(5.7, 1);
+  });
+});
+
+describe('glass sub-factory (COG temperature degradation)', () => {
+  const input: SolveInput = {
+    recipes: [
+      { recipeName: 'crushing-quartz', factoryName: 'jaw-crusher' },
+      { recipeName: 'glass-2', factoryName: 'glassworks-mk01' },
+      { recipeName: 'hotair-molten-glass', factoryName: 'glassworks-mk01' },
+      { recipeName: 'warm-air-1', factoryName: 'rhe' },
+      { recipeName: 'warm-stone-brick-1', factoryName: 'rhe' },
+      { recipeName: 'coke-coal', factoryName: 'hpf' },
+      { recipeName: 'pressured-air', factoryName: 'vacuum-pump-mk01' },
+      { recipeName: 'stone-brick', factoryName: 'advanced-foundry-mk01' },
+      { recipeName: 'lens', factoryName: 'glassworks-mk01' },
+    ],
+    target: { name: 'glass', amount: 5 },
+    time: 1,
+    solver: 'simplex',
+    constraints: [
+      { recipeName: 'crushing-quartz', productName: 'stone', type: 'exclude' },
+    ],
+  };
+
+  it('produces 5/s glass', () => {
+    const result = solve(data, input);
+    const glass = result.products.find(p => p.name === 'glass');
+    expect(glass).toBeDefined();
+    expect(glass!.amount).toBeCloseTo(5, 1);
+  });
+
+  it('outputs degraded COG@100 as waste (not recycled)', () => {
+    const result = solve(data, input);
+    // coke-oven-gas at 100C from warm-stone-brick-1 should appear as output
+    const cogOutput = result.products.find(p => p.name === 'coke-oven-gas');
+    expect(cogOutput, 'degraded COG should be waste output').toBeDefined();
+    expect(cogOutput!.amount).toBeGreaterThan(10);
+  });
+});
+
+describe('bio module speed multipliers', () => {
+  it('moss farm: 60 factories for 12/s with 15 moss modules', () => {
+    const input: SolveInput = {
+      recipes: [
+        { recipeName: 'Moss-2', factoryName: 'moss-farm-mk01', modules: [{ name: 'moss', count: 15 }] },
+      ],
+      target: { name: 'moss', amount: 12 },
+      time: 1,
+    };
+    const result = solve(data, input);
+    expect(result.recipes[0].factoryCount).toBeCloseTo(60, 0);
+    expect(result.recipes[0].effectiveSpeed).toBeCloseTo(1.0, 1);
+  });
+
+  it('auog paddock: effective speed 2.0 with 4 auog modules', () => {
+    const input: SolveInput = {
+      recipes: [
+        { recipeName: 'auog-maturing-1', factoryName: 'auog-paddock-mk01', modules: [{ name: 'auog', count: 4 }] },
+      ],
+      target: { name: 'auog', amount: 1 },
+      time: 1,
+    };
+    const result = solve(data, input);
+    expect(result.recipes[0].effectiveSpeed).toBeCloseTo(2.0, 1);
+  });
+});

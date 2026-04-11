@@ -262,6 +262,12 @@ export function solveCommand(protoPath: string, options: SolveOptions) {
   }
   console.log(rLine('└', '┴', '┘'));
 
+  const totalBuildings = result.recipes.reduce((sum, r) => sum + Math.ceil(r.factoryCount), 0);
+  const powerStr = result.totalPowerMW >= 1
+    ? `${result.totalPowerMW.toFixed(2)} MW`
+    : `${(result.totalPowerMW * 1000).toFixed(1)} kW`;
+  console.log(`\n${totalBuildings} buildings, ${powerStr} electric`);
+
   const visibleProducts = result.products.filter(p => p.amount >= 0.01);
   const visibleIngredients = result.ingredients.filter(i => i.amount >= 0.01);
 

@@ -173,3 +173,31 @@ describe('automation science pack (15-recipe, simplex + max-import balance)', ()
     }
   });
 });
+
+describe('power modeling', () => {
+  it('computes totalPowerMW > 0 for electric factories', () => {
+    const input: SolveInput = {
+      recipes: [
+        { recipeName: 'iron-plate', factoryName: 'electric-furnace' },
+      ],
+      target: { name: 'iron-plate', amount: 60 },
+      time: 60,
+    };
+    const result = solve(data, input);
+    expect(result.totalPowerMW).toBeGreaterThan(0);
+    expect(result.recipes[0].energyUsage).toBeGreaterThan(0);
+  });
+
+  it('reports energyUsage = 0 for burner factories', () => {
+    const input: SolveInput = {
+      recipes: [
+        { recipeName: 'iron-plate', factoryName: 'stone-furnace', fuel: 'coal' },
+      ],
+      target: { name: 'iron-plate', amount: 60 },
+      time: 60,
+    };
+    const result = solve(data, input);
+    expect(result.totalPowerMW).toBe(0);
+    expect(result.recipes[0].energyUsage).toBe(0);
+  });
+});

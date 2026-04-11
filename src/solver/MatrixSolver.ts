@@ -589,13 +589,22 @@ function extractResults(m: SolverMatrix, recipeCounts: number[]): SolveResult {
   }
 
   const recipeResults: RecipeResult[] = [];
+  let totalPowerWatts = 0;
   for (let r = 0; r < numRows; r++) {
+    let energyUsage = 0;
+    // Only electric factories contribute to grid power (burners consume fuel instead)
+    if (!resolved[r].fuel) {
+      const powerWatts = (resolved[r].factory.energy_usage ?? 0) * 60;
+      const consumptionEffect = 1 + resolved[r].effects.consumption;
+      energyUsage = powerWatts * consumptionEffect * recipeCounts[r];
+      totalPowerWatts += energyUsage;
+    }
     recipeResults.push({
       recipeName: resolved[r].recipeName,
       factoryName: resolved[r].factoryName,
       factoryCount: recipeCounts[r],
       effectiveSpeed: resolved[r].effectiveSpeed,
-      energyUsage: 0,
+      energyUsage,
     });
   }
 
@@ -640,7 +649,7 @@ function extractResults(m: SolverMatrix, recipeCounts: number[]): SolveResult {
     }
   }
 
-  return { recipes: recipeResults, products, ingredients, intermediates };
+  return { recipes: recipeResults, products, ingredients, intermediates, totalPowerMW: totalPowerWatts / 1e6 };
 }
 
 // ── Balance adjustment (post-processing) ──────────────────────────────────

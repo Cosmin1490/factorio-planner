@@ -33,11 +33,11 @@ npm install
 
 - `src/` — TypeScript CLI source
   - `src/solver/` — Matrix solver (algebraic + simplex), module/beacon effects
-  - `src/commands/` — CLI command handlers (solve, recipes, items, factories, techs, recipe-tree)
+  - `src/commands/` — CLI command handlers (solve, recipes, items, factories, techs, recipe-tree, inventory)
   - `src/export/` — Helmod import string generator
   - `src/data/` — Prototype data loader
-- `tests/` — Vitest test suite (solver validation, data loader tests)
-- `data/` — Prototype JSON export (recipes, entities, items, fluids from Factorio + mods)
+- `tests/` — Vitest test suite (solver validation, inventory regression, data loader tests)
+- `data/` — Prototype JSON export (recipes, entities, items, fluids from Factorio + mods), per-save block inventories (`data/saves/`)
 - `docs/` — [Pyanodon pipeline methodology](docs/pyanodon-methodology.md) (byproduct management, block design, boundary selection, bio modules)
 - `export-mod/` — Factorio mod that generates the prototype JSON export (includes force/technology data)
 
@@ -137,6 +137,24 @@ npx tsx src/cli.ts solve --recipes "iron-plate" --target "iron-plate:100" --expo
 # Raw JSON output
 npx tsx src/cli.ts solve --recipes "iron-plate" --target "iron-plate:100" --json
 ```
+
+### Inventory command (analyze built blocks from blueprints)
+
+```bash
+# Analyze a blueprint — shows recipes, exports, imports, mined resources
+npx tsx src/cli.ts inventory --blueprint bp7.txt --name "copper block"
+
+# Save to persistent block inventory (appends/updates by block name)
+npx tsx src/cli.ts inventory --blueprint bp7.txt --name "copper block" --save pyanodon-main
+
+# Analyze multiple blueprints at once
+npx tsx src/cli.ts inventory --blueprint bp1.txt bp2.txt bp3.txt --name "batch"
+
+# Raw JSON output
+npx tsx src/cli.ts inventory --blueprint bp7.txt --name "copper block" --json
+```
+
+The inventory command decodes Factorio blueprint strings, infers recipe-less entities (miners, boilers, furnaces), computes steady-state production/consumption rates, and classifies items as exports (with load station), imports (consumed but not produced), surplus (overproduced without station), or mined. Block inventories saved to `data/saves/` track what's built in-game for production planning.
 
 ## Architecture
 

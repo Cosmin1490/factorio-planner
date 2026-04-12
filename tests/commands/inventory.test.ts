@@ -43,9 +43,9 @@ describe('pcb1 factory (bp2)', () => {
   });
 
   it('imports creosote, methanal, log, copper-plate', () => {
-    expect(inv.imports['creosote']).toBeCloseTo(50, 0);
+    expect(inv.imports['creosote']).toBeCloseTo(25, 0);
     expect(inv.imports['methanal']).toBeCloseTo(12.5, 0);
-    expect(inv.imports['log']).toBeCloseTo(4, 0);
+    expect(inv.imports['log']).toBeCloseTo(0.65, 1);
     expect(inv.imports['copper-plate']).toBeCloseTo(0.625, 1);
   });
 });

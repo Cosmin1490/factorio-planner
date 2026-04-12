@@ -690,11 +690,10 @@ function computeSteadyState(
     if (maxChange < 0.0001) break;
   }
 
-  // Fix self-reinforcing export cycles: when a recipe consumes an export item
-  // but its outputs are all overproduced, cap it to match output demand.
-  // Example: log→wood→seeds→seedlings→log cycle — log-wood-fast consumes the
-  // export (log) and massively overproduces wood; cap it to what the seed chain needs.
-  // Iterate: each cap + re-converge changes downstream demand, so repeat until stable.
+  // Fix overproduction that wastes valuable inputs: when a recipe consumes an
+  // export or imported item but its outputs are all massively overproduced (>5x),
+  // cap it to match actual output demand. Iterate until stable.
+  // Examples: bp5 log→wood cycle (wastes export), bp2 log-wood-fast (wastes import).
   for (let cycleIter = 0; cycleIter < 20; cycleIter++) {
     const produced = new Map<string, number>();
     const consumed = new Map<string, number>();
@@ -706,8 +705,9 @@ function computeSteadyState(
     let cycleFixed = false;
     for (const r of recipes) {
       if (voidRecipes.has(r.name)) continue;
-      const consumesExport = r.ingredients.some(i => exportItems.has(i.name));
-      if (!consumesExport) continue;
+      const consumesValuable = r.ingredients.some(i =>
+        exportItems.has(i.name) || !internallyProduced.has(i.name));
+      if (!consumesValuable) continue;
       const consumedProducts = r.products.filter(p =>
         !exportItems.has(p.name) && (consumed.get(p.name) ?? 0) > 0.001);
       if (consumedProducts.length === 0) continue;

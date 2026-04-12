@@ -66,28 +66,23 @@
     "exports": {
       "pcb1": 0.125
     },
-    "surplus": {
-      "vacuum": 93.75,
-      "raw-fiber": 0.15,
-      "wood": 32.5,
-      "treated-wood": 0.5
-    },
+    "surplus": {},
     "imports": {
       "copper-plate": 0.625,
       "methanal": 12.5,
-      "log": 4,
-      "creosote": 50
+      "log": 0.65,
+      "creosote": 25
     },
     "mined": {},
     "intermediates": {
       "vacuum": 6.25,
       "formica": 0.25,
       "raw-fiber": 1.25,
-      "wood": 7.5,
+      "wood": 6.5,
       "saps": 2.5,
       "treated-wood": 0.5
     },
-    "powerMW": 13.63
+    "powerMW": 11.64
   },
   {
     "name": "methanal factory",

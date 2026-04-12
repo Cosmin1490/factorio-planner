@@ -6,17 +6,20 @@ import { loadPrototypes } from '../data/PrototypeLoader.js';
 import type { PrototypeData, Recipe, Entity } from '../data/PrototypeLoader.js';
 
 export interface BlockInventory {
-  source: string;
-  label?: string;
-  recipes: { name: string; factory: string; count: number; speed: number }[];
-  exports: { name: string; type: string; rate: number; hasStation: boolean }[];
-  imports: { name: string; type: string; rate: number }[];
-  intermediates: { name: string; type: string; rate: number }[];
+  name: string;
+  count: number;
+  recipes: Record<string, { factory: string; count: number }>;
+  stations: Record<string, 'load' | 'unload'>;
+  exports: Record<string, number>;
+  imports: Record<string, number>;
+  mined: Record<string, number>;
+  intermediates: Record<string, number>;
   powerMW: number;
 }
 
 interface InventoryOptions {
   blueprint: string[];
+  name?: string;
   save?: string;
   json?: boolean;
   time?: string;
@@ -280,6 +283,7 @@ function detectFurnaces(
   entities: BlueprintEntity[],
   recipeGroups: Map<string, RecipeGroup>,
   miners: MinerGroup[],
+  exportItems: Set<string>,
 ): void {
   // Group furnace entities by name
   const furnaceCounts = new Map<string, number>();
@@ -291,13 +295,16 @@ function detectFurnaces(
   }
   if (furnaceCounts.size === 0) return;
 
-  // Build set of items produced by existing block recipes + miners
+  // Build set of items produced and consumed by existing block recipes + miners
   const blockProduced = new Set<string>();
+  const blockConsumed = new Set<string>();
   for (const [recipeName] of recipeGroups) {
     const recipe = data.recipes[recipeName];
     if (!recipe) continue;
     const prods = Array.isArray(recipe.products) ? recipe.products : Object.values(recipe.products ?? {});
     for (const p of prods) blockProduced.add(p.name);
+    const ings = Array.isArray(recipe.ingredients) ? recipe.ingredients : Object.values(recipe.ingredients ?? {});
+    for (const i of ings) blockConsumed.add(i.name);
   }
   for (const m of miners) {
     for (const p of m.products) blockProduced.add(p.name);
@@ -318,31 +325,56 @@ function detectFurnaces(
     if (!entity) continue;
     const categories = entity.crafting_categories ?? {};
 
-    // Find recipes in furnace's categories whose ingredients are all block-produced
+    // Find the best recipe for this furnace: must have all ingredients block-produced,
+    // prefer recipes whose primary ingredient is a recipe product (not raw/mined).
+    const recipeProduced = new Set<string>();
+    for (const [recipeName] of recipeGroups) {
+      const recipe = data.recipes[recipeName];
+      if (!recipe) continue;
+      const prods = Array.isArray(recipe.products) ? recipe.products : Object.values(recipe.products ?? {});
+      for (const p of prods) recipeProduced.add(p.name);
+    }
+
+    // Skip void/incineration categories — these are waste disposal, not production
+    const voidCategories = new Set(['py-incineration', 'py-runoff']);
+
+    let bestRecipe: any = null;
+    let bestScore = -1;
     for (const cat of Object.keys(categories)) {
+      if (voidCategories.has(cat)) continue;
       const candidates = recipesByCategory.get(cat) ?? [];
       for (const recipe of candidates) {
         const ings = Array.isArray(recipe.ingredients) ? recipe.ingredients : Object.values(recipe.ingredients ?? {});
         if (ings.length === 0) continue;
         const allAvailable = (ings as any[]).every((i: any) => blockProduced.has(i.name));
         if (!allAvailable) continue;
-
-        // This recipe can run in this furnace — add to recipeGroups
-        const recipeName = recipe.name;
-        if (recipeGroups.has(recipeName)) {
-          // Already detected (e.g., from explicit recipe field) — add count
-          recipeGroups.get(recipeName)!.count += count;
-        } else {
-          recipeGroups.set(recipeName, {
-            factory: entityName,
-            count,
-            modules: null,
-          });
-        }
-        // Add this recipe's products to blockProduced for downstream furnaces
+        // Score: prefer recipes with more recipe-produced ingredients,
+        // tiebreak by product having a station (export) or being consumed by block recipes
         const prods = Array.isArray(recipe.products) ? recipe.products : Object.values(recipe.products ?? {});
-        for (const p of prods) blockProduced.add((p as any).name);
+        const ingScore = (ings as any[]).filter((i: any) => recipeProduced.has(i.name)).length;
+        const hasExportProduct = (prods as any[]).some((p: any) => exportItems.has(p.name)) ? 1000 : 0;
+        const hasConsumedProduct = (prods as any[]).some((p: any) => blockConsumed.has(p.name)) ? 100 : 0;
+        const score = ingScore + hasExportProduct + hasConsumedProduct;
+        if (score > bestScore) {
+          bestScore = score;
+          bestRecipe = recipe;
+        }
       }
+    }
+
+    if (bestRecipe) {
+      const recipeName = bestRecipe.name;
+      if (recipeGroups.has(recipeName)) {
+        recipeGroups.get(recipeName)!.count += count;
+      } else {
+        recipeGroups.set(recipeName, {
+          factory: entityName,
+          count,
+          modules: null,
+        });
+      }
+      const prods = Array.isArray(bestRecipe.products) ? bestRecipe.products : Object.values(bestRecipe.products ?? {});
+      for (const p of prods) blockProduced.add((p as any).name);
     }
   }
 }
@@ -633,7 +665,7 @@ function analyzeBlueprint(
   data: PrototypeData,
   entities: BlueprintEntity[],
   wires: number[][],
-  source: string,
+  name: string,
   time: number,
 ): BlockInventory {
   // Group recipe entities by recipe name, track factories and modules
@@ -672,7 +704,7 @@ function analyzeBlueprint(
   const miners = detectMiners(data, entities, recipeGroups);
 
   // Detect furnaces (no recipe field, infer from crafting categories + available inputs)
-  detectFurnaces(data, entities, recipeGroups, miners);
+  detectFurnaces(data, entities, recipeGroups, miners, exportItems);
 
   // Compute steady-state rates (machines capped by internal supply)
   const steadyRates = computeSteadyState(data, recipeGroups, boilers, miners, exportItems);
@@ -680,7 +712,7 @@ function analyzeBlueprint(
   // Compute production/consumption at steady-state rates
   const produced = new Map<string, number>();
   const consumed = new Map<string, number>();
-  const recipeResults: BlockInventory['recipes'] = [];
+  const recipeResults: Record<string, { factory: string; count: number }> = {};
   let totalPowerMW = 0;
 
   for (const [recipeName, group] of recipeGroups) {
@@ -690,7 +722,7 @@ function analyzeBlueprint(
     const speed = getEffectiveSpeed(data, group.factory, group.modules);
     const crafts = steadyRates.get(recipeName) ?? 0;
 
-    recipeResults.push({ name: recipeName, factory: group.factory, count: group.count, speed });
+    recipeResults[recipeName] = { factory: group.factory, count: group.count };
 
     const entity = data.entities[group.factory];
     if (entity?.energy_usage && !entity.burner_prototype) {
@@ -728,71 +760,78 @@ function analyzeBlueprint(
     produced.set('steam', (produced.get('steam') ?? 0) + boilerRate * b.steamPerSec * b.count);
     consumed.set('water', (consumed.get('water') ?? 0) + boilerRate * b.waterPerSec * b.count);
     consumed.set(b.fuelName, (consumed.get(b.fuelName) ?? 0) + boilerRate * b.fuelPerSec * b.count);
-    // Add boiler to recipe table for visibility
-    recipeResults.push({
-      name: `${b.entityName} (fluid burner)`,
-      factory: b.entityName,
-      count: b.count,
-      speed: 1,
-    });
+    recipeResults[`${b.entityName} (fluid burner)`] = { factory: b.entityName, count: b.count };
   }
 
   // Add miner flows (ore produced, fluid consumed if required)
+  const minedItems = new Map<string, number>();
   for (const m of miners) {
     const minerKey = `__miner_${m.entityName}_${m.products[0]?.name ?? 'unknown'}`;
     const minerRate = steadyRates.get(minerKey) ?? 0;
     for (const p of m.products) {
-      produced.set(p.name, (produced.get(p.name) ?? 0) + minerRate * p.ratePerMiner * m.count);
+      const totalRate = minerRate * p.ratePerMiner * m.count;
+      produced.set(p.name, (produced.get(p.name) ?? 0) + totalRate);
+      minedItems.set(p.name, (minedItems.get(p.name) ?? 0) + totalRate);
     }
     if (m.fluidInput) {
       consumed.set(m.fluidInput.name, (consumed.get(m.fluidInput.name) ?? 0) + minerRate * m.fluidInput.ratePerMiner * m.count);
     }
-    recipeResults.push({
-      name: `${m.entityName} (mining ${m.products.map(p => p.name).join('+')})`,
-      factory: m.entityName,
-      count: m.count,
-      speed: 1,
-    });
+    const minerLabel = `${m.entityName} (mining ${m.products.map(p => p.name).join('+')})`;
+    recipeResults[minerLabel] = { factory: m.entityName, count: m.count };
   }
 
-  // Classify items
+  // Build stations map
+  const stations: Record<string, 'load' | 'unload'> = {};
+  for (const [, info] of resolvedStations) {
+    stations[info.name] = info.direction;
+  }
+
+  // Classify items into exports/imports/intermediates/mined
   const allItems = new Set([...produced.keys(), ...consumed.keys()]);
 
-  const exports: BlockInventory['exports'] = [];
-  const imports: BlockInventory['imports'] = [];
-  const intermediates: BlockInventory['intermediates'] = [];
+  const exports: Record<string, number> = {};
+  const imports: Record<string, number> = {};
+  const mined: Record<string, number> = {};
+  const intermediates: Record<string, number> = {};
 
   for (const item of allItems) {
     const prod = produced.get(item) ?? 0;
     const cons = consumed.get(item) ?? 0;
     const net = prod - cons;
-    const type = getItemType(data, item);
 
     if (prod > 0 && cons > 0) {
-      intermediates.push({ name: item, type, rate: Math.min(prod, cons) });
+      intermediates[item] = Math.min(prod, cons);
       if (net > 0.01) {
-        exports.push({ name: item, type, rate: net, hasStation: stationItems.has(item) });
+        exports[item] = net;
       } else if (net < -0.01) {
-        imports.push({ name: item, type, rate: Math.abs(net) });
+        imports[item] = Math.abs(net);
       }
     } else if (net > 0.01) {
-      exports.push({ name: item, type, rate: net, hasStation: stationItems.has(item) });
+      exports[item] = net;
     } else if (net < -0.01) {
-      imports.push({ name: item, type, rate: Math.abs(net) });
+      imports[item] = Math.abs(net);
     }
   }
 
-  exports.sort((a, b) => b.rate - a.rate);
-  imports.sort((a, b) => b.rate - a.rate);
+  // Move mined items from imports to mined section
+  for (const [item, rate] of minedItems) {
+    if (item in imports) {
+      // Miner produces some, but not enough — remainder is imported
+      // Keep in imports, add to mined what's produced locally
+    }
+    mined[item] = rate;
+  }
 
   return {
-    source,
-    label: undefined,
+    name,
+    count: 1,
     recipes: recipeResults,
-    exports,
-    imports,
-    intermediates,
-    powerMW: totalPowerMW,
+    stations,
+    exports: roundRates(exports),
+    imports: roundRates(imports),
+    mined: roundRates(mined),
+    intermediates: roundRates(intermediates),
+    powerMW: Math.round(totalPowerMW * 100) / 100,
   };
 }
 
@@ -802,15 +841,22 @@ function formatRate(rate: number): string {
   return rate.toFixed(3);
 }
 
-function printInventory(inv: BlockInventory, time: number) {
-  console.log(`\nBlock: ${inv.source}`);
-  if (inv.label) console.log(`Label: ${inv.label}`);
+/** Round a rate map's values to avoid floating point noise in JSON */
+function roundRates(map: Record<string, number>): Record<string, number> {
+  const result: Record<string, number> = {};
+  for (const [k, v] of Object.entries(map)) {
+    result[k] = Math.round(v * 1000) / 1000;
+  }
+  return result;
+}
+
+function printInventory(inv: BlockInventory) {
+  console.log(`\nBlock: ${inv.name}${inv.count > 1 ? ` (×${inv.count})` : ''}`);
   console.log();
 
   // Recipe table
-  const hasModules = false; // Could add module display later
-  const rows = inv.recipes.map(r => ({
-    recipe: r.name,
+  const rows = Object.entries(inv.recipes).map(([name, r]) => ({
+    recipe: name,
     factory: r.factory,
     count: r.count.toString(),
   }));
@@ -830,34 +876,45 @@ function printInventory(inv: BlockInventory, time: number) {
   for (const r of rows) console.log(row(r.recipe, r.factory, r.count));
   console.log(line('└', '┴', '┘'));
 
+  const totalBuildings = Object.values(inv.recipes).reduce((s, r) => s + r.count, 0);
   const powerStr = inv.powerMW >= 1
     ? `${inv.powerMW.toFixed(2)} MW`
     : `${(inv.powerMW * 1000).toFixed(1)} kW`;
-  console.log(`\n${inv.recipes.reduce((s, r) => s + r.count, 0)} buildings, ${powerStr} electric`);
+  console.log(`\n${totalBuildings} buildings, ${powerStr} electric`);
+
+  const fmtItems = (items: Record<string, number>) =>
+    Object.entries(items).sort(([,a], [,b]) => b - a).map(([n, r]) => `${n}: ${formatRate(r)}/s`).join(', ');
 
   // Exports
-  if (inv.exports.length > 0) {
+  const exportEntries = Object.entries(inv.exports);
+  if (exportEntries.length > 0) {
+    const stationed = exportEntries.filter(([n]) => inv.stations[n] === 'load');
+    const surplus = exportEntries.filter(([n]) => inv.stations[n] !== 'load');
     console.log('\nExports:');
-    const stationed = inv.exports.filter(e => e.hasStation);
-    const surplus = inv.exports.filter(e => !e.hasStation);
     if (stationed.length > 0) {
-      console.log('  ' + stationed.map(e => `${e.name}: ${formatRate(e.rate)}/s`).join(', '));
+      console.log('  ' + stationed.map(([n, r]) => `${n}: ${formatRate(r)}/s`).join(', '));
     }
     if (surplus.length > 0) {
-      console.log('  Voided/surplus (no station): ' + surplus.map(e => `${e.name}: ${formatRate(e.rate)}/s`).join(', '));
+      console.log('  Voided/surplus: ' + surplus.map(([n, r]) => `${n}: ${formatRate(r)}/s`).join(', '));
     }
+  }
+
+  // Mined
+  if (Object.keys(inv.mined).length > 0) {
+    console.log('\nMined:');
+    console.log('  ' + fmtItems(inv.mined));
   }
 
   // Imports
-  if (inv.imports.length > 0) {
+  if (Object.keys(inv.imports).length > 0) {
     console.log('\nImports:');
-    console.log('  ' + inv.imports.map(i => `${i.name}: ${formatRate(i.rate)}/s`).join(', '));
+    console.log('  ' + fmtItems(inv.imports));
   }
 
   // Intermediates
-  if (inv.intermediates.length > 0) {
+  if (Object.keys(inv.intermediates).length > 0) {
     console.log('\nIntermediates:');
-    console.log('  ' + inv.intermediates.map(i => `${i.name}: ${formatRate(i.rate)}/s`).join(', '));
+    console.log('  ' + fmtItems(inv.intermediates));
   }
 
   console.log();
@@ -866,12 +923,19 @@ function printInventory(inv: BlockInventory, time: number) {
 export function inventoryCommand(protoPath: string, options: InventoryOptions) {
   const data = loadPrototypes(protoPath);
   const time = parseInt(options.time ?? '1', 10);
+
+  if (options.save && !options.name) {
+    console.error('Error: --name is required when using --save');
+    process.exit(1);
+  }
+
   const inventories: BlockInventory[] = [];
 
   for (const bpPath of options.blueprint) {
     try {
       const { entities, wires } = decodeBlueprintFile(bpPath);
-      const inv = analyzeBlueprint(data, entities, wires, bpPath, time);
+      const blockName = options.name ?? bpPath;
+      const inv = analyzeBlueprint(data, entities, wires, blockName, time);
       inventories.push(inv);
     } catch (err: any) {
       console.error(`Error processing ${bpPath}: ${err.message}`);
@@ -884,13 +948,29 @@ export function inventoryCommand(protoPath: string, options: InventoryOptions) {
   }
 
   for (const inv of inventories) {
-    printInventory(inv, time);
+    printInventory(inv);
   }
 
-  if (options.save) {
+  if (options.save && inventories.length > 0) {
     const __dirname = dirname(resolve(protoPath));
     const savePath = resolve(__dirname, 'saves', `${options.save}.json`);
-    writeFileSync(savePath, JSON.stringify(inventories, null, 2));
-    console.log(`Saved inventory to ${savePath}`);
+
+    // Append/update: read existing save, replace by name or append
+    let existing: BlockInventory[] = [];
+    try {
+      existing = JSON.parse(readFileSync(savePath, 'utf8'));
+    } catch { /* file doesn't exist yet */ }
+
+    for (const inv of inventories) {
+      const idx = existing.findIndex(e => e.name === inv.name);
+      if (idx >= 0) {
+        existing[idx] = inv;
+      } else {
+        existing.push(inv);
+      }
+    }
+
+    writeFileSync(savePath, JSON.stringify(existing, null, 2));
+    console.log(`Saved "${options.name}" to ${savePath} (${existing.length} blocks total)`);
   }
 }

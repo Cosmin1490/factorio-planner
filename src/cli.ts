@@ -146,13 +146,15 @@ program
   .command('inventory')
   .description('Analyze block blueprints: decode recipes, compute I/O rates, identify exports/imports')
   .requiredOption('--blueprint <files...>', 'Blueprint file(s) to analyze')
-  .option('--save <name>', 'Save combined inventory to data/saves/<name>.json')
+  .option('--name <name>', 'Block name (required for --save)')
+  .option('--save <name>', 'Save to data/saves/<name>.json (appends/updates by block name)')
   .option('--json', 'Output raw JSON')
   .option('--time <seconds>', 'Time base in seconds (default: 1)', '1')
   .option('--proto <path>', 'Path to prototype JSON', DEFAULT_PROTO_PATH)
   .action((opts) => {
     inventoryCommand(opts.proto, {
       blueprint: opts.blueprint,
+      name: opts.name,
       save: opts.save,
       json: opts.json,
       time: opts.time,

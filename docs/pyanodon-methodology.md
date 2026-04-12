@@ -16,6 +16,8 @@ Most of these principles apply to any complex Factorio overhaul mod (SeaBlock, S
     **Check existing waste streams before new production.** Before building a new raw-material chain, check if any existing block already produces the needed item as a voided or surplus byproduct. Voided outputs are free inputs — zero mining, zero new infrastructure upstream. Example: needing 80/s aromatics, the obvious path was tar-distilation from raw-coal (93/s raw-coal, 24 mining drills). But the existing tar refinery voids 280/s pitch and 60/s middle-oil — pitch-refining + light-oil-aromatics converts that waste into 86/s aromatics with zero mining. Rule 13 (re-audit) identifies surplus outputs; this step turns them into supply sources.
 3. **Normalize to same output** — cost per 1 unit of output, not per craft. 4x output at 2 inputs beats 2x at 1.
 4. **Rank by:** efficiency (raw materials/output) > complexity (recipes/buildings) > convenience. Watch for "later game" recipes that exist to consume excess byproducts — traps at early tech. **Always run the numbers before eliminating** — two paths sharing an upstream input can have wildly different per-unit consumption. Don't dismiss on structural similarity alone; quantify first.
+    
+    **Include upstream cost of new imports.** When recipe alternatives differ in imports, check the block inventory: does each import already have a supplier? If yes, it's free — just a train station. If not, the real cost includes the entire upstream block: power, buildings, byproduct handling, and design time. A recipe saving 6 local buildings but requiring a new 10 MW electrolyzer block with chlorine/hydrogen venting is more expensive in total, not less. Imports with many future consumers (NaOH serves electrochemistry broadly) amortize their upstream cost across blocks; single-purpose imports don't — prefer the alternative with an already-available or trivially-produced import. Example: cellulose-02 (2 biofactories, imports NaOH — no supplier, 10 MW electrolyzer, byproduct venting) vs cellulose-00 (8 hpf, imports limestone — trivial mining). The local savings are real but the system cost is higher.
 
 ## Byproduct management
 
@@ -98,7 +100,7 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
 ## Block design
 
 22. **City block space budget** — in train-based city block architectures, each block has finite space split between factories and train stations (1 station per item, input or output). Three tools to fit a sub-factory into a block:
-    - **Import** — 1 station, 0 buildings. Use for high-volume bus items.
+    - **Import** — 1 station, 0 buildings locally. Use for high-volume bus items. Caveat: if the import has no existing supplier, the real cost includes a new upstream block — evaluate total system cost per rule 4 before choosing import over inline.
     - **Inline** — 0 stations, N buildings. Use for cheap-to-produce items (1-2 buildings) to save a station. Vacuum (no inputs, 1 pump) should always be inlined.
     - **New boundary** — 1 station, but absorbs multiple imports into a separate block. Use when producing an item inline would require importing 3+ of its own ingredients. Example: pcb1 has only 4 consumers but producing it inline means importing formica, copper-plate, vacuum, plus formica's chain (treated-wood, sap, fiber, methanal, creosote) — 5+ stations vs 1 for pcb1.
     

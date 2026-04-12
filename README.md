@@ -4,7 +4,7 @@ Node.js CLI tool for Factorio production planning. Computes exact factory counts
 
 Designed to be driven by [Claude](https://claude.ai/) — you describe what you want to produce, Claude explores the recipe graph, builds the solver input, and iterates on constraints. Works with any Factorio mod set by re-exporting prototype data.
 
-Features a native TypeScript solver (algebraic + simplex), [Helmod](https://mods.factorio.com/mod/helmod) export for in-game import, and tech-level filtering from save data. The included prototype data is from a Pyanodon modpack save.
+Features a native TypeScript solver (algebraic + LP simplex with cost minimization), [Helmod](https://mods.factorio.com/mod/helmod) export for in-game import, temperature-aware fluid modeling, power computation, and tech-level filtering from save data. The included prototype data is from a Pyanodon modpack save.
 
 ## How it works with Claude
 
@@ -147,19 +147,23 @@ CLI (commander)
   → Output (text summary, JSON, or Helmod export string)
 ```
 
-The solver is a native TypeScript reimplementation. It computes exact factory counts, crafting speeds, fuel consumption, and material flows. The simplex solver handles multi-recipe chains with competing intermediates.
+The solver is a native TypeScript reimplementation. It computes exact factory counts, crafting speeds, fuel consumption, power draw, and material flows.
 
 **Claude is the AI layer** — no interactive prompts. Claude explores recipes via query commands, builds the recipe list, and invokes solve with explicit parameters.
 
 ## Solver modes
 
 - **Algebraic** (`--solver algebra`, default for target mode): Multi-pass Gaussian elimination. Fast, works well for simple chains. Breaks on large chains (12+ recipes).
-- **Simplex** (`--solver simplex`, default for input mode): Linear programming. Handles complex chains, competing consumers, and cyclic dependencies.
+- **Simplex** (`--solver simplex`, default for input mode): Two-phase LP with cost minimization (target mode) and legacy Helmod-style pivot (input mode).
+
+The LP simplex minimizes `sum(recipeCost x recipeRate)` where recipe costs are derived from BFS depth in the ingredient graph. This eliminates cascade blowup on deep chains — a 100-recipe Pyanodon pipeline solves to ~163 buildings vs ~326 without the objective. Comparable to [YAFC](https://github.com/shpaass/yafc-ce)'s OrTools-based LP solver but implemented natively in TypeScript.
 
 Key solver features:
 - `--constraint "recipe:product:exclude"` — prevent a byproduct from driving solver scaling
 - `--max-import "item:0"` — force full internal production of an intermediate (cascades deficits to raw materials)
 - `--modules` / `--beacons` — apply module and beacon effects to factory speed and productivity
+- Temperature-aware fluid columns (e.g., `coke-oven-gas@250C` vs `@100C`) for recipes with explicit temperature constraints
+- Per-recipe power modeling (`totalPowerMW` in output)
 - `--export helmod` — generate a Helmod import string for pasting into Factorio
 
 ## Updating Prototype Data
@@ -176,8 +180,8 @@ The export includes `force.recipes` (unlock state) and `technologies` (researche
 
 ## TODO
 
+- [ ] Recipe cycle detection: pre-solve warning for circular dependencies (ash loops, coal-gas feedback)
 - [ ] `--electric` / `--no-burner` flag: auto-select best electric factory per recipe (avoid burnt-result coupling)
-- [ ] Temperature-linked fluids: conversion rows for steam at different temperatures
 
 ## License
 

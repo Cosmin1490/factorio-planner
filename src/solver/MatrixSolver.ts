@@ -49,6 +49,7 @@ interface SolverMatrix {
   numRows: number;
   numCols: number;
   itemCosts: number[];
+  itemDepths: number[];
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -209,11 +210,10 @@ function findIngredientColumn(
 }
 
 /**
- * Compute per-column cost weights via BFS depth from raw inputs.
- * Shallow items (closer to raw materials) get higher cost → simplex prefers them,
- * leading to solutions that minimize deep cascade chains.
+ * Compute BFS depth from raw inputs for each item column.
+ * Used by both the legacy simplex (item costs) and LP simplex (recipe costs).
  */
-function computeItemCosts(
+function computeItemDepths(
   columns: MatrixColumn[],
   matrix: number[][],
   numRows: number,
@@ -246,8 +246,35 @@ function computeItemCosts(
     if (!changed) break;
   }
 
-  // Shallow = high weight (preferred), deep = low weight
-  return depth.map(d => d === Infinity ? 0.01 : 1 / (1 + d));
+  return depth;
+}
+
+/** Shallow = high weight (preferred), deep = low weight. Used by legacy simplex pivot. */
+function computeItemCosts(depths: number[]): number[] {
+  return depths.map(d => d === Infinity ? 0.01 : 1 / (1 + d));
+}
+
+/**
+ * Compute per-recipe cost for LP objective: minimize sum(recipeCost_r * x_r).
+ * Cost = 1 + max depth of any product. Deep recipes are expensive → LP avoids scaling them.
+ */
+function computeRecipeCosts(
+  depths: number[],
+  matrix: number[][],
+  numRows: number,
+  numCols: number,
+): number[] {
+  const costs = new Array(numRows).fill(1);
+  for (let r = 0; r < numRows; r++) {
+    let maxProductDepth = 0;
+    for (let c = 0; c < numCols; c++) {
+      if (matrix[r][c] > 0 && depths[c] < Infinity) {
+        maxProductDepth = Math.max(maxProductDepth, depths[c]);
+      }
+    }
+    costs[r] = 1 + maxProductDepth;
+  }
+  return costs;
 }
 
 // ── Matrix construction ─────────────────────────────────────────────────────
@@ -347,8 +374,9 @@ function buildMatrix(data: PrototypeData, input: SolveInput): SolverMatrix {
     }
   }
 
-  const itemCosts = computeItemCosts(columns, matrix, numRows, numCols);
-  return { matrix, columns, colIndex, resolved, Z, numRows, numCols, itemCosts };
+  const itemDepths = computeItemDepths(columns, matrix, numRows, numCols);
+  const itemCosts = computeItemCosts(itemDepths);
+  return { matrix, columns, colIndex, resolved, Z, numRows, numCols, itemCosts, itemDepths };
 }
 
 // ── Algebraic solver ────────────────────────────────────────────────────────
@@ -667,7 +695,7 @@ function simplexPivot(t: SimplexTableau, xrow: number, xcol: number): void {
   t.colMap[xcol] = oldHeader;
 }
 
-function solveSimplex(m: SolverMatrix, input: SolveInput): number[] {
+function solveSimplexLegacy(m: SolverMatrix, input: SolveInput): number[] {
   const tableau = simplexPrepare(m, input);
 
   // Pivot loop
@@ -691,6 +719,264 @@ function solveSimplex(m: SolverMatrix, input: SolveInput): number[] {
   }
 
   return recipeCounts;
+}
+
+// ── LP simplex solver (target mode — cost minimization) ───────────────────
+
+/**
+ * Standard two-phase simplex with cost minimization objective.
+ * Minimizes sum(recipeCost_r * x_r) subject to production/balance constraints.
+ *
+ * LP formulation:
+ *   Variables: x_r >= 0 (recipe rate for each recipe r)
+ *   Objective: minimize sum(recipeCost_r * x_r)
+ *   Constraints:
+ *     Target column: sum_r(A[r][c] * x_r) >= targetAmount
+ *     Intermediates: sum_r(A[r][c] * x_r) >= 0 (production >= consumption)
+ *     Inputs/outputs: unconstrained
+ *
+ * Phase 1 finds a feasible solution via artificial variables.
+ * Phase 2 optimizes the cost objective.
+ */
+function solveSimplexLP(m: SolverMatrix, input: SolveInput): number[] {
+  const { matrix, columns, Z, numRows, numCols, resolved, itemDepths } = m;
+
+  // Apply exclude constraints to a working copy of the matrix
+  const workMatrix = matrix.map(row => [...row]);
+  const constraintMap = new Map<string, ConstraintSpec[]>();
+  for (const c of input.constraints ?? []) {
+    const existing = constraintMap.get(c.recipeName) ?? [];
+    existing.push(c);
+    constraintMap.set(c.recipeName, existing);
+  }
+  for (let r = 0; r < numRows; r++) {
+    const constraints = constraintMap.get(resolved[r].recipeName);
+    if (!constraints) continue;
+    for (let c = 0; c < numCols; c++) {
+      if (workMatrix[r][c] <= 0) continue;
+      const colName = columns[c].name;
+      if (constraints.some(cs => cs.productName === colName && cs.type === 'exclude')) {
+        workMatrix[r][c] = 0;
+      }
+    }
+  }
+
+  // Identify constrained columns and build RHS
+  const constrainedCols: number[] = [];
+  const rhs: number[] = [];
+
+  for (let c = 0; c < numCols; c++) {
+    if (Z[c] < -1e-10) {
+      // Target column: must produce at least targetAmount
+      constrainedCols.push(c);
+      rhs.push(-Z[c]); // targetAmount (positive)
+    } else if (columns[c].state === ItemState.Intermediate) {
+      // Intermediate: check if it has at least one producer in the working matrix
+      let hasProducer = false;
+      for (let r = 0; r < numRows; r++) {
+        if (workMatrix[r][c] > 1e-10) { hasProducer = true; break; }
+      }
+      if (!hasProducer) continue; // no producer after excludes → treat as free import
+      constrainedCols.push(c);
+      rhs.push(0); // production >= consumption
+    }
+  }
+
+  const K = constrainedCols.length; // number of constraints
+  const n = numRows; // number of recipe variables
+
+  if (K === 0) return new Array(n).fill(0);
+
+  // Compute recipe costs for the objective
+  const recipeCosts = computeRecipeCosts(itemDepths, workMatrix, numRows, numCols);
+
+  // ── Build tableau ────────────────────────────────────────────────────────
+  // Layout: K constraint rows + 1 Z-row
+  // Columns: n (recipe vars) + K (surplus) + K (artificial) + 1 (RHS)
+  //          [x_0..x_{n-1}] [s_0..s_{K-1}] [a_0..a_{K-1}] [rhs]
+
+  const totalVars = n + 2 * K;
+  const rhsIdx = totalVars;
+  const tab: number[][] = [];
+  const basis: number[] = [];
+
+  for (let k = 0; k < K; k++) {
+    const row = new Array(totalVars + 1).fill(0);
+    const c = constrainedCols[k];
+
+    // Recipe variable coefficients: A[r][c] for each recipe r
+    for (let r = 0; r < n; r++) {
+      row[r] = workMatrix[r][c];
+    }
+
+    // Surplus variable (subtract from >= constraint to get equality)
+    row[n + k] = -1;
+
+    // Artificial variable
+    row[n + K + k] = 1;
+
+    // RHS
+    row[rhsIdx] = rhs[k];
+
+    tab.push(row);
+    basis.push(n + K + k); // artificial k is initially in basis
+  }
+
+  // ── Phase 1: minimize sum of artificials ──────────────────────────────────
+  // Z-row: c_j = 1 for artificial vars, 0 for others
+  // Reduced costs: Z_j = c_j - sum_k(c_Bk * tab[k][j])
+  // Since all basis vars are artificial with c_Bk = 1:
+  const zRow = new Array(totalVars + 1).fill(0);
+  for (let j = 0; j <= totalVars; j++) {
+    let basisSum = 0;
+    for (let k = 0; k < K; k++) basisSum += tab[k][j];
+    zRow[j] = (j >= n + K && j < n + 2 * K ? 1 : 0) - basisSum;
+  }
+  tab.push(zRow);
+
+  const maxIter = (n + K) * 10;
+
+  for (let iter = 0; iter < maxIter; iter++) {
+    // Find entering column: most negative reduced cost
+    let minRC = -1e-8;
+    let enterCol = -1;
+    for (let j = 0; j < totalVars; j++) {
+      if (tab[K][j] < minRC) {
+        minRC = tab[K][j];
+        enterCol = j;
+      }
+    }
+    if (enterCol < 0) break; // optimal
+
+    // Find leaving row: minimum ratio test (Bland's rule for ties)
+    let minRatio = Infinity;
+    let leaveRow = -1;
+    for (let k = 0; k < K; k++) {
+      if (tab[k][enterCol] > 1e-10) {
+        const ratio = tab[k][rhsIdx] / tab[k][enterCol];
+        if (ratio < minRatio - 1e-10) {
+          minRatio = ratio;
+          leaveRow = k;
+        } else if (Math.abs(ratio - minRatio) < 1e-10 && basis[k] > basis[leaveRow]) {
+          leaveRow = k; // Bland's: prefer leaving the higher-index basis variable
+        }
+      }
+    }
+    if (leaveRow < 0) break; // unbounded
+
+    // Pivot
+    lpPivot(tab, K, totalVars, rhsIdx, basis, leaveRow, enterCol);
+  }
+
+  // Check feasibility: Phase 1 objective should be ~0
+  if (tab[K][rhsIdx] > 1e-6) {
+    return new Array(n).fill(0); // infeasible
+  }
+
+  // ── Phase 2: minimize recipe costs ─────────────────────────────────────────
+  // Rebuild Z-row with real costs
+  for (let j = 0; j <= totalVars; j++) tab[K][j] = 0;
+
+  // Set costs: recipe vars get recipeCosts, artificials get big-M
+  const objCosts = new Array(totalVars).fill(0);
+  for (let r = 0; r < n; r++) objCosts[r] = recipeCosts[r];
+  for (let k = 0; k < K; k++) objCosts[n + K + k] = 1e8; // big-M for artificials
+
+  // Compute reduced costs: Z_j = c_j - sum_k(c_Bk * tab[k][j])
+  for (let j = 0; j <= totalVars; j++) {
+    let val = j < totalVars ? objCosts[j] : 0;
+    for (let k = 0; k < K; k++) {
+      const bVar = basis[k];
+      const bCost = bVar < totalVars ? objCosts[bVar] : 0;
+      val -= bCost * tab[k][j];
+    }
+    tab[K][j] = val;
+  }
+
+  // Phase 2 pivot loop
+  for (let iter = 0; iter < maxIter; iter++) {
+    let minRC = -1e-8;
+    let enterCol = -1;
+    for (let j = 0; j < totalVars; j++) {
+      if (tab[K][j] < minRC) {
+        minRC = tab[K][j];
+        enterCol = j;
+      }
+    }
+    if (enterCol < 0) break;
+
+    let minRatio = Infinity;
+    let leaveRow = -1;
+    for (let k = 0; k < K; k++) {
+      if (tab[k][enterCol] > 1e-10) {
+        const ratio = tab[k][rhsIdx] / tab[k][enterCol];
+        if (ratio < minRatio - 1e-10) {
+          minRatio = ratio;
+          leaveRow = k;
+        } else if (Math.abs(ratio - minRatio) < 1e-10 && leaveRow >= 0 && basis[k] > basis[leaveRow]) {
+          leaveRow = k;
+        }
+      }
+    }
+    if (leaveRow < 0) break;
+
+    // Update Z-row reduced costs before pivot
+    lpPivot(tab, K, totalVars, rhsIdx, basis, leaveRow, enterCol);
+  }
+
+  // Extract recipe counts from basis
+  const recipeCounts = new Array(n).fill(0);
+  for (let k = 0; k < K; k++) {
+    const bVar = basis[k];
+    if (bVar < n) {
+      recipeCounts[bVar] = Math.max(0, tab[k][rhsIdx]);
+    }
+  }
+
+  return recipeCounts;
+}
+
+/** Standard simplex pivot operation. */
+function lpPivot(
+  tab: number[][],
+  numConstraints: number,
+  totalVars: number,
+  rhsIdx: number,
+  basis: number[],
+  leaveRow: number,
+  enterCol: number,
+): void {
+  const pivotVal = tab[leaveRow][enterCol];
+
+  // Divide pivot row by pivot value
+  for (let j = 0; j <= totalVars; j++) {
+    tab[leaveRow][j] /= pivotVal;
+  }
+
+  // Eliminate from all other rows (including Z-row at index numConstraints)
+  for (let k = 0; k <= numConstraints; k++) {
+    if (k === leaveRow) continue;
+    const factor = tab[k][enterCol];
+    if (Math.abs(factor) < 1e-12) continue;
+    for (let j = 0; j <= totalVars; j++) {
+      tab[k][j] -= factor * tab[leaveRow][j];
+      if (Math.abs(tab[k][j]) < 1e-10) tab[k][j] = 0;
+    }
+  }
+
+  basis[leaveRow] = enterCol;
+}
+
+function solveSimplex(m: SolverMatrix, input: SolveInput): number[] {
+  const isInputMode = !!input.inputs?.length && !input.target;
+
+  if (isInputMode) {
+    // Input mode: use legacy Helmod-style simplex (validated, no cascade issue)
+    return solveSimplexLegacy(m, input);
+  }
+
+  // Target mode: use LP simplex with cost minimization
+  return solveSimplexLP(m, input);
 }
 
 // ── Result extraction (shared) ──────────────────────────────────────────────

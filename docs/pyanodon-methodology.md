@@ -87,7 +87,7 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
     - **Tier D (1-3)**: pbsb-alloy (3), nexelit-plate (3)
     Tier A/B are almost always good boundaries. Tier C/D only if they also have deep chains or cascade risk.
 
-18. **Chain depth & cascade risk** — deep chains (5+ recipes) or chains containing cascade magnifiers (high input:output ratio) justify splitting even at low consumer counts. Battery-mk01 (33 consumers, 30:1 cyanic-acid cascade) and rubber (15 consumers, deep petrochemical chain) are worth splitting. Iron-plate from ore is only 2-3 recipes — not worth splitting on its own. For 50+ recipe solver runs, identify and import these items as commodities. Exclude byproducts at EVERY cascade link — breaking one link is not enough if the solver imports the intermediate.
+18. **Chain depth & cascade risk** — deep chains (5+ recipes) or chains containing cascade magnifiers (high input:output ratio) justify splitting even at low consumer counts. Battery-mk01 (33 consumers, 30:1 cyanic-acid cascade) and rubber (15 consumers, deep petrochemical chain) are worth splitting. Iron-plate from ore is only 2-3 recipes — not worth splitting on its own. The LP cost minimizer handles cascade reduction automatically (100-recipe chains solve without blowup), but splitting deep chains into separate blocks still helps for physical layout, train logistics, and independent scaling. Exclude byproducts at every cascade link to constrain the solution space — the LP finds better solutions with fewer degrees of freedom.
 
 19. **Context-dependent depth** — the boundary moves based on what you're solving. Making circuits? Iron-plate is a boundary (import it). Making iron-plate itself? Ore is the boundary. Rule: **import from the highest tier below your current target**.
 
@@ -223,10 +223,10 @@ Once you have critical mass, only the steady-state matters for pipeline planning
 
 - **Recipe selection determines solution quality** — the solver finds a feasible solution given the recipes you chose. It does NOT search for better recipe alternatives. Every recipe in the `--recipes` list is a human decision: does this recipe use the cheapest path? Is there an alternative that avoids an expensive intermediate? Are there newer unlocked recipes that obsolete this one? Run `recipes --produces <item> --unlocked` for every non-trivial intermediate before locking in the recipe list. The solver is a calculator, not an optimizer — garbage recipes in, garbage solution out.
 - **Use electric factories for crafting** — `automated-factory-mk01` (crafting). For smelting, prefer `steel-furnace` (2x2, speed 4, fluid fuel) in city blocks — solver can use `advanced-foundry-mk01` for simplicity but real builds should use steel-furnace for density.
-- **Exclude byproducts that drive scaling** — `--constraint "recipe:product:exclude"` for every byproduct that could cascade.
+- **Exclude byproducts that drive scaling** — `--constraint "recipe:product:exclude"` for every byproduct that could cascade. The LP cost minimizer reduces cascade blowup automatically, but excludes still help by removing degrees of freedom the solver would otherwise explore.
 - **Force internal production** — `--max-import "item:0"` for intermediates (iron-gear-wheel, iron-plate, grade-1-copper, grade-2-copper). Cascading deficits push to raw materials.
 - **Recycle byproducts** — add recycling recipes + `--max-import "item:0"` to force items through the loop.
-- **Target mode for complex chains** — input mode lets simplex freely import intermediates. Use target mode + binary search the target to fit input budgets.
+- **Target mode for complex chains** — target mode uses LP simplex with cost minimization (minimizes total weighted recipe activity, avoids cascade blowup). Input mode uses legacy simplex. Use target mode + binary search the target to fit input budgets.
 - **Ash is free** — treat as readily available input, don't let it drive scaling.
 - **Always add `--modules` for biological recipes** — without modules, bio farms are unusably slow and dominate building count.
 

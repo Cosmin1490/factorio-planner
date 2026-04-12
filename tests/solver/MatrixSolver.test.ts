@@ -369,10 +369,11 @@ describe('logistic science pack (100-recipe regression guard)', () => {
   it('total buildings stay under 400 (cascade guard)', () => {
     const result = solve(data, input);
     const total = result.recipes.reduce((s, r) => s + Math.ceil(r.factoryCount), 0);
-    // Temperature-correct result: ~326 buildings (coke-oven-gas temp degradation adds load)
+    // LP simplex with cost minimization: ~163 buildings (avoids cascade over-scaling)
+    // Previously ~326 with legacy simplex (cost-weighted pivot, no objective)
     // Previously 177 on main (incorrectly recycled 100C gas as 250C input)
     expect(total).toBeLessThan(400);
-    expect(total).toBeGreaterThan(200);
+    expect(total).toBeGreaterThan(100);
   });
 
   it('all 100 recipes present in result', () => {
@@ -488,5 +489,48 @@ describe('bio module speed multipliers', () => {
     };
     const result = solve(data, input);
     expect(result.recipes[0].effectiveSpeed).toBeCloseTo(2.0, 1);
+  });
+});
+
+describe('LP cost minimization (target mode)', () => {
+  it('LP simplex satisfies target with non-negative recipe counts', () => {
+    // 3-recipe chain: iron-ore → processed-iron-ore → iron-plate
+    const input: SolveInput = {
+      recipes: [
+        { recipeName: 'grade-1-iron-crush', factoryName: 'jaw-crusher' },
+        { recipeName: 'low-grade-smelting-iron', factoryName: 'advanced-foundry-mk01' },
+        { recipeName: 'iron-gear-wheel', factoryName: 'automated-factory-mk01' },
+      ],
+      target: { name: 'iron-gear-wheel', amount: 5 },
+      time: 1,
+      solver: 'simplex',
+      constraints: [
+        { recipeName: 'grade-1-iron-crush', productName: 'stone', type: 'exclude' },
+      ],
+    };
+    const result = solve(data, input);
+    const gears = result.products.find(p => p.name === 'iron-gear-wheel');
+    expect(gears).toBeDefined();
+    expect(gears!.amount).toBeCloseTo(5, 1);
+
+    // All recipes should have non-negative counts (LP feasible solution)
+    for (const r of result.recipes) {
+      expect(r.factoryCount, `${r.recipeName}`).toBeGreaterThanOrEqual(-0.001);
+    }
+  });
+
+  it('LP simplex handles single-recipe target correctly', () => {
+    const input: SolveInput = {
+      recipes: [
+        { recipeName: 'stone-brick', factoryName: 'advanced-foundry-mk01' },
+      ],
+      target: { name: 'stone-brick', amount: 10 },
+      time: 1,
+      solver: 'simplex',
+    };
+    const result = solve(data, input);
+    const bricks = result.products.find(p => p.name === 'stone-brick');
+    expect(bricks).toBeDefined();
+    expect(bricks!.amount).toBeCloseTo(10, 1);
   });
 });

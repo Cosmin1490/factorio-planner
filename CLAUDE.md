@@ -20,8 +20,10 @@ No build step needed for dev. The 16MB prototype JSON loads in ~0.6 seconds.
 - `src/commands/recipes.ts` — recipe query commands (--produces, --consumes, --unlocked)
 - `src/commands/recipeTree.ts` — recipe graph traversal (--needs backward, --produces-from forward, --ignore, --unlocked)
 - `src/commands/techs.ts` — technology lookup (--unlocks)
+- `src/commands/inventory.ts` — blueprint analyzer (decode entities, infer miners/boilers/furnaces, compute steady-state rates, classify exports/imports/mined)
 - `data/helmod-web-prototypes.json` — all recipe/entity/item/force/technology data (16MB, exported from Factorio)
-- `data/saves/<name>.md` — per-save block inventories (what's built in-game, stations, rates). Ask which save before starting block design work.
+- `data/saves/<name>.json` — per-save block inventories (JSON, updated via `inventory --save`). Ask which save before starting block design work.
+- `data/saves/<name>.md` — human-readable block inventory summaries (manually maintained alongside JSON)
 - `export-mod/` — Factorio mod that dumps prototype + force + technology data to JSON
 
 ## Methodology
@@ -61,6 +63,26 @@ No build step needed for dev. The 16MB prototype JSON loads in ~0.6 seconds.
 - Pyanodon water `heat_capacity` is **2,100 J/unit/°C** (vanilla is 200). This is 10.5× higher and affects all steam/boiler calculations. Always read from `data.fluids["water"].heat_capacity`, don't hardcode.
 - Fluid `fuel_value` is in `data.fluids`, not `data.items`. Oil boiler mk01 `fluid_energy_source.effectivity=2` doubles fuel efficiency.
 - **Mining quirks** — many items that appear to have "no producers" in recipe-tree are actually mined from resource patches with dedicated miners (`buildProducerIndex` won't find them). Key examples: `native-flora` (ore-bioreserve → flora-collector), wild plants (`ralesia`, `rennea`, etc. → harvester), specialized ores (`coal-rock`, `quartz-rock`, `borax` → dedicated mines). Check `data.entities` for resources with `mineable_properties` when an item has no recipe producers. Also: stone mining yields both `stone` and `kerogen` (check `mineable_properties.products` for co-products), and many ores require a specific fluid to mine (check `mineable_properties.required_fluid`; see methodology rule 24).
+
+## Inventory command
+
+Decodes blueprint strings, infers what each block does, and saves to `data/saves/<name>.json`.
+
+```bash
+# Analyze a blueprint
+npx tsx src/cli.ts inventory --blueprint bp7.txt --name "copper block"
+
+# Save incrementally (appends new block or updates existing by name)
+npx tsx src/cli.ts inventory --blueprint bp7.txt --name "copper block" --save pyanodon-main
+```
+
+- **Recipe-less entity detection**: three classes of blueprint entities have no `recipe` field:
+  - **Miners** (`type=mining-drill`): inferred from `resource_categories` × items consumed by block recipes
+  - **Boilers** (`type=boiler`, `burns_fluid=true`): picks best non-cycling fluid fuel from block-produced fluids
+  - **Furnaces** (`type=furnace`): inferred from `crafting_categories` × recipes whose ingredients are block-produced. Disambiguated by station/consumer presence. Void categories (`py-incineration`, `py-runoff`) excluded.
+- **Steady-state rates**: iterative convergence — caps consumers at available supply, caps overproducers only when ALL consumed products are surplus. Waste byproducts (zero consumers) don't block scaling.
+- **Burner fuel not modeled**: stone-furnace coal consumption is invisible in rates (same limitation as solver for burner factories).
+- **Save format**: `--name` required for `--save`. Existing entries matched by name — replaced if found, appended if new. `count` field defaults to 1, editable in JSON for multiple copies.
 
 ## Helmod export format
 

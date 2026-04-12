@@ -11,6 +11,7 @@ export interface BlockInventory {
   recipes: Record<string, { factory: string; count: number }>;
   stations: Record<string, 'load' | 'unload'>;
   exports: Record<string, number>;
+  surplus: Record<string, number>;
   imports: Record<string, number>;
   mined: Record<string, number>;
   intermediates: Record<string, number>;
@@ -585,12 +586,43 @@ function computeSteadyState(
     if (internallyConsumed.has(item)) internalIntermediates.add(item);
   }
 
+  // Expand exportItems to protect all upstream intermediates on paths leading to exports.
+  // This prevents bidirectional scaling from collapsing chains that feed stationed exports
+  // (e.g., tar→pitch→creosote where creosote has a load station).
+  const protectedItems = new Set(exportItems);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const r of recipes) {
+      const producesProtected = r.products.some(p => protectedItems.has(p.name));
+      if (!producesProtected) continue;
+      for (const ing of r.ingredients) {
+        if (!protectedItems.has(ing.name)) {
+          protectedItems.add(ing.name);
+          changed = true;
+        }
+      }
+    }
+  }
+
+  // Identify void recipes (py-incineration, py-runoff, py-venting) — these are waste disposal
+  // and should only consume leftover surplus, not compete with production recipes for supply.
+  const voidCategories = new Set(['py-incineration', 'py-runoff', 'py-venting']);
+  const voidRecipes = new Set<string>();
+  for (const [recipeName] of recipeGroups) {
+    const recipe = data.recipes[recipeName];
+    if (recipe && voidCategories.has(recipe.category)) {
+      voidRecipes.add(recipeName);
+    }
+  }
+
   // Iterative convergence: scale down over-consumers and over-producers.
   // Each iteration collects proposed rate caps per recipe, then applies the most
   // restrictive one. This avoids multiplicative double-application when a recipe
   // is constrained by both input supply and output demand in the same iteration.
+  // Void recipes are excluded from convergence and sized to leftover surplus afterward.
   const rate = new Map<string, number>();
-  for (const r of recipes) rate.set(r.name, r.maxCraftsPerSec);
+  for (const r of recipes) rate.set(r.name, voidRecipes.has(r.name) ? 0 : r.maxCraftsPerSec);
 
   for (let iter = 0; iter < 50; iter++) {
     let maxChange = 0;
@@ -616,22 +648,22 @@ function computeSteadyState(
       const prod = produced.get(item) ?? 0;
       const cons = consumed.get(item) ?? 0;
 
-      if (cons > prod + 0.001 && !exportItems.has(item)) {
-        // Consumption exceeds production for non-export → cap consumers
+      if (cons > prod + 0.001) {
+        // Consumption exceeds production → cap consumers (export surplus handled post-convergence)
         const ratio = prod / cons;
         for (const r of recipes) {
           if (!r.ingredients.some(i => i.name === item)) continue;
           const proposed = Math.min(rate.get(r.name)! * ratio, r.maxCraftsPerSec);
           caps.set(r.name, Math.min(caps.get(r.name)!, proposed));
         }
-      } else if (prod > cons + 0.001 && !exportItems.has(item)) {
-        // Production exceeds consumption for non-export → cap producers
+      } else if (prod > cons + 0.001 && !protectedItems.has(item)) {
+        // Production exceeds consumption for non-protected → cap producers
         // Only cap a recipe if ALL its consumed non-export products are overproduced.
         // Skip waste byproducts (zero consumers) — they don't constrain the recipe.
         for (const r of recipes) {
           if (!r.products.some(p => p.name === item)) continue;
           const consumedProducts = r.products.filter(p =>
-            !exportItems.has(p.name) && (consumed.get(p.name) ?? 0) > 0.001);
+            !protectedItems.has(p.name) && (consumed.get(p.name) ?? 0) > 0.001);
           if (consumedProducts.length === 0) continue; // all products are waste
           const allOverProduced = consumedProducts.every(p => {
             const pProd = produced.get(p.name) ?? 0;
@@ -656,6 +688,32 @@ function computeSteadyState(
     }
 
     if (maxChange < 0.0001) break;
+  }
+
+  // Size void recipes to consume leftover surplus (waste disposal)
+  if (voidRecipes.size > 0) {
+    const produced = new Map<string, number>();
+    const consumed = new Map<string, number>();
+    for (const r of recipes) {
+      const crafts = rate.get(r.name)!;
+      for (const p of r.products) produced.set(p.name, (produced.get(p.name) ?? 0) + crafts * p.amount);
+      for (const ing of r.ingredients) consumed.set(ing.name, (consumed.get(ing.name) ?? 0) + crafts * ing.amount);
+    }
+    for (const r of recipes) {
+      if (!voidRecipes.has(r.name)) continue;
+      // Rate limited by surplus of each ingredient and by max capacity
+      let maxRate = r.maxCraftsPerSec;
+      for (const ing of r.ingredients) {
+        const surplus = (produced.get(ing.name) ?? 0) - (consumed.get(ing.name) ?? 0);
+        if (surplus > 0 && ing.amount > 0) {
+          maxRate = Math.min(maxRate, surplus / ing.amount);
+        } else {
+          maxRate = 0;
+          break;
+        }
+      }
+      rate.set(r.name, maxRate);
+    }
   }
 
   return rate;
@@ -786,10 +844,13 @@ function analyzeBlueprint(
     stations[info.name] = info.direction;
   }
 
-  // Classify items into exports/imports/intermediates/mined
+  // Classify items into exports/surplus/imports/intermediates/mined
+  // exports = net-positive items WITH a load station (confirmed train export)
+  // surplus = net-positive items WITHOUT a load station (voided, burned, recycled internally)
   const allItems = new Set([...produced.keys(), ...consumed.keys()]);
 
   const exports: Record<string, number> = {};
+  const surplus: Record<string, number> = {};
   const imports: Record<string, number> = {};
   const mined: Record<string, number> = {};
   const intermediates: Record<string, number> = {};
@@ -802,12 +863,20 @@ function analyzeBlueprint(
     if (prod > 0 && cons > 0) {
       intermediates[item] = Math.min(prod, cons);
       if (net > 0.01) {
-        exports[item] = net;
+        if (exportItems.has(item)) {
+          exports[item] = net;
+        } else {
+          surplus[item] = net;
+        }
       } else if (net < -0.01) {
         imports[item] = Math.abs(net);
       }
     } else if (net > 0.01) {
-      exports[item] = net;
+      if (exportItems.has(item)) {
+        exports[item] = net;
+      } else {
+        surplus[item] = net;
+      }
     } else if (net < -0.01) {
       imports[item] = Math.abs(net);
     }
@@ -828,6 +897,7 @@ function analyzeBlueprint(
     recipes: recipeResults,
     stations,
     exports: roundRates(exports),
+    surplus: roundRates(surplus),
     imports: roundRates(imports),
     mined: roundRates(mined),
     intermediates: roundRates(intermediates),
@@ -885,18 +955,16 @@ function printInventory(inv: BlockInventory) {
   const fmtItems = (items: Record<string, number>) =>
     Object.entries(items).sort(([,a], [,b]) => b - a).map(([n, r]) => `${n}: ${formatRate(r)}/s`).join(', ');
 
-  // Exports
-  const exportEntries = Object.entries(inv.exports);
-  if (exportEntries.length > 0) {
-    const stationed = exportEntries.filter(([n]) => inv.stations[n] === 'load');
-    const surplus = exportEntries.filter(([n]) => inv.stations[n] !== 'load');
+  // Exports (only items with load stations)
+  if (Object.keys(inv.exports).length > 0) {
     console.log('\nExports:');
-    if (stationed.length > 0) {
-      console.log('  ' + stationed.map(([n, r]) => `${n}: ${formatRate(r)}/s`).join(', '));
-    }
-    if (surplus.length > 0) {
-      console.log('  Voided/surplus: ' + surplus.map(([n, r]) => `${n}: ${formatRate(r)}/s`).join(', '));
-    }
+    console.log('  ' + fmtItems(inv.exports));
+  }
+
+  // Surplus (net-positive items without load stations — voided, burned, recycled)
+  if (Object.keys(inv.surplus).length > 0) {
+    console.log('\nSurplus:');
+    console.log('  ' + fmtItems(inv.surplus));
   }
 
   // Mined

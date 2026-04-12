@@ -1,928 +1,483 @@
 [
   {
-    "source": "/tmp/bp.txt",
-    "recipes": [
-      {
-        "name": "seaweed-1",
+    "name": "seaweed farm",
+    "count": 1,
+    "recipes": {
+      "seaweed-1": {
         "factory": "seaweed-crop-mk01",
-        "count": 32,
-        "speed": 1
+        "count": 32
       }
-    ],
-    "exports": [
-      {
-        "name": "seaweed",
-        "type": "item",
-        "rate": 6.4,
-        "hasStation": true
-      }
-    ],
-    "imports": [
-      {
-        "name": "water",
-        "type": "fluid",
-        "rate": 128
-      }
-    ],
-    "intermediates": [],
+    },
+    "stations": {
+      "water": "unload",
+      "seaweed": "load"
+    },
+    "exports": {
+      "seaweed": 6.4
+    },
+    "surplus": {},
+    "imports": {
+      "water": 128
+    },
+    "mined": {},
+    "intermediates": {},
     "powerMW": 14.4
   },
   {
-    "source": "/tmp/bp2.txt",
-    "recipes": [
-      {
-        "name": "pcb1",
+    "name": "pcb1 factory",
+    "count": 1,
+    "recipes": {
+      "pcb1": {
         "factory": "pcb-factory-mk01",
-        "count": 1,
-        "speed": 1
+        "count": 1
       },
-      {
-        "name": "vacuum",
+      "vacuum": {
         "factory": "vacuum-pump-mk01",
-        "count": 1,
-        "speed": 1
+        "count": 1
       },
-      {
-        "name": "formica",
+      "formica": {
         "factory": "pulp-mill-mk01",
-        "count": 3,
-        "speed": 1
+        "count": 3
       },
-      {
-        "name": "fiber-01",
+      "fiber-01": {
         "factory": "wpu-mk01",
-        "count": 7,
-        "speed": 1
+        "count": 7
       },
-      {
-        "name": "log-wood-fast",
+      "log-wood-fast": {
         "factory": "wpu-mk01",
-        "count": 1,
-        "speed": 1
+        "count": 1
       },
-      {
-        "name": "sap-01",
+      "sap-01": {
         "factory": "sap-extractor-mk01",
-        "count": 50,
-        "speed": 1
+        "count": 50
       },
-      {
-        "name": "treated-wood",
+      "treated-wood": {
         "factory": "tar-processing-unit",
-        "count": 1,
-        "speed": 1
+        "count": 1
       }
-    ],
-    "exports": [
-      {
-        "name": "vacuum",
-        "type": "fluid",
-        "rate": 90,
-        "hasStation": false
-      },
-      {
-        "name": "wood",
-        "type": "item",
-        "rate": 32.5,
-        "hasStation": false
-      },
-      {
-        "name": "treated-wood",
-        "type": "item",
-        "rate": 0.3999999999999999,
-        "hasStation": false
-      },
-      {
-        "name": "pcb1",
-        "type": "item",
-        "rate": 0.2,
-        "hasStation": true
-      }
-    ],
-    "imports": [
-      {
-        "name": "creosote",
-        "type": "fluid",
-        "rate": 50
-      },
-      {
-        "name": "methanal",
-        "type": "fluid",
-        "rate": 15.000000000000002
-      },
-      {
-        "name": "log",
-        "type": "item",
-        "rate": 4
-      },
-      {
-        "name": "copper-plate",
-        "type": "item",
-        "rate": 1
-      },
-      {
-        "name": "saps",
-        "type": "item",
-        "rate": 0.5000000000000004
-      },
-      {
-        "name": "raw-fiber",
-        "type": "item",
-        "rate": 0.10000000000000009
-      },
-      {
-        "name": "formica",
-        "type": "item",
-        "rate": 0.09999999999999998
-      }
-    ],
-    "intermediates": [
-      {
-        "name": "vacuum",
-        "type": "fluid",
-        "rate": 10
-      },
-      {
-        "name": "formica",
-        "type": "item",
-        "rate": 0.30000000000000004
-      },
-      {
-        "name": "raw-fiber",
-        "type": "item",
-        "rate": 1.4000000000000001
-      },
-      {
-        "name": "wood",
-        "type": "item",
-        "rate": 7.500000000000001
-      },
-      {
-        "name": "saps",
-        "type": "item",
-        "rate": 2.5
-      },
-      {
-        "name": "treated-wood",
-        "type": "item",
-        "rate": 0.6000000000000001
-      }
-    ],
-    "powerMW": 13.850000000000001
+    },
+    "stations": {
+      "pcb1": "load",
+      "creosote": "unload",
+      "log": "unload",
+      "methanal": "unload",
+      "copper-plate": "unload"
+    },
+    "exports": {
+      "pcb1": 0.125
+    },
+    "surplus": {
+      "vacuum": 93.75,
+      "raw-fiber": 0.15,
+      "wood": 32.5,
+      "treated-wood": 0.5
+    },
+    "imports": {
+      "copper-plate": 0.625,
+      "methanal": 12.5,
+      "log": 4,
+      "creosote": 50
+    },
+    "mined": {},
+    "intermediates": {
+      "vacuum": 6.25,
+      "formica": 0.25,
+      "raw-fiber": 1.25,
+      "wood": 7.5,
+      "saps": 2.5,
+      "treated-wood": 0.5
+    },
+    "powerMW": 13.63
   },
   {
-    "source": "/tmp/bp3.txt",
-    "recipes": [
-      {
-        "name": "moondrop-1",
+    "name": "methanal factory",
+    "count": 1,
+    "recipes": {
+      "moondrop-1": {
         "factory": "moondrop-greenhouse-mk01",
-        "count": 7,
-        "speed": 1
+        "count": 7
       },
-      {
-        "name": "moondrop-seeds",
+      "moondrop-seeds": {
         "factory": "botanical-nursery",
-        "count": 1,
-        "speed": 1
+        "count": 1
       },
-      {
-        "name": "methane-co2",
+      "methane-co2": {
         "factory": "moondrop-greenhouse-mk01",
-        "count": 4,
-        "speed": 1
+        "count": 4
       },
-      {
-        "name": "moondrop-co2",
+      "moondrop-co2": {
         "factory": "moondrop-greenhouse-mk01",
-        "count": 1,
-        "speed": 1
+        "count": 1
       },
-      {
-        "name": "methanal",
+      "methanal": {
         "factory": "hpf",
-        "count": 1,
-        "speed": 1
+        "count": 1
       }
-    ],
-    "exports": [
-      {
-        "name": "carbon-dioxide",
-        "type": "fluid",
-        "rate": 13.333333333333332,
-        "hasStation": false
-      },
-      {
-        "name": "methanal",
-        "type": "fluid",
-        "rate": 12.5,
-        "hasStation": true
-      },
-      {
-        "name": "moondrop-seeds",
-        "type": "item",
-        "rate": 1.0333333333333337,
-        "hasStation": false
-      }
-    ],
-    "imports": [
-      {
-        "name": "water",
-        "type": "fluid",
-        "rate": 31.666666666666668
-      },
-      {
-        "name": "methane",
-        "type": "fluid",
-        "rate": 4.333333333333334
-      },
-      {
-        "name": "copper-plate",
-        "type": "item",
-        "rate": 1.25
-      },
-      {
-        "name": "moondrop",
-        "type": "item",
-        "rate": 0.36
-      }
-    ],
-    "intermediates": [
-      {
-        "name": "moondrop",
-        "type": "item",
-        "rate": 0.64
-      },
-      {
-        "name": "moondrop-seeds",
-        "type": "item",
-        "rate": 0.4666666666666667
-      },
-      {
-        "name": "methane",
-        "type": "fluid",
-        "rate": 10.666666666666666
-      },
-      {
-        "name": "carbon-dioxide",
-        "type": "fluid",
-        "rate": 26.666666666666668
-      }
-    ],
-    "powerMW": 7.525
+    },
+    "stations": {
+      "water": "unload",
+      "copper-plate": "unload",
+      "methanal": "load"
+    },
+    "exports": {
+      "methanal": 8.889
+    },
+    "surplus": {
+      "moondrop-seeds": 0.07,
+      "carbon-dioxide": 13.333
+    },
+    "imports": {
+      "water": 31.667,
+      "copper-plate": 0.889
+    },
+    "mined": {},
+    "intermediates": {
+      "moondrop": 0.358,
+      "moondrop-seeds": 0.467,
+      "methane": 10.667,
+      "carbon-dioxide": 26.667
+    },
+    "powerMW": 6.87
   },
   {
-    "source": "/tmp/bp4.txt",
-    "recipes": [
-      {
-        "name": "Moss-2",
+    "name": "moss farm",
+    "count": 1,
+    "recipes": {
+      "Moss-2": {
         "factory": "moss-farm-mk01",
-        "count": 60,
-        "speed": 1
+        "count": 60
       },
-      {
-        "name": "muddy-sludge",
+      "muddy-sludge": {
         "factory": "washer",
-        "count": 4,
-        "speed": 1
+        "count": 4
       },
-      {
-        "name": "soil",
+      "soil": {
         "factory": "soil-extractor-mk01",
-        "count": 4,
-        "speed": 1
+        "count": 4
       },
-      {
-        "name": "moondrop-co2",
+      "moondrop-co2": {
         "factory": "moondrop-greenhouse-mk01",
-        "count": 2,
-        "speed": 1
+        "count": 2
       }
-    ],
-    "exports": [
-      {
-        "name": "muddy-sludge",
-        "type": "fluid",
-        "rate": 25,
-        "hasStation": false
-      },
-      {
-        "name": "moss",
-        "type": "item",
-        "rate": 12,
-        "hasStation": true
-      },
-      {
-        "name": "carbon-dioxide",
-        "type": "fluid",
-        "rate": 5,
-        "hasStation": false
-      }
-    ],
-    "imports": [
-      {
-        "name": "water",
-        "type": "fluid",
-        "rate": 500
-      },
-      {
-        "name": "stone",
-        "type": "item",
-        "rate": 15
-      },
-      {
-        "name": "soil",
-        "type": "item",
-        "rate": 2
-      }
-    ],
-    "intermediates": [
-      {
-        "name": "muddy-sludge",
-        "type": "fluid",
-        "rate": 75
-      },
-      {
-        "name": "soil",
-        "type": "item",
-        "rate": 8
-      },
-      {
-        "name": "carbon-dioxide",
-        "type": "fluid",
-        "rate": 75
-      }
-    ],
-    "powerMW": 10.1
+    },
+    "stations": {
+      "stone": "unload",
+      "moss": "load"
+    },
+    "exports": {
+      "moss": 12
+    },
+    "surplus": {
+      "muddy-sludge": 5,
+      "carbon-dioxide": 5
+    },
+    "imports": {
+      "stone": 15,
+      "water": 480
+    },
+    "mined": {},
+    "intermediates": {
+      "muddy-sludge": 75,
+      "soil": 8,
+      "carbon-dioxide": 75
+    },
+    "powerMW": 9.78
   },
   {
-    "source": "/tmp/bp5.txt",
-    "recipes": [
-      {
-        "name": "wood-seeds",
+    "name": "log block",
+    "count": 1,
+    "recipes": {
+      "wood-seeds": {
         "factory": "assembling-machine-1",
-        "count": 1,
-        "speed": 1
+        "count": 1
       },
-      {
-        "name": "wood-seedling",
+      "wood-seedling": {
         "factory": "botanical-nursery",
-        "count": 5,
-        "speed": 1
+        "count": 5
       },
-      {
-        "name": "log-wood-fast",
+      "log-wood-fast": {
         "factory": "wpu-mk01",
-        "count": 1,
-        "speed": 1
+        "count": 1
       },
-      {
-        "name": "log3",
+      "log3": {
         "factory": "fwf-mk01",
-        "count": 10,
-        "speed": 1
+        "count": 10
       }
-    ],
-    "exports": [
-      {
-        "name": "wood",
-        "type": "item",
-        "rate": 39,
-        "hasStation": false
-      },
-      {
-        "name": "wood-seeds",
-        "type": "item",
-        "rate": 0.55,
-        "hasStation": false
-      }
-    ],
-    "imports": [
-      {
-        "name": "water",
-        "type": "fluid",
-        "rate": 150
-      },
-      {
-        "name": "ash",
-        "type": "item",
-        "rate": 7.5
-      },
-      {
-        "name": "log",
-        "type": "item",
-        "rate": 2.5
-      },
-      {
-        "name": "moss",
-        "type": "item",
-        "rate": 1.25
-      }
-    ],
-    "intermediates": [
-      {
-        "name": "wood-seeds",
-        "type": "item",
-        "rate": 0.25
-      },
-      {
-        "name": "wood-seedling",
-        "type": "item",
-        "rate": 0.75
-      },
-      {
-        "name": "wood",
-        "type": "item",
-        "rate": 1
-      },
-      {
-        "name": "log",
-        "type": "item",
-        "rate": 1.5
-      }
-    ],
-    "powerMW": 5.625
+    },
+    "stations": {
+      "water": "unload",
+      "ash": "unload",
+      "log": "load",
+      "moss": "unload"
+    },
+    "exports": {},
+    "surplus": {
+      "wood-seeds": 0.55,
+      "wood": 14
+    },
+    "imports": {
+      "moss": 1.25,
+      "water": 150,
+      "ash": 7.5
+    },
+    "mined": {},
+    "intermediates": {
+      "wood-seeds": 0.25,
+      "wood-seedling": 0.75,
+      "wood": 1,
+      "log": 1.5
+    },
+    "powerMW": 5.31
   },
   {
-    "source": "/tmp/bp6.txt",
-    "recipes": [
-      {
-        "name": "electric-boiler-water-to-steam",
+    "name": "tar refinery",
+    "count": 1,
+    "recipes": {
+      "electric-boiler-water-to-steam": {
         "factory": "py-electric-boiler",
-        "count": 1,
-        "speed": 1
+        "count": 1
       },
-      {
-        "name": "tar-refining",
+      "tar-refining": {
         "factory": "tar-processing-unit",
-        "count": 10,
-        "speed": 1
+        "count": 10
       },
-      {
-        "name": "anthracene-gasoline-cracking",
+      "anthracene-gasoline-cracking": {
         "factory": "distilator",
-        "count": 12,
-        "speed": 1
+        "count": 12
+      },
+      "oil-boiler-mk01 (fluid burner)": {
+        "factory": "oil-boiler-mk01",
+        "count": 4
       }
-    ],
-    "exports": [
-      {
-        "name": "pitch",
-        "type": "fluid",
-        "rate": 280,
-        "hasStation": true
-      },
-      {
-        "name": "middle-oil",
-        "type": "fluid",
-        "rate": 60,
-        "hasStation": true
-      },
-      {
-        "name": "gasoline",
-        "type": "fluid",
-        "rate": 60,
-        "hasStation": true
-      },
-      {
-        "name": "creosote",
-        "type": "fluid",
-        "rate": 48,
-        "hasStation": true
-      },
-      {
-        "name": "coke",
-        "type": "item",
-        "rate": 15,
-        "hasStation": true
-      }
-    ],
-    "imports": [
-      {
-        "name": "tar",
-        "type": "fluid",
-        "rate": 200
-      },
-      {
-        "name": "steam",
-        "type": "fluid",
-        "rate": 140
-      },
-      {
-        "name": "water",
-        "type": "fluid",
-        "rate": 60
-      }
-    ],
-    "intermediates": [
-      {
-        "name": "steam",
-        "type": "fluid",
-        "rate": 60
-      },
-      {
-        "name": "anthracene-oil",
-        "type": "fluid",
-        "rate": 150
-      }
-    ],
+    },
+    "stations": {
+      "tar": "unload",
+      "water": "unload",
+      "middle-oil": "load",
+      "gasoline": "load",
+      "anthracene-oil": "load",
+      "coke": "load",
+      "creosote": "load",
+      "pitch": "load"
+    },
+    "exports": {
+      "middle-oil": 60,
+      "creosote": 48,
+      "pitch": 280,
+      "coke": 15,
+      "gasoline": 10.65
+    },
+    "surplus": {
+      "steam": 100
+    },
+    "imports": {
+      "water": 300,
+      "tar": 200
+    },
+    "mined": {},
+    "intermediates": {
+      "steam": 200,
+      "anthracene-oil": 150,
+      "gasoline": 49.35
+    },
     "powerMW": 36
   },
   {
-    "source": "/tmp/bp7.txt",
-    "recipes": [
-      {
-        "name": "grade-2-copper",
+    "name": "copper block",
+    "count": 1,
+    "recipes": {
+      "grade-2-copper": {
         "factory": "automated-screener-mk01",
-        "count": 10,
-        "speed": 1
+        "count": 10
       },
-      {
-        "name": "grade-1-copper-crush",
+      "grade-1-copper-crush": {
         "factory": "jaw-crusher",
-        "count": 6,
-        "speed": 1
+        "count": 6
       },
-      {
-        "name": "saline-water",
+      "saline-water": {
         "factory": "washer",
-        "count": 6,
-        "speed": 1
+        "count": 6
+      },
+      "copper-plate-4": {
+        "factory": "stone-furnace",
+        "count": 6
+      },
+      "electric-mining-drill (mining copper-ore)": {
+        "factory": "electric-mining-drill",
+        "count": 8
       }
-    ],
-    "exports": [
-      {
-        "name": "water-saline",
-        "type": "fluid",
-        "rate": 15.000000000000002,
-        "hasStation": false
-      },
-      {
-        "name": "grade-2-copper",
-        "type": "item",
-        "rate": 8.666666666666666,
-        "hasStation": false
-      },
-      {
-        "name": "stone",
-        "type": "item",
-        "rate": 0.9999999999999996,
-        "hasStation": false
-      }
-    ],
-    "imports": [
-      {
-        "name": "water",
-        "type": "fluid",
-        "rate": 30.000000000000004
-      },
-      {
-        "name": "copper-ore",
-        "type": "item",
-        "rate": 16.666666666666664
-      },
-      {
-        "name": "grade-1-copper",
-        "type": "item",
-        "rate": 0.666666666666667
-      }
-    ],
-    "intermediates": [
-      {
-        "name": "grade-1-copper",
-        "type": "item",
-        "rate": 3.333333333333333
-      },
-      {
-        "name": "stone",
-        "type": "item",
-        "rate": 3.0000000000000004
-      }
-    ],
-    "powerMW": 11.4
+    },
+    "stations": {
+      "water": "unload",
+      "raw-coal": "unload",
+      "copper-plate": "load"
+    },
+    "exports": {
+      "copper-plate": 3.16
+    },
+    "surplus": {
+      "grade-1-copper": 0.2,
+      "water-saline": 15
+    },
+    "imports": {
+      "water": 30
+    },
+    "mined": {
+      "copper-ore": 16
+    },
+    "intermediates": {
+      "grade-1-copper": 3,
+      "grade-2-copper": 7.9,
+      "stone": 3,
+      "copper-ore": 16
+    },
+    "powerMW": 9.78
   },
   {
-    "source": "/tmp/bp8.txt",
-    "recipes": [
-      {
-        "name": "aluminium-plate-1",
+    "name": "aluminium block",
+    "count": 1,
+    "recipes": {
+      "aluminium-plate-1": {
         "factory": "advanced-foundry-mk01",
-        "count": 8,
-        "speed": 1
+        "count": 8
       },
-      {
-        "name": "distilled-raw-coal",
+      "distilled-raw-coal": {
         "factory": "distilator",
-        "count": 3,
-        "speed": 1
+        "count": 3
       },
-      {
-        "name": "coal-gas",
+      "coal-gas": {
         "factory": "distilator",
-        "count": 2,
-        "speed": 1
+        "count": 2
       },
-      {
-        "name": "coal-gas-from-coke",
+      "coal-gas-from-coke": {
         "factory": "distilator",
-        "count": 1,
-        "speed": 1
+        "count": 1
+      },
+      "fluid-drill-mk02 (mining ore-aluminium)": {
+        "factory": "fluid-drill-mk02",
+        "count": 10
       }
-    ],
-    "exports": [
-      {
-        "name": "coal-gas",
-        "type": "fluid",
-        "rate": 120.66666666666666,
-        "hasStation": false
-      },
-      {
-        "name": "tar",
-        "type": "fluid",
-        "rate": 82.33333333333333,
-        "hasStation": true
-      },
-      {
-        "name": "aluminium-plate",
-        "type": "item",
-        "rate": 1.3333333333333333,
-        "hasStation": true
-      },
-      {
-        "name": "iron-oxide",
-        "type": "item",
-        "rate": 0.5,
-        "hasStation": false
-      },
-      {
-        "name": "ash",
-        "type": "item",
-        "rate": 0.2,
-        "hasStation": false
-      }
-    ],
-    "imports": [
-      {
-        "name": "raw-coal",
-        "type": "item",
-        "rate": 15
-      },
-      {
-        "name": "ore-aluminium",
-        "type": "item",
-        "rate": 13.333333333333332
-      },
-      {
-        "name": "coal",
-        "type": "item",
-        "rate": 2.166666666666666
-      }
-    ],
-    "intermediates": [
-      {
-        "name": "coal",
-        "type": "item",
-        "rate": 4.5
-      },
-      {
-        "name": "coke",
-        "type": "item",
-        "rate": 4
-      }
-    ],
-    "powerMW": 12.6
+    },
+    "stations": {
+      "tar": "load",
+      "aluminium-plate": "load"
+    },
+    "exports": {
+      "aluminium-plate": 1,
+      "tar": 70.2
+    },
+    "surplus": {
+      "iron-oxide": 0.435,
+      "coal-gas": 10.7,
+      "ash": 0.135
+    },
+    "imports": {
+      "raw-coal": 15
+    },
+    "mined": {
+      "ore-aluminium": 10
+    },
+    "intermediates": {
+      "coal": 4.5,
+      "coal-gas": 100,
+      "coke": 2.7,
+      "ore-aluminium": 10
+    },
+    "powerMW": 9.71
   },
   {
-    "source": "/tmp/bp9.txt",
-    "recipes": [
-      {
-        "name": "distilled-raw-coal",
+    "name": "coal refinery",
+    "count": 1,
+    "recipes": {
+      "distilled-raw-coal": {
         "factory": "distilator",
-        "count": 1,
-        "speed": 1
+        "count": 1
       },
-      {
-        "name": "coal-gas",
+      "coal-gas": {
         "factory": "distilator",
-        "count": 1,
-        "speed": 1
+        "count": 1
       },
-      {
-        "name": "coal-gas-from-coke",
+      "coal-gas-from-coke": {
         "factory": "distilator",
-        "count": 2,
-        "speed": 1
+        "count": 2
       },
-      {
-        "name": "syngas",
+      "syngas": {
         "factory": "gasifier",
-        "count": 2,
-        "speed": 1
+        "count": 2
       },
-      {
-        "name": "tar-refining",
+      "tar-refining": {
         "factory": "tar-processing-unit",
-        "count": 3,
-        "speed": 1
+        "count": 3
       },
-      {
-        "name": "pitch-refining",
+      "pitch-refining": {
         "factory": "distilator",
-        "count": 3,
-        "speed": 1
+        "count": 3
       },
-      {
-        "name": "tar-refining-tops",
+      "tar-refining-tops": {
         "factory": "tar-processing-unit",
-        "count": 1,
-        "speed": 1
+        "count": 1
       },
-      {
-        "name": "light-oil-aromatics",
+      "light-oil-aromatics": {
         "factory": "distilator",
-        "count": 1,
-        "speed": 1
+        "count": 1
       },
-      {
-        "name": "carbolic-oil-creosote",
+      "carbolic-oil-creosote": {
         "factory": "tar-processing-unit",
-        "count": 1,
-        "speed": 1
+        "count": 1
       },
-      {
-        "name": "naphthalene-oil-creosote",
+      "naphthalene-oil-creosote": {
         "factory": "tar-processing-unit",
-        "count": 1,
-        "speed": 1
+        "count": 1
       },
-      {
-        "name": "anthracene-oil-creosote",
+      "anthracene-oil-creosote": {
         "factory": "tar-processing-unit",
-        "count": 2,
-        "speed": 1
+        "count": 2
+      },
+      "coal-gas-pyvoid-gas": {
+        "factory": "py-gas-vent",
+        "count": 5
+      },
+      "oil-boiler-mk01 (fluid burner)": {
+        "factory": "oil-boiler-mk01",
+        "count": 3
       }
-    ],
-    "exports": [
-      {
-        "name": "creosote",
-        "type": "fluid",
-        "rate": 74.4,
-        "hasStation": true
-      },
-      {
-        "name": "syngas",
-        "type": "fluid",
-        "rate": 46.666666666666664,
-        "hasStation": false
-      },
-      {
-        "name": "aromatics",
-        "type": "fluid",
-        "rate": 25,
-        "hasStation": false
-      },
-      {
-        "name": "pitch",
-        "type": "fluid",
-        "rate": 24.000000000000007,
-        "hasStation": false
-      },
-      {
-        "name": "coal-gas",
-        "type": "fluid",
-        "rate": 18,
-        "hasStation": false
-      },
-      {
-        "name": "anthracene-oil",
-        "type": "fluid",
-        "rate": 13.000000000000014,
-        "hasStation": false
-      },
-      {
-        "name": "gasoline",
-        "type": "fluid",
-        "rate": 12.5,
-        "hasStation": false
-      },
-      {
-        "name": "naphthalene-oil",
-        "type": "fluid",
-        "rate": 12,
-        "hasStation": false
-      },
-      {
-        "name": "hydrogen",
-        "type": "fluid",
-        "rate": 6.000000000000001,
-        "hasStation": false
-      },
-      {
-        "name": "ash",
-        "type": "item",
-        "rate": 1.0666666666666667,
-        "hasStation": false
-      },
-      {
-        "name": "iron-oxide",
-        "type": "item",
-        "rate": 0.2,
-        "hasStation": false
-      }
-    ],
-    "imports": [
-      {
-        "name": "steam",
-        "type": "fluid",
-        "rate": 145
-      },
-      {
-        "name": "water",
-        "type": "fluid",
-        "rate": 66.66666666666666
-      },
-      {
-        "name": "carbolic-oil",
-        "type": "fluid",
-        "rate": 12.5
-      },
-      {
-        "name": "middle-oil",
-        "type": "fluid",
-        "rate": 6.9999999999999964
-      },
-      {
-        "name": "raw-coal",
-        "type": "item",
-        "rate": 5
-      },
-      {
-        "name": "coal",
-        "type": "item",
-        "rate": 1.833333333333333
-      },
-      {
-        "name": "light-oil",
-        "type": "fluid",
-        "rate": 0.5
-      },
-      {
-        "name": "tar",
-        "type": "fluid",
-        "rate": 0.3333333333333428
-      }
-    ],
-    "intermediates": [
-      {
-        "name": "coal",
-        "type": "item",
-        "rate": 1.5
-      },
-      {
-        "name": "coal-gas",
-        "type": "fluid",
-        "rate": 33.33333333333333
-      },
-      {
-        "name": "tar",
-        "type": "fluid",
-        "rate": 59.666666666666664
-      },
-      {
-        "name": "coke",
-        "type": "item",
-        "rate": 8
-      },
-      {
-        "name": "middle-oil",
-        "type": "fluid",
-        "rate": 18.000000000000004
-      },
-      {
-        "name": "anthracene-oil",
-        "type": "fluid",
-        "rate": 50
-      },
-      {
-        "name": "pitch",
-        "type": "fluid",
-        "rate": 60.00000000000001
-      },
-      {
-        "name": "light-oil",
-        "type": "fluid",
-        "rate": 24.5
-      },
-      {
-        "name": "naphthalene-oil",
-        "type": "fluid",
-        "rate": 25
-      },
-      {
-        "name": "carbolic-oil",
-        "type": "fluid",
-        "rate": 12.5
-      }
-    ],
-    "powerMW": 9.000000000000002
+    },
+    "stations": {
+      "creosote": "load",
+      "water": "unload"
+    },
+    "exports": {
+      "creosote": 36.438
+    },
+    "surplus": {
+      "iron-oxide": 0.145,
+      "tar": 13.909,
+      "ash": 0.877,
+      "pitch": 12.932,
+      "hydrogen": 3.297,
+      "aromatics": 11.512,
+      "gasoline": 5.756,
+      "steam": 0.055
+    },
+    "imports": {
+      "raw-coal": 5,
+      "water": 142.317
+    },
+    "mined": {},
+    "intermediates": {
+      "coal": 1.5,
+      "coal-gas": 40.197,
+      "tar": 32.788,
+      "coke": 4.197,
+      "syngas": 46.667,
+      "middle-oil": 9.836,
+      "anthracene-oil": 34.482,
+      "pitch": 32.971,
+      "light-oil": 11.512,
+      "naphthalene-oil": 16.431,
+      "carbolic-oil": 4.918,
+      "steam": 75.595
+    },
+    "powerMW": 5.44
   }
 ]

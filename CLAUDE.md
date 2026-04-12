@@ -80,7 +80,9 @@ npx tsx src/cli.ts inventory --blueprint bp7.txt --name "copper block" --save py
   - **Miners** (`type=mining-drill`): inferred from `resource_categories` × items consumed by block recipes
   - **Boilers** (`type=boiler`, `burns_fluid=true`): picks best non-cycling fluid fuel from block-produced fluids
   - **Furnaces** (`type=furnace`): inferred from `crafting_categories` × recipes whose ingredients are block-produced. Disambiguated by station/consumer presence. Void categories (`py-incineration`, `py-runoff`) excluded.
-- **Steady-state rates**: iterative convergence — caps consumers at available supply, caps overproducers only when ALL consumed products are surplus. Waste byproducts (zero consumers) don't block scaling.
+- **Steady-state rates**: iterative convergence — caps consumers at available supply, caps overproducers only when ALL consumed products are surplus. Export-path protection: upstream intermediates feeding stationed exports are shielded from bidirectional scaling. Void recipes (`py-venting`, `py-incineration`, `py-runoff`) sized to leftover surplus after convergence — they don't compete with production recipes for supply. Waste byproducts (zero consumers) don't block scaling.
+- **Export classification**: `exports` = net-positive items WITH a load station. `surplus` = net-positive items WITHOUT a load station (voided, burned, recycled). Both fields are `Record<string, number>` in `BlockInventory`.
+- **Known limitation — self-reinforcing cycles**: cycles like log→wood→seeds→seedlings→log where the cycle product is also an export can't be correctly sized. The engine caps the cycle consumer to all available supply, leaving nothing for export. In game, circuit controls or belt priority handle this. Workaround: manually adjust `count` or note the block exports in the `.md` summary.
 - **Burner fuel not modeled**: stone-furnace coal consumption is invisible in rates (same limitation as solver for burner factories).
 - **Save format**: `--name` required for `--save`. Existing entries matched by name — replaced if found, appended if new. `count` field defaults to 1, editable in JSON for multiple copies.
 

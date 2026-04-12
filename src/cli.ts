@@ -9,6 +9,7 @@ import { itemsCommand, itemInfoCommand } from './commands/items.js';
 import { solveCommand } from './commands/solve.js';
 import { techsCommand } from './commands/techs.js';
 import { recipeTreeCommand } from './commands/recipeTree.js';
+import { inventoryCommand } from './commands/inventory.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '..');
@@ -139,6 +140,23 @@ program
   .option('--proto <path>', 'Path to prototype JSON', DEFAULT_PROTO_PATH)
   .action((opts) => {
     techsCommand(opts.proto, { unlocks: opts.unlocks });
+  });
+
+program
+  .command('inventory')
+  .description('Analyze block blueprints: decode recipes, compute I/O rates, identify exports/imports')
+  .requiredOption('--blueprint <files...>', 'Blueprint file(s) to analyze')
+  .option('--save <name>', 'Save combined inventory to data/saves/<name>.json')
+  .option('--json', 'Output raw JSON')
+  .option('--time <seconds>', 'Time base in seconds (default: 1)', '1')
+  .option('--proto <path>', 'Path to prototype JSON', DEFAULT_PROTO_PATH)
+  .action((opts) => {
+    inventoryCommand(opts.proto, {
+      blueprint: opts.blueprint,
+      save: opts.save,
+      json: opts.json,
+      time: opts.time,
+    });
   });
 
 program.parse();

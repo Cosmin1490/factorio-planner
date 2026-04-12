@@ -534,3 +534,66 @@ describe('LP cost minimization (target mode)', () => {
     expect(bricks!.amount).toBeCloseTo(10, 1);
   });
 });
+
+describe('cycle detection', () => {
+  it('detects ash cycle in log3 with burner factory', () => {
+    // log3 recipe consumes 30 ash per craft; fwf-mk01 is a burner that produces ash as burnt_result
+    const input: SolveInput = {
+      recipes: [
+        { recipeName: 'log3', factoryName: 'fwf-mk01', fuel: 'coal' },
+        { recipeName: 'wood-seedling', factoryName: 'botanical-nursery' },
+        { recipeName: 'wood-seeds', factoryName: 'assembling-machine-1' },
+        { recipeName: 'log-wood-fast', factoryName: 'wpu-mk01' },
+      ],
+      target: { name: 'log', amount: 1 },
+      time: 1,
+      solver: 'simplex',
+    };
+    const result = solve(data, input);
+    expect(result.warnings.length).toBeGreaterThan(0);
+
+    const ashCycle = result.warnings.find(w =>
+      w.type === 'cycle' && w.detail.items.includes('ash'));
+    expect(ashCycle).toBeDefined();
+    expect(ashCycle!.detail.recipes).toContain('log3');
+  });
+
+  it('reports no cycles for acyclic pipeline', () => {
+    // Simple iron gear chain — no cycles
+    const input: SolveInput = {
+      recipes: [
+        { recipeName: 'grade-1-iron-crush', factoryName: 'jaw-crusher' },
+        { recipeName: 'low-grade-smelting-iron', factoryName: 'advanced-foundry-mk01' },
+        { recipeName: 'iron-gear-wheel', factoryName: 'automated-factory-mk01' },
+      ],
+      target: { name: 'iron-gear-wheel', amount: 5 },
+      time: 1,
+      solver: 'simplex',
+      constraints: [
+        { recipeName: 'grade-1-iron-crush', productName: 'stone', type: 'exclude' },
+      ],
+    };
+    const result = solve(data, input);
+    expect(result.warnings.length).toBe(0);
+  });
+
+  it('solver returns non-negative counts despite cycle', () => {
+    // The LP solver handles cycles mathematically — recipe counts should never go negative
+    const input: SolveInput = {
+      recipes: [
+        { recipeName: 'log3', factoryName: 'fwf-mk01', fuel: 'coal' },
+        { recipeName: 'wood-seedling', factoryName: 'botanical-nursery' },
+        { recipeName: 'wood-seeds', factoryName: 'assembling-machine-1' },
+        { recipeName: 'log-wood-fast', factoryName: 'wpu-mk01' },
+      ],
+      target: { name: 'log', amount: 1 },
+      time: 1,
+      solver: 'simplex',
+    };
+    const result = solve(data, input);
+    // All recipe counts should be non-negative (no degenerate negative scaling)
+    for (const r of result.recipes) {
+      expect(r.factoryCount, `${r.recipeName}`).toBeGreaterThanOrEqual(-0.001);
+    }
+  });
+});

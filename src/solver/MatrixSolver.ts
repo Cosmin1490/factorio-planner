@@ -11,7 +11,7 @@
 
 import type { PrototypeData, Recipe, Entity, Item, RecipeElement } from '../data/PrototypeLoader.js';
 import { computeEffects, effectiveSpeed, effectiveProductivity } from './ModuleEffects.js';
-import { ItemState, type SolveInput, type SolveResult, type RecipeResult, type ItemFlow, type IntermediateDetail, type EffectTotals, type ConstraintSpec } from './types.js';
+import { ItemState, type SolveInput, type SolveResult, type RecipeResult, type ItemFlow, type IntermediateDetail, type EffectTotals, type ConstraintSpec, type CycleWarning, type SolverWarning } from './types.js';
 
 // ── Internal types ──────────────────────────────────────────────────────────
 
@@ -1055,7 +1055,7 @@ function extractResults(m: SolverMatrix, recipeCounts: number[]): SolveResult {
     }
   }
 
-  return { recipes: recipeResults, products, ingredients, intermediates, totalPowerMW: totalPowerWatts / 1e6 };
+  return { recipes: recipeResults, products, ingredients, intermediates, totalPowerMW: totalPowerWatts / 1e6, warnings: [] };
 }
 
 // ── Balance adjustment (post-processing) ──────────────────────────────────
@@ -1125,14 +1125,103 @@ function adjustForBalance(
   }
 }
 
+// ── Cycle detection (Tarjan's SCC on item-recipe bipartite graph) ──────────
+
+/**
+ * Detect recipe cycles using Tarjan's SCC algorithm on the bipartite graph
+ * encoded by the coefficient matrix. Nodes 0..numRows-1 are recipes,
+ * numRows..numRows+numCols-1 are items. Edges: item→recipe if recipe consumes
+ * item (matrix[r][c] < 0), recipe→item if recipe produces item (matrix[r][c] > 0).
+ * Returns non-trivial SCCs (size > 1) as CycleWarnings.
+ */
+function detectCycles(
+  matrix: number[][],
+  numRows: number,
+  numCols: number,
+  resolved: ResolvedRecipe[],
+  columns: MatrixColumn[],
+): CycleWarning[] {
+  const N = numRows + numCols;
+  const index = new Array(N).fill(-1);
+  const lowlink = new Array(N).fill(0);
+  const onStack = new Array(N).fill(false);
+  const stack: number[] = [];
+  let idx = 0;
+  const sccs: number[][] = [];
+
+  function neighbors(node: number): number[] {
+    const result: number[] = [];
+    if (node < numRows) {
+      // Recipe node → item nodes it produces
+      for (let c = 0; c < numCols; c++) {
+        if (matrix[node][c] > 0) result.push(numRows + c);
+      }
+    } else {
+      // Item node → recipe nodes that consume it
+      const c = node - numRows;
+      for (let r = 0; r < numRows; r++) {
+        if (matrix[r][c] < 0) result.push(r);
+      }
+    }
+    return result;
+  }
+
+  function strongconnect(v: number): void {
+    index[v] = lowlink[v] = idx++;
+    stack.push(v);
+    onStack[v] = true;
+
+    for (const w of neighbors(v)) {
+      if (index[w] === -1) {
+        strongconnect(w);
+        lowlink[v] = Math.min(lowlink[v], lowlink[w]);
+      } else if (onStack[w]) {
+        lowlink[v] = Math.min(lowlink[v], index[w]);
+      }
+    }
+
+    if (lowlink[v] === index[v]) {
+      const scc: number[] = [];
+      let w: number;
+      do {
+        w = stack.pop()!;
+        onStack[w] = false;
+        scc.push(w);
+      } while (w !== v);
+      if (scc.length > 1) sccs.push(scc);
+    }
+  }
+
+  for (let i = 0; i < N; i++) {
+    if (index[i] === -1) strongconnect(i);
+  }
+
+  return sccs.map(scc => {
+    const recipes: string[] = [];
+    const items: string[] = [];
+    for (const node of scc) {
+      if (node < numRows) recipes.push(resolved[node].recipeName);
+      else items.push(columns[node - numRows].name);
+    }
+    return { recipes, items };
+  });
+}
+
 // ── Public API ──────────────────────────────────────────────────────────────
 
 export function solve(data: PrototypeData, input: SolveInput): SolveResult {
   const m = buildMatrix(data, input);
+  const cycles = detectCycles(m.matrix, m.numRows, m.numCols, m.resolved, m.columns);
   const solver = input.solver ?? 'algebra';
   const recipeCounts = solver === 'simplex' ? solveSimplex(m, input) : solveAlgebra(m, input);
   if (input.maxImports?.length) {
     adjustForBalance(m, recipeCounts, new Map(input.maxImports.map(i => [i.name, i.amount])));
   }
-  return extractResults(m, recipeCounts);
+  const result = extractResults(m, recipeCounts);
+  result.warnings = cycles.map(c => ({
+    type: 'cycle' as const,
+    message: `Cycle: ${c.items.join(' \u2192 ')} via recipes ${c.recipes.join(', ')}`,
+    detail: c,
+  }));
+  return result;
 }

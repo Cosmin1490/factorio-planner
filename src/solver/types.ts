@@ -79,6 +79,19 @@ export interface IntermediateDetail {
   consumers: { recipeName: string; amount: number }[];
 }
 
+/** Cycle detected in item-recipe graph */
+export interface CycleWarning {
+  recipes: string[];    // recipe names in the cycle
+  items: string[];      // item names forming the cycle edges
+}
+
+/** Solver warning (cycle detection, etc.) */
+export interface SolverWarning {
+  type: 'cycle';
+  message: string;
+  detail: CycleWarning;
+}
+
 /** Full solver output */
 export interface SolveResult {
   recipes: RecipeResult[];
@@ -86,6 +99,7 @@ export interface SolveResult {
   ingredients: ItemFlow[];
   intermediates: IntermediateDetail[];
   totalPowerMW: number;
+  warnings: SolverWarning[];
 }
 
 /** Computed module/beacon effects for a single recipe */

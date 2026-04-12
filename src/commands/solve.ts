@@ -207,6 +207,21 @@ export function solveCommand(protoPath: string, options: SolveOptions) {
   console.error('Running solver...');
   const result = solve(data, solveInput);
 
+  if (result.warnings.length > 0) {
+    console.error('\nWarnings:');
+    for (const w of result.warnings) {
+      console.error(`  \u26a0 ${w.message}`);
+      if (w.type === 'cycle') {
+        const { recipes: cycleRecipes, items: cycleItems } = w.detail;
+        // Suggest excluding each cyclic item from the first recipe that produces it
+        const suggestion = cycleRecipes[0] && cycleItems[0]
+          ? `--constraint "${cycleRecipes[0]}:${cycleItems[0]}:exclude"`
+          : '';
+        if (suggestion) console.error(`    Consider: ${suggestion}`);
+      }
+    }
+  }
+
   if (options.export === 'helmod') {
     const exportString = exportHelmod(solveInput, result, data);
     console.log(exportString);

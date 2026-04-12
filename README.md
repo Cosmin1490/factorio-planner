@@ -163,6 +163,7 @@ Key solver features:
 - `--max-import "item:0"` — force full internal production of an intermediate (cascades deficits to raw materials)
 - `--modules` / `--beacons` — apply module and beacon effects to factory speed and productivity
 - Temperature-aware fluid columns (e.g., `coke-oven-gas@250C` vs `@100C`) for recipes with explicit temperature constraints
+- Recipe cycle detection (Tarjan's SCC) — warns about circular dependencies before solving, with suggested `--constraint` fixes
 - Per-recipe power modeling (`totalPowerMW` in output)
 - `--export helmod` — generate a Helmod import string for pasting into Factorio
 
@@ -180,7 +181,6 @@ The export includes `force.recipes` (unlock state) and `technologies` (researche
 
 ## TODO
 
-- [ ] Recipe cycle detection: pre-solve warning for circular dependencies (ash loops, coal-gas feedback)
 - [ ] `--electric` / `--no-burner` flag: auto-select best electric factory per recipe (avoid burnt-result coupling)
 
 ## License

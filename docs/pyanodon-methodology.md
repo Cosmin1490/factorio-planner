@@ -228,6 +228,7 @@ Once you have critical mass, only the steady-state matters for pipeline planning
 - **Recycle byproducts** — add recycling recipes + `--max-import "item:0"` to force items through the loop.
 - **Target mode for complex chains** — target mode uses LP simplex with cost minimization (minimizes total weighted recipe activity, avoids cascade blowup). Input mode uses legacy simplex. Use target mode + binary search the target to fit input budgets.
 - **Ash is free** — treat as readily available input, don't let it drive scaling.
+- **Watch for cycle warnings** — the solver detects circular dependencies (Tarjan's SCC) and warns before solving. Common in Pyanodon: burner factories (assembling-machine-1/2/3) produce ash as `burnt_result` from coal, creating ash feedback loops when other recipes consume ash (e.g., log3). Use electric factories to avoid, or `--constraint "recipe:ash:exclude"` to break the cycle.
 - **Always add `--modules` for biological recipes** — without modules, bio farms are unusably slow and dominate building count.
 
 ## Examples

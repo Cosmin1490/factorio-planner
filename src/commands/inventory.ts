@@ -694,8 +694,8 @@ function computeSteadyState(
   // but its outputs are all overproduced, cap it to match output demand.
   // Example: log→wood→seeds→seedlings→log cycle — log-wood-fast consumes the
   // export (log) and massively overproduces wood; cap it to what the seed chain needs.
-  // Then re-run convergence to propagate the change through the chain.
-  {
+  // Iterate: each cap + re-converge changes downstream demand, so repeat until stable.
+  for (let cycleIter = 0; cycleIter < 20; cycleIter++) {
     const produced = new Map<string, number>();
     const consumed = new Map<string, number>();
     for (const r of recipes) {
@@ -727,33 +727,55 @@ function computeSteadyState(
         cycleFixed = true;
       }
     }
+    if (!cycleFixed) break;
     // Re-run convergence to propagate the cycle fix through the chain
-    if (cycleFixed) {
-      for (let iter = 0; iter < 50; iter++) {
-        let maxChange = 0;
-        const produced2 = new Map<string, number>();
-        const consumed2 = new Map<string, number>();
-        for (const r of recipes) {
-          const crafts = rate.get(r.name)!;
-          for (const p of r.products) produced2.set(p.name, (produced2.get(p.name) ?? 0) + crafts * p.amount);
-          for (const ing of r.ingredients) consumed2.set(ing.name, (consumed2.get(ing.name) ?? 0) + crafts * ing.amount);
-        }
-        for (const item of internalIntermediates) {
-          const prod = produced2.get(item) ?? 0;
-          const cons = consumed2.get(item) ?? 0;
-          if (cons > prod + 0.001) {
-            const ratio = prod / cons;
-            for (const r of recipes) {
-              if (!r.ingredients.some(i => i.name === item)) continue;
-              const newRate = Math.min(rate.get(r.name)! * ratio, r.maxCraftsPerSec);
-              const change = Math.abs(rate.get(r.name)! - newRate);
-              if (change > maxChange) maxChange = change;
-              rate.set(r.name, newRate);
-            }
+    for (let iter = 0; iter < 50; iter++) {
+      let maxChange = 0;
+      const produced2 = new Map<string, number>();
+      const consumed2 = new Map<string, number>();
+      for (const r of recipes) {
+        const crafts = rate.get(r.name)!;
+        for (const p of r.products) produced2.set(p.name, (produced2.get(p.name) ?? 0) + crafts * p.amount);
+        for (const ing of r.ingredients) consumed2.set(ing.name, (consumed2.get(ing.name) ?? 0) + crafts * ing.amount);
+      }
+      for (const item of internalIntermediates) {
+        const prod = produced2.get(item) ?? 0;
+        const cons = consumed2.get(item) ?? 0;
+        if (cons > prod + 0.001) {
+          // Forward: cap consumers when supply insufficient
+          const ratio = prod / cons;
+          for (const r of recipes) {
+            if (!r.ingredients.some(i => i.name === item)) continue;
+            const newRate = Math.min(rate.get(r.name)! * ratio, r.maxCraftsPerSec);
+            const change = Math.abs(rate.get(r.name)! - newRate);
+            if (change > maxChange) maxChange = change;
+            rate.set(r.name, newRate);
+          }
+        } else if (prod > cons + 0.001 && !exportItems.has(item)) {
+          // Bidirectional: cap overproducers of non-export cycle intermediates.
+          // Safe here because this only runs after a cycle fix was applied.
+          const consumedProducts2 = (r: typeof recipes[0]) => r.products.filter(p =>
+            !exportItems.has(p.name) && (consumed2.get(p.name) ?? 0) > 0.001);
+          for (const r of recipes) {
+            if (!r.products.some(p => p.name === item)) continue;
+            const cp = consumedProducts2(r);
+            if (cp.length === 0) continue;
+            const allOverProduced = cp.every(p => {
+              const pProd = produced2.get(p.name) ?? 0;
+              const pCons = consumed2.get(p.name) ?? 0;
+              return pProd > pCons + 0.001;
+            });
+            if (!allOverProduced) continue;
+            const minRatio = Math.min(...cp.map(p =>
+              (consumed2.get(p.name) ?? 0) / Math.max(produced2.get(p.name) ?? 1, 0.001)));
+            const newRate = rate.get(r.name)! * minRatio;
+            const change = Math.abs(rate.get(r.name)! - newRate);
+            if (change > maxChange) maxChange = change;
+            rate.set(r.name, newRate);
           }
         }
-        if (maxChange < 0.0001) break;
       }
+      if (maxChange < 0.0001) break;
     }
   }
 

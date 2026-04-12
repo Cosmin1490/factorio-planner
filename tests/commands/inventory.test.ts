@@ -83,7 +83,7 @@ describe('log block (bp5) — self-reinforcing cycle', () => {
   beforeAll(() => { inv = analyze('bp5.txt', 'log block'); });
 
   it('exports log (cycle correctly sized)', () => {
-    expect(inv.exports['log']).toBeCloseTo(1.4, 1);
+    expect(inv.exports['log']).toBeCloseTo(1.47, 1);
   });
 
   it('imports ash, moss, water', () => {

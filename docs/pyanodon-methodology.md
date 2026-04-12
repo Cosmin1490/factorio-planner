@@ -105,6 +105,8 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
     - **New boundary** — 1 station, but absorbs multiple imports into a separate block. Use when producing an item inline would require importing 3+ of its own ingredients. Example: pcb1 has only 4 consumers but producing it inline means importing formica, copper-plate, vacuum, plus formica's chain (treated-wood, sap, fiber, methanal, creosote) — 5+ stations vs 1 for pcb1.
     
     When a sub-factory has many buildings, aggressively inline cheap imports to save stations. When it has few buildings, more stations are fine. The balance point depends on block size and station footprint.
+    
+    **Building count != building space.** Pyanodon building sizes range from 2x2 (stone-furnace, 4 tiles) to 15x15 (fwf-mk01, 225 tiles) — a 56x ratio. Always check tile footprint before concluding a recipe "costs too many buildings": 11 sap-extractors (5x5, 275 tiles total) take less space than 2 research-centers (10x10, 200 tiles). Conversely, 2 distilators (8x8, 128 tiles) take more space than 5 rhe (5x5, 125 tiles). Use `data.entities[name].tile_width/tile_height` to check.
 
 23. **Single-item smelting** — at bus-scale volumes, each plate gets its own city block. Prefer steel-furnace (2x2, speed 4, fluid-burning) over advanced-foundry (6x6, speed 1, electric) — 33x more plates per tile. Steel-furnace burns any fluid fuel — consumption rate scales inversely with fuel value: `fuel_rate = 6 MW / fuel_value`. Higher-value fuels (gasoline 1.2 MJ, COG 1.0 MJ) need less throughput; low-value fuels (coal-gas 0.2 MJ) need 5x more, which has real infrastructure impact (pipe capacity, train trips, station sizing). Choose fuel based on both availability and throughput cost.
     

@@ -210,10 +210,11 @@
       "log": "load",
       "moss": "unload"
     },
-    "exports": {},
+    "exports": {
+      "log": 1.4
+    },
     "surplus": {
-      "wood-seeds": 0.55,
-      "wood": 14
+      "wood-seeds": 0.55
     },
     "imports": {
       "moss": 1.25,
@@ -225,9 +226,9 @@
       "wood-seeds": 0.25,
       "wood-seedling": 0.75,
       "wood": 1,
-      "log": 1.5
+      "log": 0.1
     },
-    "powerMW": 5.31
+    "powerMW": 5.14
   },
   {
     "name": "tar refinery",

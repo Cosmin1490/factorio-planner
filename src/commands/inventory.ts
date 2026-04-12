@@ -44,7 +44,7 @@ interface BlueprintEntity {
   };
 }
 
-function decodeBlueprintFile(filePath: string): { entities: BlueprintEntity[]; wires: number[][] } {
+export function decodeBlueprintFile(filePath: string): { entities: BlueprintEntity[]; wires: number[][] } {
   const raw = readFileSync(filePath, 'utf8').trim();
   const json = JSON.parse(inflateSync(Buffer.from(raw.slice(1), 'base64')).toString());
   return {
@@ -690,6 +690,73 @@ function computeSteadyState(
     if (maxChange < 0.0001) break;
   }
 
+  // Fix self-reinforcing export cycles: when a recipe consumes an export item
+  // but its outputs are all overproduced, cap it to match output demand.
+  // Example: log→wood→seeds→seedlings→log cycle — log-wood-fast consumes the
+  // export (log) and massively overproduces wood; cap it to what the seed chain needs.
+  // Then re-run convergence to propagate the change through the chain.
+  {
+    const produced = new Map<string, number>();
+    const consumed = new Map<string, number>();
+    for (const r of recipes) {
+      const crafts = rate.get(r.name)!;
+      for (const p of r.products) produced.set(p.name, (produced.get(p.name) ?? 0) + crafts * p.amount);
+      for (const ing of r.ingredients) consumed.set(ing.name, (consumed.get(ing.name) ?? 0) + crafts * ing.amount);
+    }
+    let cycleFixed = false;
+    for (const r of recipes) {
+      if (voidRecipes.has(r.name)) continue;
+      const consumesExport = r.ingredients.some(i => exportItems.has(i.name));
+      if (!consumesExport) continue;
+      const consumedProducts = r.products.filter(p =>
+        !exportItems.has(p.name) && (consumed.get(p.name) ?? 0) > 0.001);
+      if (consumedProducts.length === 0) continue;
+      // Only trigger when outputs are egregiously overproduced (>5x demand).
+      // Mild overproduction (e.g., 1.5x steam from boilers) is normal and intentional.
+      const allMassivelyOverProduced = consumedProducts.every(p => {
+        const pProd = produced.get(p.name) ?? 0;
+        const pCons = consumed.get(p.name) ?? 0;
+        return pProd > pCons * 5;
+      });
+      if (!allMassivelyOverProduced) continue;
+      const minRatio = Math.min(...consumedProducts.map(p =>
+        (consumed.get(p.name) ?? 0) / Math.max(produced.get(p.name) ?? 1, 0.001)));
+      const proposed = rate.get(r.name)! * minRatio;
+      if (proposed < rate.get(r.name)! - 0.0001) {
+        rate.set(r.name, proposed);
+        cycleFixed = true;
+      }
+    }
+    // Re-run convergence to propagate the cycle fix through the chain
+    if (cycleFixed) {
+      for (let iter = 0; iter < 50; iter++) {
+        let maxChange = 0;
+        const produced2 = new Map<string, number>();
+        const consumed2 = new Map<string, number>();
+        for (const r of recipes) {
+          const crafts = rate.get(r.name)!;
+          for (const p of r.products) produced2.set(p.name, (produced2.get(p.name) ?? 0) + crafts * p.amount);
+          for (const ing of r.ingredients) consumed2.set(ing.name, (consumed2.get(ing.name) ?? 0) + crafts * ing.amount);
+        }
+        for (const item of internalIntermediates) {
+          const prod = produced2.get(item) ?? 0;
+          const cons = consumed2.get(item) ?? 0;
+          if (cons > prod + 0.001) {
+            const ratio = prod / cons;
+            for (const r of recipes) {
+              if (!r.ingredients.some(i => i.name === item)) continue;
+              const newRate = Math.min(rate.get(r.name)! * ratio, r.maxCraftsPerSec);
+              const change = Math.abs(rate.get(r.name)! - newRate);
+              if (change > maxChange) maxChange = change;
+              rate.set(r.name, newRate);
+            }
+          }
+        }
+        if (maxChange < 0.0001) break;
+      }
+    }
+  }
+
   // Size void recipes to consume leftover surplus (waste disposal)
   if (voidRecipes.size > 0) {
     const produced = new Map<string, number>();
@@ -719,7 +786,7 @@ function computeSteadyState(
   return rate;
 }
 
-function analyzeBlueprint(
+export function analyzeBlueprint(
   data: PrototypeData,
   entities: BlueprintEntity[],
   wires: number[][],

@@ -13,18 +13,3 @@
 | Copper plate | copper-plate | 3.16/s | 3 (water, raw-coal in; copper-plate out) | 8 electric-mining-drill, 10 screener (grade-2-copper), 6 jaw-crusher (grade-1-copper-crush), 6 washer (saline-water), 6 stone-furnace (copper-plate-4) | On-site at ore patch, washers for stone disposal, mining-limited |
 | Aluminium plate | aluminium-plate | ~1.0/s (ore-limited, 1.33/s foundry capacity) | 2 (aluminium-plate out, tar out) | 10 fluid-drill-mk02, 8 advanced-foundry (aluminium-plate-1), 3 distilator (distilled-raw-coal), 2 distilator (coal-gas), 1 distilator (coal-gas-from-coke), 1 sinkhole, 1 burner, 1 tailings-pond | On-site at ore patch, raw-coal belted in (hack — needs cleanup), coal chain produces coal-gas (mining fluid, internal only) + tar export (overflow-to-void: station first, sinkhole surplus). Aluminium not voided — backs up if no consumer, stalling entire block |
 | Creosote | creosote | 36.4/s | 2 (water in; creosote out) | 1 distilator (distilled-raw-coal), 1 distilator (coal-gas), 2 distilator (coal-gas-from-coke), 2 gasifier (syngas), 3 tar-processing (tar-refining), 3 tar-processing (pitch-refining), 1 tar-processing (tar-refining-tops), 1 tar-processing (light-oil-aromatics), 1 tar-processing (carbolic-oil-creosote), 1 tar-processing (naphthalene-oil-creosote), 2 tar-processing (anthracene-oil-creosote), 3 oil-boiler | Full coal→tar→cracking chain, all oil fractions cracked to creosote, coke recycled, 5 gas vents + 2 overflow valves + sinkhole + burner for byproducts, self-powered via oil boilers. Raw-coal belted from adjacent block (debt — cross-block coupling, needs train station) |
-
-## Designed (not yet built)
-
-| Block | Output | Rate | Status |
-|---|---|---|---|
-| Electronic circuit | electronic-circuit | 0.9/s | Designed, 24 buildings, 11 stations |
-| Solder | solder | 0.6/s | Designed, 4 buildings, 3 stations |
-| Iron plate | iron-plate | — | Designed only |
-| Tin plate | tin-plate | — | Designed only |
-| Small-parts-01 | small-parts-01 | — | Designed only |
-| Glass | glass | — | Designed only |
-| Battery | battery-mk01 | 0.05/s | Designed, 18 buildings |
-| Rubber | rubber | 0.24/s | Designed, 21 buildings |
-| Auog farm | caged-auog | 0.1/s | Designed, ~8 buildings |
-| Vrauks farm | formic-acid | — | Designed, ~21 buildings |

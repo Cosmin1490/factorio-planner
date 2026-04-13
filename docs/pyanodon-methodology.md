@@ -198,7 +198,7 @@ All Pyanodon biological buildings use items (not standard modules) as modules wi
 | `sap-extractor-mk01` | 2 | `sap-tree` | 3x |
 | `fwf-mk01` (wood farm) | 10 | `tree-mk01` | 11x |
 
-Without modules, bio farms are unusably slow and dominate building count (757 -> 110 buildings for logistic science pack). mk02/mk03/mk04 tiers exist with 2x/3x/4x speed bonus per slot.
+Without modules, bio farms are unusably slow and dominate building count (757 -> 163 buildings for logistic science pack after bio modules + LP cost minimization). mk02/mk03/mk04 tiers exist with 2x/3x/4x speed bonus per slot.
 
 **Effective speed formula:** `effective_speed = base_crafting_speed × (1 + N_modules × module_bonus)`. Example: auog-paddock-mk01 (base 0.4) with 4 auog modules (+100% each): `0.4 × (1 + 4×1.0) = 2.0`. The "5x" in the table means full slots give 5x the base speed, not 5x some other number. Always compute effective craft time as `recipe_time / effective_speed` when sizing buildings.
 
@@ -239,4 +239,4 @@ Once you have critical mass, only the steady-state matters for pipeline planning
 
 - **Pitch pipeline**: 3 electric boilers = 75 MW / 111.5 MW total. Oil boiler burning gasoline (28.79/s for 140 steam/s) saves 75 MW.
 - **Coal chain recycling**: 11 raw-coal/s -> 100 tar/s + 113.65 syngas/s (vs 33/s without). Syngas covers 77% of steam needs.
-- **Logistic science pack**: 11,506 -> 110 buildings by importing battery/rubber/creosote at commodity boundaries, excluding byproducts at every cascade link, and adding bio modules. Splitting by shared system (7 pipelines) not by product (4).
+- **Logistic science pack**: 11,506 -> 163 buildings by importing battery/rubber/creosote at commodity boundaries, excluding byproducts at every cascade link, adding bio modules, and LP cost minimization (11,506 → 110 boundaries+modules → 326 temperature correction → 163 LP). Splitting by shared system (7 pipelines) not by product (4).

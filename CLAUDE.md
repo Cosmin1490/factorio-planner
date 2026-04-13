@@ -35,7 +35,7 @@ No build step needed for dev. The 16MB prototype JSON loads in ~0.6 seconds.
 - Native TypeScript solver (no Lua dependency)
 - Items produced by one recipe and consumed by another in the same block are classified as intermediates (state=0) and linked internally
 - **Algebraic solver**: Multi-pass Gaussian elimination. Default for target mode. Supports `--constraint` (master/exclude). Breaks on large chains (12+ recipes — gives astronomical numbers).
-- **Simplex solver**: Linear programming. Default for input mode. Supports `--constraint exclude` (zeroes out production coefficients in working copy). Handles complex chains with competing consumers. Always use simplex for blocks with many recipes. See "Solver lacks minimization objective" below for cascade caveat.
+- **Simplex solver**: Linear programming. Default for input mode. Supports `--constraint exclude` (zeroes out production coefficients in working copy). Handles complex chains with competing consumers. Always use simplex for blocks with many recipes.
 - Input mode defaults to simplex because algebraic greedy pass can't balance competing consumers
 - Module/beacon effects computed and exposed via `--modules` and `--beacons` CLI flags
 - Fuel consumption modeled in matrix: burner factories consume fuel and produce `burnt_result` (e.g., coal→ash). This creates automatic intermediate linking but can cause degenerate scaling — prefer electric factories or use exclude constraints.

@@ -183,6 +183,8 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
     **Cascade outputs are inventory-dependent.** Tier rates are inversely proportional — exporting all stone means zero saline-water produced; voiding all saline-water means maximum stone-to-saline conversion. You cannot claim the block exports X stone AND Y saline-water simultaneously at their maximum rates. When recording block output in the inventory, pick the **design-intent tier**: if saline-water consumers exist, record the saline-water rate and reduce stone export accordingly. If no consumer exists yet, record full stone export and note saline-water as latent capacity. Re-audit when downstream blocks change (rule 13).
     
     **When to use:** any block with a high-volume byproduct that has both direct consumers (stone → stone-brick block) and conversion consumers (saline-water → electronic circuits). Single-consumer byproducts don't need a cascade — just export or void. Low-volume byproducts (< 1/s) aren't worth the complexity.
+    
+    **Centralized cascade blocks.** When multiple producer blocks export the same byproduct (e.g., iron and copper blocks both produce stone from crushing), consider a dedicated cascade block that imports from all producers rather than duplicating conversion tiers in each. This keeps producer blocks simple (export only, 1 station per byproduct) and consolidates conversion buildings, voiding infrastructure, and the associated stations in one place. The cascade block is sized to the aggregate byproduct rate across all producers. Trade-off: adds one block and train hops between producers and the cascade, but saves stations and space in every producer block.
 
 ## Bio organisms
 

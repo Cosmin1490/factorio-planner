@@ -81,14 +81,14 @@ When planning a major expansion (new science tier, new end product), the macro-l
 
 A good boundary is an item where you'd naturally put a train stop. Score candidates on:
 
-16. **Consumer count** — items consumed by many unlocked recipes are natural bus items. Empirical counts (Pyanodon, current unlock, 2026-04-12, via `recipes --consumes <item> --unlocked`):
-    - **Tier A (20+)**: small-parts-01 (125), iron-plate (104), electronic-circuit (95), steel-plate (92), glass (38), stone-brick (34), copper-plate (24), lead-plate (22), native-flora (20)
-    - **Tier B (10-19)**: copper-cable (19), iron-stick (13), battery-mk01 (11), coke (10), tin-plate (10)
-    - **Tier C (4-9)**: rubber (5), pcb1 (4)
-    - **Tier D (1-3)**: stopper (2), zinc-plate (2), nexelit-plate (1)
+16. **Consumer count** — items consumed by many recipes are natural bus items. Count all recipes (not just currently unlocked) so boundaries hold as you research more techs (via `recipes --consumes <item>`):
+    - **Tier A (50+)**: steel-plate (264), small-parts-01 (241), electronic-circuit (219), nexelit-plate (190), iron-plate (183), glass (174), lead-plate (91), native-flora (85), tin-plate (81), copper-plate (64), stone-brick (48)
+    - **Tier B (15-49)**: coke (30), copper-cable (27), rubber (27), iron-stick (23), battery-mk01 (20), zinc-plate (15)
+    - **Tier C (5-14)**: stopper (7)
+    - **Tier D (<5)**: pcb1 (4)
     Tier A/B are almost always good boundaries. Tier C/D only if they also have deep chains or cascade risk.
 
-17. **Chain depth & cascade risk** — deep chains (5+ recipes) or chains containing cascade magnifiers (high input:output ratio) justify splitting even at low consumer counts. Battery-mk01 (11 consumers, 30:1 cyanic-acid cascade) and rubber (5 consumers, deep petrochemical chain) are worth splitting. Iron-plate from ore is only 2-3 recipes — not worth splitting on its own. The LP cost minimizer handles cascade reduction automatically (100-recipe chains solve without blowup), but splitting deep chains into separate blocks still helps for physical layout, train logistics, and independent scaling. Exclude byproducts at every cascade link to constrain the solution space — the LP finds better solutions with fewer degrees of freedom.
+17. **Chain depth & cascade risk** — deep chains (5+ recipes) or chains containing cascade magnifiers (high input:output ratio) justify splitting even at low consumer counts. Battery-mk01 (20 consumers, 30:1 cyanic-acid cascade) and rubber (27 consumers, deep petrochemical chain) are worth splitting. Iron-plate from ore is only 2-3 recipes — not worth splitting on its own. The LP cost minimizer handles cascade reduction automatically (100-recipe chains solve without blowup), but splitting deep chains into separate blocks still helps for physical layout, train logistics, and independent scaling. Exclude byproducts at every cascade link to constrain the solution space — the LP finds better solutions with fewer degrees of freedom.
 
 18. **Context-dependent depth** — the boundary moves based on what you're solving. Making circuits? Iron-plate is a boundary (import it). Making iron-plate itself? Ore is the boundary. Rule: **import from the highest tier below your current target**.
 

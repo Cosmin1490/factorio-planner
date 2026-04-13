@@ -185,6 +185,8 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
     **When to use:** any block with a high-volume byproduct that has both direct consumers (stone → stone-brick block) and conversion consumers (saline-water → electronic circuits). Single-consumer byproducts don't need a cascade — just export or void. Low-volume byproducts (< 1/s) aren't worth the complexity.
     
     **Centralized cascade blocks.** When multiple producer blocks export the same byproduct (e.g., iron and copper blocks both produce stone from crushing), consider a dedicated cascade block that imports from all producers rather than duplicating conversion tiers in each. This keeps producer blocks simple (export only, 1 station per byproduct) and consolidates conversion buildings, voiding infrastructure, and the associated stations in one place. The cascade block is sized to the aggregate byproduct rate across all producers. Trade-off: adds one block and train hops between producers and the cascade, but saves stations and space in every producer block.
+    
+    **Train priority as tiering mechanism.** When both a direct consumer (stone-brick block) and a cascade block import the same byproduct, use train station priority to implement the tier ordering: direct consumer gets high priority, cascade block gets low priority. Trains deliver to the consumer first; only surplus reaches the cascade. This replaces in-block overflow wiring with train scheduling — simpler, no circuits at the producer, and the consumer and cascade are fully independent blocks. The cascade block still applies overflow-to-void internally for its own conversion products.
 
 ## Bio organisms
 

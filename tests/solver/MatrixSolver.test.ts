@@ -597,3 +597,86 @@ describe('cycle detection', () => {
     }
   });
 });
+
+describe('pitch+acetylene block (LP import variable constraints)', () => {
+  // 6-recipe block with 140/s pitch cap and internal lime cycle.
+  // Before LP import vars, adjustForBalance cascaded past the cap to 187.5/s.
+  // Now the simplex finds the optimal solution within the cap.
+  const recipes: RecipeSpec[] = [
+    { recipeName: 'pitch-refining', factoryName: 'distilator' },
+    { recipeName: 'light-oil-aromatics', factoryName: 'distilator' },
+    { recipeName: 'calcium-carbide', factoryName: 'hpf' },
+    { recipeName: 'acetylene', factoryName: 'gasifier' },
+    { recipeName: 'lime', factoryName: 'hpf' },
+    { recipeName: 'slacked-lime-void', factoryName: 'evaporator' },
+  ];
+
+  const constraints = [
+    { recipeName: 'pitch-refining', itemName: 'naphthalene-oil', type: 'exclude' as const },
+    { recipeName: 'pitch-refining', itemName: 'anthracene-oil', type: 'exclude' as const },
+    { recipeName: 'pitch-refining', itemName: 'hydrogen', type: 'exclude' as const },
+    { recipeName: 'light-oil-aromatics', itemName: 'gasoline', type: 'exclude' as const },
+    { recipeName: 'lime', itemName: 'carbon-dioxide', type: 'exclude' as const },
+  ];
+
+  const maxImports = [
+    { name: 'pitch', amount: 140 },
+    { name: 'lime', amount: 0 },
+    { name: 'calcium-carbide', amount: 0 },
+    { name: 'coke', amount: 0 },
+    { name: 'light-oil', amount: 0 },
+    { name: 'slacked-lime', amount: 0 },
+  ];
+
+  it('respects 140/s pitch cap with cyclic lime loop', () => {
+    const input: SolveInput = {
+      recipes,
+      constraints,
+      maxImports,
+      target: { name: 'acetylene', amount: 149 },
+      time: 1,
+      solver: 'simplex',
+    };
+    const result = solve(data, input);
+
+    // Pitch import must respect cap (pitch is an ingredient/input)
+    const pitch = result.ingredients.find(p => p.name === 'pitch');
+    expect(pitch).toBeDefined();
+    expect(pitch!.amount).toBeLessThanOrEqual(140.1); // within cap
+
+    // Acetylene target met (acetylene is a product/output)
+    const acetylene = result.products.find(p => p.name === 'acetylene');
+    expect(acetylene).toBeDefined();
+    expect(acetylene!.amount).toBeCloseTo(149, 0);
+
+    // All intermediates balanced internally (not imported)
+    for (const name of ['coke', 'light-oil', 'calcium-carbide', 'lime', 'slacked-lime']) {
+      const item = result.products.find(p => p.name === name);
+      if (item) {
+        // Net flow should be ~0 (internally balanced) or positive (surplus)
+        expect(Math.abs(item.amount), `${name} should be internally balanced`).toBeLessThan(0.1);
+      }
+    }
+
+    // Building counts should be reasonable (31 total)
+    const totalBuildings = result.recipes.reduce((s, r) => s + r.factoryCount, 0);
+    expect(totalBuildings).toBeGreaterThan(25);
+    expect(totalBuildings).toBeLessThan(40);
+  });
+
+  it('returns infeasible (zeros) when target exceeds what pitch cap allows', () => {
+    const input: SolveInput = {
+      recipes,
+      constraints,
+      maxImports,
+      target: { name: 'acetylene', amount: 200 },
+      time: 1,
+      solver: 'simplex',
+    };
+    const result = solve(data, input);
+
+    // LP should report infeasible — 200/s acetylene needs more than 140/s pitch
+    const totalBuildings = result.recipes.reduce((s, r) => s + r.factoryCount, 0);
+    expect(totalBuildings).toBe(0);
+  });
+});

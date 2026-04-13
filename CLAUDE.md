@@ -34,7 +34,7 @@ No build step needed for dev. The 16MB prototype JSON loads in ~0.6 seconds.
 
 - Native TypeScript solver (no Lua dependency)
 - Items produced by one recipe and consumed by another in the same block are classified as intermediates (state=0) and linked internally
-- **Algebraic solver**: Multi-pass Gaussian elimination. Default for target mode. Supports `--constraint` (master/exclude). Breaks on large chains (12+ recipes — gives astronomical numbers).
+- **Algebraic solver**: Multi-pass Gaussian elimination. Legacy solver, superseded by LP simplex for target mode. Still available via `--solver algebra`. Supports `--constraint` (master/exclude). Breaks on large chains (12+ recipes — gives astronomical numbers).
 - **Simplex solver**: Linear programming. Default for input mode. Supports `--constraint exclude` (zeroes out production coefficients in working copy). Handles complex chains with competing consumers. Always use simplex for blocks with many recipes.
 - Input mode defaults to simplex because algebraic greedy pass can't balance competing consumers
 - Module/beacon effects computed and exposed via `--modules` and `--beacons` CLI flags
@@ -57,7 +57,7 @@ No build step needed for dev. The 16MB prototype JSON loads in ~0.6 seconds.
 - Entity quality fields (`crafting_speed` etc.) are objects keyed by quality name: `{ normal: 1, uncommon: 1.3, ... }`
 - Module effects are per-quality: `item.module_effects.normal.speed`
 - Coal `burnt_result` is ash (Pyanodon-specific). Solver models this — stone furnaces burning coal auto-produce ash as intermediate.
-- Solid fuel items have `fuel_category` field (`chemical`, `biomass`, `jerry`, `nexelit`, `quantum`). Burner entities have `burner_prototype.fuel_categories` (object with category keys → true). An entity only accepts fuels whose category is in its `fuel_categories`. All canister items (`*-canister`) have `fuel_category: "jerry"` and `fuel_value: 10000000`. Recipe category `py-incineration` (pyvoid recipes) is filtered from producer index — check `data.recipes["<item>-pyvoid"]` directly.
+- Fuel categories and canister mechanics: see methodology rule 9. Code-facing: check `item.fuel_category` and `entity.burner_prototype.fuel_categories` (object with category keys → true). All canister items (`*-canister`) have `fuel_category: "jerry"` and `fuel_value: 10000000`. Recipe category `py-incineration` (pyvoid recipes) is filtered from producer index — check `data.recipes["<item>-pyvoid"]` directly.
 - Force data (`force.recipes`) tracks unlock state per recipe. Technology data tracks researched techs and their recipe unlocks.
 - Some recipes have `ingredients: {}` (empty object) instead of `[]` — same `Array.isArray()` guard as products
 - Some recipes have variable output: `products[].amount_min` / `amount_max` instead of `amount` (e.g., auog-pooping-1 yields 3-8 manure). Read `.amount` first; if undefined, use `(amount_min + amount_max) / 2` for average throughput. See methodology Bio organisms section for sizing guidance.

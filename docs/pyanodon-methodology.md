@@ -57,7 +57,7 @@ Multi-product recipes stall completely when ANY output buffer is full. Every pro
     | assembling-machine-3 | yes | yes | yes | yes | — | — |
     | py-burner | yes | yes | yes | yes | — | — |
     
-    All canisters have the same fuel_value (10,000,000 J) regardless of the fluid inside. When planning fuel imports for a block, verify the consumer entity accepts the fuel category.
+    All canisters have the same fuel_value (10,000,000 J) regardless of the fluid inside. When planning fuel imports for a block, verify the consumer entity accepts the fuel category. Jerry fuels follow the container pattern (like barrels/cages) — fill at source (`empty-fuel-canister` + fluid → canister), burn at consumer, empty canister returns. No net canister consumption; plan for the return logistics (canister unload at filler, canister load at consumer).
 
 ## Block delta planning
 

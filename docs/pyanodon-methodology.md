@@ -31,7 +31,7 @@ Most of these principles apply to any complex Factorio overhaul mod (SeaBlock, S
 
 Multi-product recipes stall completely when ANY output buffer is full. Every product must have somewhere to go.
 
-- **Voiding buildings**: sinkhole (liquids), exhaust pipe (gases), py-burner (non-fuel solids). The py-burner is a furnace that requires solid fuel (chemical/biomass category) and uses `*-pyvoid` recipes (category `py-incineration`, crafting_speed 5) to probabilistically destroy items — typically 80% destroyed per cycle (1 in -> 0.2 out at probability). One py-burner handles several items/s. **Solid fuels (coal, coke, raw-coal, wood) have NO pyvoid recipes and cannot be destroyed** — they are consumed as fuel by the burner, producing `burnt_result` (ash for coal/coke/raw-coal). To void a solid fuel, convert it to fluids first (e.g., `coal-gas-from-coke`: coke -> coal-gas + tar + ash), then void the fluids and pyvoid the ash. **Note:** `recipes --consumes` does not show pyvoid recipes (filtered category). Use prototype data to verify: `data.recipes["<item>-pyvoid"]`.
+- **Voiding buildings**: sinkhole (liquids), exhaust pipe (gases), py-burner (non-fuel solids). The py-burner is a furnace that requires solid fuel (accepts chemical, biomass, jerry, and nuke categories) and uses `*-pyvoid` recipes (category `py-incineration`, crafting_speed 5) to probabilistically destroy items — typically 80% destroyed per cycle (1 in -> 0.2 out at probability). One py-burner handles several items/s. **Solid fuels (coal, coke, raw-coal, wood) have NO pyvoid recipes and cannot be destroyed** — they are consumed as fuel by the burner, producing `burnt_result` (ash for coal/coke/raw-coal). To void a solid fuel, convert it to fluids first (e.g., `coal-gas-from-coke`: coke -> coal-gas + tar + ash), then void the fluids and pyvoid the ash. **Note:** `recipes --consumes` does not show pyvoid recipes (filtered category). Use prototype data to verify: `data.recipes["<item>-pyvoid"]`.
 - **Ash loop pattern** — the py-burner's fuel produces ash as `burnt_result`, and ash has a pyvoid recipe. Feed the ash back into the same burner as the item to destroy: the burner consumes fuel (producing ash), destroys 80% of the ash input, and the 20% remainder recirculates. The loop converges to zero — each cycle destroys 80%, so residual ash shrinks exponentially. One py-burner handles both the primary waste item AND its own fuel ash with a single belt loop. Common pattern used in any block that produces non-fuel solid waste (e.g., aluminium block voids iron-oxide this way).
 - **Convert before voiding when the intermediate has value** — conversion captures value but has a cost: the conversion recipe must keep pace with production. Always compute the building ratio before committing — when conversion is too expensive, pyvoid directly instead. Viable example: `coal-gas-from-coke` (4 coke/s per distilator). Value-capture example: stone -> saline-water (10 stone + 100 water -> 50 water-saline) creates a useful intermediate; apply overflow-to-void on the saline-water, export what consumers need, sinkhole the rest.
 - **Overflow-to-void pattern**: don't void blindly — prioritize real consumption, only void surplus. Wire a pump or overflow valve with circuit condition: fill the load station buffer first, overflow excess to a sinkhole/exhaust. When a consumer eventually connects, trains pull from the station and less goes to void automatically. No block redesign needed. Example: tar refinery produces 280/s pitch with no current consumer — overflow valve after the pitch tank routes excess to sinkhole, block keeps running for creosote/gasoline/coke/middle-oil.
@@ -43,6 +43,21 @@ Multi-product recipes stall completely when ANY output buffer is full. Every pro
 
 8. **Account for power cost, use unlocked tiers** — total MW = count x energy_usage x 60. Electric boilers (25 MW rated) often dominate peak budget. Always `--factory` with unlocked tiers — solver auto-picks mk04 which are usually locked.
 9. **Burn byproduct fluids for steam** — oil boiler mk01: effectivity=2, 0 MW electrical. `fuel_rate = (steam_rate x heat_capacity x dT) / (fuel_value x effectivity)`. Pyanodon water heat_capacity=2,100, dT=235. Fluid fuel_value in `data.fluids` not `data.items`. After splitting into sub-factories, check if byproduct fluids (syngas, pitch, gasoline) cover the sub-factory's own boiler needs — often they do (rubber sub-factory: syngas 177/s + pitch 44.8/s covers its 32/s steam at 250C+). **Produce steam locally, never train it** — train in fuel fluids if local byproducts don't cover demand, but always boil on-site.
+
+    **Fuel categories are not interchangeable.** Solid fuels belong to distinct categories: `chemical` (coal, coke, raw-coal), `biomass` (wood), `jerry` (all canisters — acetylene, gasoline, light-oil, etc.), `nexelit`, `quantum`. Each burner entity accepts only specific categories — check `entity.burner_prototype.fuel_categories`. Key examples:
+    
+    | Entity | chemical | biomass | jerry | nuke | nexelit | quantum |
+    |---|---|---|---|---|---|---|
+    | locomotive (mk01) | yes | yes | — | yes | — | — |
+    | mk02-locomotive | — | — | yes | yes | — | — |
+    | ht-locomotive (mk03) | — | — | — | — | yes | — |
+    | stone-furnace | yes | yes | — | — | — | — |
+    | assembling-machine-1 | yes | yes | — | — | — | — |
+    | assembling-machine-2 | yes | yes | yes | — | — | — |
+    | assembling-machine-3 | yes | yes | yes | yes | — | — |
+    | py-burner | yes | yes | yes | yes | — | — |
+    
+    All canisters have the same fuel_value (10,000,000 J) regardless of the fluid inside. When planning fuel imports for a block, verify the consumer entity accepts the fuel category.
 
 ## Block delta planning
 

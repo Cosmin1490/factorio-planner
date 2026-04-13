@@ -765,7 +765,22 @@ function solveSimplexLP(m: SolverMatrix, input: SolveInput): number[] {
   const constrainedCols: number[] = [];
   const rhs: number[] = [];
 
+  // Build maxImport lookup for LP-level constraints.
+  // For capped items, we add import variables (virtual recipes that produce the item)
+  // and cap constraints (import_var <= cap), avoiding negative RHS entirely.
+  const maxImportMap = new Map<string, number>();
+  for (const mi of input.maxImports ?? []) {
+    maxImportMap.set(mi.name, mi.amount);
+  }
+
+  // Collect import variables: one per capped item that needs importing.
+  // Each import var is a virtual recipe column that produces +1 of the capped item.
+  const importVars: { col: number; cap: number }[] = [];
+
   for (let c = 0; c < numCols; c++) {
+    const colName = columns[c].name;
+    const cap = maxImportMap.get(colName);
+
     if (Z[c] < -1e-10) {
       // Target column: must produce at least targetAmount
       constrainedCols.push(c);
@@ -776,73 +791,115 @@ function solveSimplexLP(m: SolverMatrix, input: SolveInput): number[] {
       for (let r = 0; r < numRows; r++) {
         if (workMatrix[r][c] > 1e-10) { hasProducer = true; break; }
       }
-      if (!hasProducer) continue; // no producer after excludes → treat as free import
+      if (cap != null && cap > 0) {
+        // Capped intermediate: add import variable + constraint, keep RHS=0
+        importVars.push({ col: c, cap });
+        constrainedCols.push(c);
+        rhs.push(0); // production + import >= consumption (import var handles the slack)
+      } else if (hasProducer || (cap != null && cap === 0)) {
+        // Uncapped intermediate with producer, or forced internal (cap=0)
+        constrainedCols.push(c);
+        rhs.push(0);
+      }
+      // else: no producer, no cap → free import (skip)
+    } else if (columns[c].state === ItemState.Input && cap != null) {
+      // Input item with a cap: add import variable + constraint
+      importVars.push({ col: c, cap });
       constrainedCols.push(c);
-      rhs.push(0); // production >= consumption
+      rhs.push(0); // import var handles the supply, capped separately
     }
   }
 
   const K = constrainedCols.length; // number of constraints
-  const n = numRows; // number of recipe variables
+  const n = numRows; // number of real recipe variables
+  const nImp = importVars.length; // number of import variables
+  const nVars = n + nImp; // total decision variables (recipes + imports)
 
   if (K === 0) return new Array(n).fill(0);
 
   // Compute recipe costs for the objective
   const recipeCosts = computeRecipeCosts(itemDepths, workMatrix, numRows, numCols);
 
-  // ── Build tableau ────────────────────────────────────────────────────────
-  // Layout: K constraint rows + 1 Z-row
-  // Columns: n (recipe vars) + K (surplus) + K (artificial) + 1 (RHS)
-  //          [x_0..x_{n-1}] [s_0..s_{K-1}] [a_0..a_{K-1}] [rhs]
+  // Import variable costs: very high so the LP prefers internal production
+  // but lower than big-M artificial cost (1e8) so Phase 2 uses them when needed
+  const maxRecipeCost = Math.max(...recipeCosts, 1);
+  const importCost = maxRecipeCost * 100; // strongly prefer recipes over imports
 
-  const totalVars = n + 2 * K;
+  // ── Build tableau ────────────────────────────────────────────────────────
+  // Layout: K constraint rows + nImp cap-constraint rows + 1 Z-row
+  // Decision vars: nVars (n recipes + nImp imports)
+  // Columns: nVars + (K + nImp) surplus + (K + nImp) artificial + 1 RHS
+  const totalConstraints = K + nImp; // item constraints + import cap constraints
+  const totalVars = nVars + 2 * totalConstraints;
   const rhsIdx = totalVars;
   const tab: number[][] = [];
   const basis: number[] = [];
 
+  // Item balance constraints: sum_r(A[r][c] * x_r) + imp_c >= rhs[k]
   for (let k = 0; k < K; k++) {
     const row = new Array(totalVars + 1).fill(0);
     const c = constrainedCols[k];
 
-    // Recipe variable coefficients: A[r][c] for each recipe r
+    // Recipe variable coefficients
     for (let r = 0; r < n; r++) {
       row[r] = workMatrix[r][c];
     }
+    // Import variable coefficients: +1 for matching import var
+    for (let iv = 0; iv < nImp; iv++) {
+      if (importVars[iv].col === c) {
+        row[n + iv] = 1; // import produces the item
+      }
+    }
 
-    // Surplus variable (subtract from >= constraint to get equality)
-    row[n + k] = -1;
-
-    // Artificial variable
-    row[n + K + k] = 1;
-
-    // RHS
+    // Surplus and artificial for this constraint
+    row[nVars + k] = -1;                    // surplus
+    row[nVars + totalConstraints + k] = 1;  // artificial
     row[rhsIdx] = rhs[k];
 
     tab.push(row);
-    basis.push(n + K + k); // artificial k is initially in basis
+    basis.push(nVars + totalConstraints + k); // artificial in basis
+  }
+
+  // Import cap constraints: imp_c <= cap  ⟺  -imp_c >= -cap  ⟺  imp_c + slack = cap
+  // Use <= form directly: imp_c + slack = cap (slack in basis at cap, no artificial needed)
+  for (let iv = 0; iv < nImp; iv++) {
+    const row = new Array(totalVars + 1).fill(0);
+    row[n + iv] = 1; // import variable
+    const capIdx = K + iv;
+    row[nVars + capIdx] = 1; // slack (not surplus — this is <= constraint)
+    row[rhsIdx] = importVars[iv].cap;
+
+    tab.push(row);
+    basis.push(nVars + capIdx); // slack in basis (feasible: slack = cap)
   }
 
   // ── Phase 1: minimize sum of artificials ──────────────────────────────────
   // Z-row: c_j = 1 for artificial vars, 0 for others
   // Reduced costs: Z_j = c_j - sum_k(c_Bk * tab[k][j])
-  // Since all basis vars are artificial with c_Bk = 1:
+  // Only rows with artificial in basis contribute (c_Bk = 1).
+  // Import cap rows have slack in basis (cost 0, no contribution).
   const zRow = new Array(totalVars + 1).fill(0);
   for (let j = 0; j <= totalVars; j++) {
     let basisSum = 0;
-    for (let k = 0; k < K; k++) basisSum += tab[k][j];
-    zRow[j] = (j >= n + K && j < n + 2 * K ? 1 : 0) - basisSum;
+    for (let k = 0; k < K; k++) {
+      // All K item-constraint rows start with artificial in basis
+      basisSum += tab[k][j];
+    }
+    const isArtificial = j >= nVars + totalConstraints && j < nVars + 2 * totalConstraints;
+    zRow[j] = (isArtificial ? 1 : 0) - basisSum;
   }
   tab.push(zRow);
 
-  const maxIter = (n + K) * 10;
+  const TC = totalConstraints; // Z-row index in tableau
+  const maxIter = (nVars + TC) * 10;
 
   for (let iter = 0; iter < maxIter; iter++) {
     // Find entering column: most negative reduced cost
     let minRC = -1e-8;
     let enterCol = -1;
     for (let j = 0; j < totalVars; j++) {
-      if (tab[K][j] < minRC) {
-        minRC = tab[K][j];
+      if (tab[TC][j] < minRC) {
+        minRC = tab[TC][j];
         enterCol = j;
       }
     }
@@ -851,7 +908,7 @@ function solveSimplexLP(m: SolverMatrix, input: SolveInput): number[] {
     // Find leaving row: minimum ratio test (Bland's rule for ties)
     let minRatio = Infinity;
     let leaveRow = -1;
-    for (let k = 0; k < K; k++) {
+    for (let k = 0; k < TC; k++) {
       if (tab[k][enterCol] > 1e-10) {
         const ratio = tab[k][rhsIdx] / tab[k][enterCol];
         if (ratio < minRatio - 1e-10) {
@@ -865,32 +922,41 @@ function solveSimplexLP(m: SolverMatrix, input: SolveInput): number[] {
     if (leaveRow < 0) break; // unbounded
 
     // Pivot
-    lpPivot(tab, K, totalVars, rhsIdx, basis, leaveRow, enterCol);
+    lpPivot(tab, TC, totalVars, rhsIdx, basis, leaveRow, enterCol);
   }
 
   // Check feasibility: Phase 1 objective should be ~0
-  if (tab[K][rhsIdx] > 1e-6) {
+  // Also check if any artificial is still in basis at positive value
+  let artificialsInBasis = false;
+  for (let k = 0; k < TC; k++) {
+    if (basis[k] >= nVars + TC && tab[k][rhsIdx] > 1e-6) {
+      artificialsInBasis = true;
+      break;
+    }
+  }
+  if (tab[TC][rhsIdx] > 1e-6 || artificialsInBasis) {
     return new Array(n).fill(0); // infeasible
   }
 
   // ── Phase 2: minimize recipe costs ─────────────────────────────────────────
   // Rebuild Z-row with real costs
-  for (let j = 0; j <= totalVars; j++) tab[K][j] = 0;
+  for (let j = 0; j <= totalVars; j++) tab[TC][j] = 0;
 
-  // Set costs: recipe vars get recipeCosts, artificials get big-M
+  // Set costs: recipe vars get recipeCosts, import vars get importCost, artificials get big-M
   const objCosts = new Array(totalVars).fill(0);
   for (let r = 0; r < n; r++) objCosts[r] = recipeCosts[r];
-  for (let k = 0; k < K; k++) objCosts[n + K + k] = 1e8; // big-M for artificials
+  for (let iv = 0; iv < nImp; iv++) objCosts[n + iv] = importCost;
+  for (let k = 0; k < TC; k++) objCosts[nVars + TC + k] = 1e8; // big-M for artificials
 
   // Compute reduced costs: Z_j = c_j - sum_k(c_Bk * tab[k][j])
   for (let j = 0; j <= totalVars; j++) {
     let val = j < totalVars ? objCosts[j] : 0;
-    for (let k = 0; k < K; k++) {
+    for (let k = 0; k < TC; k++) {
       const bVar = basis[k];
       const bCost = bVar < totalVars ? objCosts[bVar] : 0;
       val -= bCost * tab[k][j];
     }
-    tab[K][j] = val;
+    tab[TC][j] = val;
   }
 
   // Phase 2 pivot loop
@@ -898,8 +964,8 @@ function solveSimplexLP(m: SolverMatrix, input: SolveInput): number[] {
     let minRC = -1e-8;
     let enterCol = -1;
     for (let j = 0; j < totalVars; j++) {
-      if (tab[K][j] < minRC) {
-        minRC = tab[K][j];
+      if (tab[TC][j] < minRC) {
+        minRC = tab[TC][j];
         enterCol = j;
       }
     }
@@ -907,7 +973,7 @@ function solveSimplexLP(m: SolverMatrix, input: SolveInput): number[] {
 
     let minRatio = Infinity;
     let leaveRow = -1;
-    for (let k = 0; k < K; k++) {
+    for (let k = 0; k < TC; k++) {
       if (tab[k][enterCol] > 1e-10) {
         const ratio = tab[k][rhsIdx] / tab[k][enterCol];
         if (ratio < minRatio - 1e-10) {
@@ -920,13 +986,12 @@ function solveSimplexLP(m: SolverMatrix, input: SolveInput): number[] {
     }
     if (leaveRow < 0) break;
 
-    // Update Z-row reduced costs before pivot
-    lpPivot(tab, K, totalVars, rhsIdx, basis, leaveRow, enterCol);
+    lpPivot(tab, TC, totalVars, rhsIdx, basis, leaveRow, enterCol);
   }
 
-  // Extract recipe counts from basis
+  // Extract recipe counts from basis (only real recipe vars, not import vars)
   const recipeCounts = new Array(n).fill(0);
-  for (let k = 0; k < K; k++) {
+  for (let k = 0; k < TC; k++) {
     const bVar = basis[k];
     if (bVar < n) {
       recipeCounts[bVar] = Math.max(0, tab[k][rhsIdx]);
@@ -1213,9 +1278,20 @@ export function solve(data: PrototypeData, input: SolveInput): SolveResult {
   const m = buildMatrix(data, input);
   const cycles = detectCycles(m.matrix, m.numRows, m.numCols, m.resolved, m.columns);
   const solver = input.solver ?? 'algebra';
+  const isLPMode = solver === 'simplex' && !!input.target && !input.inputs?.length;
   const recipeCounts = solver === 'simplex' ? solveSimplex(m, input) : solveAlgebra(m, input);
   if (input.maxImports?.length) {
-    adjustForBalance(m, recipeCounts, new Map(input.maxImports.map(i => [i.name, i.amount])));
+    if (isLPMode) {
+      // LP mode models import caps (cap > 0) as hard constraints in the tableau.
+      // Still run adjustForBalance for cap=0 items (force-internal) since those
+      // need bottom-up consumer scaling that the LP can't enforce.
+      const zeroCapImports = input.maxImports.filter(i => i.amount === 0);
+      if (zeroCapImports.length) {
+        adjustForBalance(m, recipeCounts, new Map(zeroCapImports.map(i => [i.name, i.amount])));
+      }
+    } else {
+      adjustForBalance(m, recipeCounts, new Map(input.maxImports.map(i => [i.name, i.amount])));
+    }
   }
   const result = extractResults(m, recipeCounts);
   result.warnings = cycles.map(c => ({

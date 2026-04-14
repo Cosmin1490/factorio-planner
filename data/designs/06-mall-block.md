@@ -205,26 +205,26 @@ The mall assembles end products but imports materials. These upstream blocks mus
 ### Phase 1: basic materials (enables rail, belts, inserters, pipes)
 | Block | Output | Buildings | Key feeds |
 |---|---|---|---|
-| [iron-plate](iron-plate-block.md) | 15/s | 38 steel-furnace | small-parts, pipe, rail, inserters, everything |
-| [steel-plate](steel-plate-block.md) | 5/s | 75 adv-foundry (2× stamps) | locomotive, wagons, rail, train-stop |
-| [solder](solder-block.md) | 2/s | 12 auto-factory | shaft-mk01, e-circuit chain |
+| [iron-plate](03a-iron-plate-block.md) | 15/s | 38 steel-furnace | small-parts, pipe, rail, inserters, everything |
+| [steel-plate](03b-steel-plate-block.md) | 5/s | 75 adv-foundry (2× stamps) | locomotive, wagons, rail, train-stop |
+| [solder](03c-solder-block.md) | 2/s | 12 auto-factory | shaft-mk01, e-circuit chain |
 
 **Mall unlocked:** rail, transport-belt, underground-belt, splitter, pipe, pipe-to-ground, pump, offshore-pump, stone-brick, landfill
 
 ### Phase 2: alloys + plates (enables train vehicles)
 | Block | Output | Buildings | Key feeds |
 |---|---|---|---|
-| [duralumin](duralumin-block.md) | 3/s | 12 smelter | locomotive, wagons, brake, inserters |
-| [glass](glass-block.md) | 2/s | 5 glassworks | brake-mk01, resistor1, battery-mk01 |
-| [titanium-plate](titanium-plate-block.md) | 2/s | 8 steel-furnace | wagons (50 each), vitreloy |
-| [intermetallics](intermetallics-block.md) | 1/s | 30 (adv-foundry + smelter) | locomotive, wagons, 48 total consumers |
+| [duralumin](04a-duralumin-block.md) | 3/s | 12 smelter | locomotive, wagons, brake, inserters |
+| [glass](04b-glass-block.md) | 2/s | 5 glassworks | brake-mk01, resistor1, battery-mk01 |
+| [titanium-plate](04c-titanium-plate-block.md) | 2/s | 8 steel-furnace | wagons (50 each), vitreloy |
+| [intermetallics](04d-intermetallics-block.md) | 1/s | 30 (adv-foundry + smelter) | locomotive, wagons, 48 total consumers |
 
 **Mall unlocked:** locomotive, cargo-wagon, fluid-wagon (with inline brake/gearbox/shaft/steam-engine), medium-electric-pole, big-electric-pole
 
 ### Phase 3: electronics (enables combinators, substation, fast-inserter)
 | Block | Output | Buildings | Key feeds |
 |---|---|---|---|
-| [electronic-circuit](electronic-circuit-block.md) | 2/s | 31 (chipshooter + electronics + chemical) | locomotive (10), combinators, substation, fast-inserter, 219 consumers |
+| [electronic-circuit](05-electronic-circuit-block.md) | 2/s | 31 (chipshooter + electronics + chemical) | locomotive (10), combinators, substation, fast-inserter, 219 consumers |
 
 **Mall unlocked:** all remaining groups (combinators, substation, fast-inserter, train-stop)
 

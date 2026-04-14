@@ -194,3 +194,50 @@ Use **passive-provider** for output warehouses (bots or inserters pick up finish
 ## When to build
 
 As soon as steel-plate, electronic-circuit, and small-parts-01 are available on the bus. Start with rail + belt + inserter groups (highest consumption during expansion), add train vehicles and other groups as ingredients become available. The MAM pattern can be adopted from the start or retrofitted onto a dedicated-assembler mall later.
+
+## Build sequence — material blocks needed
+
+The mall assembles end products but imports materials. These upstream blocks must exist before the mall can produce each recipe group. Blocks listed in dependency order.
+
+### Phase 1: basic materials (enables rail, belts, inserters, pipes)
+| Block | Output | Buildings | Key feeds |
+|---|---|---|---|
+| [iron-plate](iron-plate-block.md) | 15/s | 38 steel-furnace | small-parts, pipe, rail, inserters, everything |
+| [steel-plate](steel-plate-block.md) | 5/s | 75 adv-foundry (2× stamps) | locomotive, wagons, rail, train-stop |
+| [solder](solder-block.md) | 2/s | 12 auto-factory | shaft-mk01, e-circuit chain |
+
+**Mall unlocked:** rail, transport-belt, underground-belt, splitter, pipe, pipe-to-ground, pump, offshore-pump, stone-brick, landfill
+
+### Phase 2: alloys + plates (enables train vehicles)
+| Block | Output | Buildings | Key feeds |
+|---|---|---|---|
+| [duralumin](duralumin-block.md) | 3/s | 12 smelter | locomotive, wagons, brake, inserters |
+| [glass](glass-block.md) | 2/s | 5 glassworks | brake-mk01, resistor1, battery-mk01 |
+| [titanium-plate](titanium-plate-block.md) | 2/s | 8 steel-furnace | wagons (50 each), vitreloy |
+| [intermetallics](intermetallics-block.md) | 1/s | 30 (adv-foundry + smelter) | locomotive, wagons, 48 total consumers |
+
+**Mall unlocked:** locomotive, cargo-wagon, fluid-wagon (with inline brake/gearbox/shaft/steam-engine), medium-electric-pole, big-electric-pole
+
+### Phase 3: electronics (enables combinators, substation, fast-inserter)
+| Block | Output | Buildings | Key feeds |
+|---|---|---|---|
+| [electronic-circuit](electronic-circuit-block.md) | 2/s | 31 (chipshooter + electronics + chemical) | locomotive (10), combinators, substation, fast-inserter, 219 consumers |
+
+**Mall unlocked:** all remaining groups (combinators, substation, fast-inserter, train-stop)
+
+### Upstream blocks not yet designed
+These are needed by the material blocks above but don't have design files yet:
+- **lead-plate** — feeds solder (8/s), intermetallics (via pbsb-alloy)
+- **tin-plate** — feeds solder (4/s), capacitor1, e-circuit
+- **zinc-plate** — feeds battery-mk01
+- **nickel-plate** — feeds vitreloy (1.5/s)
+- **nexelit-plate** — feeds fenxsb-alloy (1/s)
+- **sb-oxide** — feeds vitreloy + fenxsb-alloy (2/s total)
+- **aluminium-plate** — feeds duralumin (12/s, current block only 1/s)
+- **copper-plate** — feeds duralumin (6/s), vitreloy, e-circuit (current block only 3.16/s)
+- **graphite** — feeds vacuum-tube, battery-mk01 (2.4/s)
+- **ceramic** — feeds capacitor1, inductor1 (1.15/s)
+- **cyanic-acid** — feeds battery-mk01 (12/s fluid)
+- **melamine** — feeds battery-mk01 (0.8/s)
+- **pbsb-alloy** — feeds battery-mk01 (0.4/s)
+- **pcb1** — feeds e-circuit (0.4/s, current block 0.125/s — needs scaling)

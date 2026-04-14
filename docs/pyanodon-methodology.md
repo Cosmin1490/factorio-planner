@@ -111,6 +111,8 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
 
 19. **Stable physical properties** — good boundaries have uniform properties across consumers. Iron-plate at X/s is iron-plate regardless of consumer. Temperature-variant fluids (coke-oven-gas at 100C vs 250C) are poor boundaries unless the solver's temperature-linked columns handle them — unconstrained fluids still share one column, verify manually. Steam specifically is never trained (rule 9).
 
+**Handcrafting limitation.** In Pyanodon, most recipes beyond raw materials require specialized buildings (hpf, advanced-foundry, py-rawores-smelter, glassworks, electronics-factory, chipshooter, etc.) and **cannot be handcrafted**. Only items in the `crafting` category (automated-factory recipes) can be handcrafted — and even then, many are impractical due to ingredient depth. This means "handcraft it for now" is rarely a viable fallback. If an item needs a specialized building, it must be either inlined in a block or have its own production block — there is no middle ground. Check the recipe's crafting category before assuming handcrafting is an option.
+
 ## Block design
 
 20. **City block space budget** — in train-based city block architectures, each block has finite space split between factories and train stations (1 station per item, input or output). Three tools to fit a sub-factory into a block:

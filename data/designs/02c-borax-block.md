@@ -52,7 +52,7 @@ Syngas block (02b) produces 310/s. This block consumes 300/s — 10/s surplus st
 
 - Must be placed on a borax ore patch with 9+ mining positions.
 - 12/s borax supports 2 iron plate blocks (each needs 5.94/s borax) with 0.12/s surplus.
-- No Helmod export — miners are not solver recipes. Place miners on ore patch, belt raw-borax to washers, pipe syngas from train station to miners.
+- Helmod export covers washers only. Miners are not solver recipes — place on ore patch manually.
 - Syngas block (02b) paired 1:1 with this block. Build them together.
 - Sinkhole placement: single sinkhole covers 128.6/s muddy-sludge (sinkhole capacity is 240/s).
 
@@ -60,3 +60,11 @@ Syngas block (02b) produces 310/s. This block consumes 300/s — 10/s surplus st
 
 - Add miners as ore patch allows. Each additional miner needs 33.33/s more syngas and 1 more washer.
 - At 310/s syngas (full block output), max 9 miners (300/s used). For 10+ miners, stamp syngas block.
+
+## Helmod import string
+
+Washers only — miners are manual placement on ore patch.
+
+```
+eJx1UjFywyAQ7PWKG9XJTOSeJkW6NP6ABsE5ZoI45UCxNR79PUjGCCdxBbd7x+3uoAksKWmhFZcKQFnpvajfSaOtnyLwjewNObFbimB6FM1y6+LQZ8tEYR3Lg68Lvg4CGC3qa1+TECfjfN0Ry/PzSfqjcR+JCdMQmVTQySHnqpvagUmPKojAI2bwIFUgnsRBWp9QTzbqLRF1NFYzuqQSYN/kaxa9R2UGTOtuyvdNCTiNZ/GyAY+dbG7497PJxhJns6Ffo7QmTKJ2xL20Rf/N4SY4S367UkXzTdOiBvmOeLwBQPY0ulBaA+ijTIteXOYMzhvfoVTkCvZ6po7k0WfRa0aFhSK5P4mZgP1d6sMYRLP7b08MnFEbdCEpmfO3XIG5YgwjO2grdPoHVW/GCw==
+```

@@ -209,6 +209,8 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
     
     **Train priority as tiering mechanism.** When both a direct consumer (stone-brick block) and a cascade block import the same byproduct, use train station priority to implement the tier ordering: direct consumer gets high priority, cascade block gets low priority. Trains deliver to the consumer first; only surplus reaches the cascade. This replaces in-block overflow wiring with train scheduling — simpler, no circuits at the producer, and the consumer and cascade are fully independent blocks. The cascade block still applies overflow-to-void internally for its own conversion products.
 
+**Mall blocks** (infrastructure crafting — trains, belts, inserters, poles, pipes, combinators) are exempt from the production block rules above. Throughput is irrelevant, stamping doesn't apply, belt coupling and bots between subblocks are fine, and the setup can span multiple city blocks. See `data/designs/mall-block.md` for ingredient groupings and layout guidance.
+
 ## Bio organisms
 
 ### Module system

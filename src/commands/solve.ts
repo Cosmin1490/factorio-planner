@@ -176,9 +176,9 @@ export function solveCommand(protoPath: string, options: SolveOptions) {
     constraints.push({ recipeName: recipe, productName: product, type });
   }
 
-  // Input mode defaults to simplex (algebraic greedy pass can't balance competing consumers)
-  const solverDefault = options.input ? 'simplex' : 'algebra';
-  const solverMode = (options.solver ?? solverDefault) as SolverMode;
+  // Simplex is the default — LP cost minimization for target mode, legacy Helmod-style for input mode.
+  // Algebra is legacy, breaks on 12+ recipe chains (astronomical numbers). Still available via --solver algebra.
+  const solverMode = (options.solver ?? 'simplex') as SolverMode;
   if (solverMode !== 'algebra' && solverMode !== 'simplex') {
     console.error(`Invalid solver "${options.solver}" — must be "algebra" or "simplex"`);
     process.exit(1);

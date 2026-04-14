@@ -118,6 +118,8 @@ stone-brick, concrete, landfill
 
 ## MAM pattern (Multi-purpose Assembler Mall)
 
+*Term from the Pyanodon community (Discord). Not widely documented outside that circle — the mechanics are standard Factorio 2.0 + Pyanodon buildings.*
+
 Instead of 1 dedicated assembler per recipe, use Factorio 2.0's circuit-based recipe setting to have shared assemblers dynamically swap between recipes. Combined with Pyanodon's warehouses (450 slots) as smart buffers, this dramatically reduces assembler count.
 
 ### How it works
@@ -133,6 +135,7 @@ Instead of 1 dedicated assembler per recipe, use Factorio 2.0's circuit-based re
 - **Throughput doesn't matter** — a single assembler cycling through 5 recipes at 20% duty cycle each still produces far more than you consume of any individual item.
 - **Same crafting category** — recipes within a category (e.g., `crafting`) run on the same assembler type. Small-parts-01, bolts, iron-gear-wheel, copper-cable, pipe — all `crafting`, one `automated-factory` handles them all.
 - **Warehouses absorb variance** — 450 slots buffer enough stock to cover gaps while the assembler works on other recipes.
+- **Warehouse footprint enables shared access** — the 6x6 warehouse can serve multiple assemblers simultaneously. Unlike vanilla chests (1x1) where only 1-2 inserters fit per side, a warehouse has 24 tiles of perimeter — enough for 6+ assemblers to insert/extract from the same buffer. This physical advantage is what makes the shared-buffer pattern practical; vanilla chests can't do it.
 
 ### MAM vs dedicated assemblers
 

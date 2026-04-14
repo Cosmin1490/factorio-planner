@@ -116,9 +116,9 @@ stone-brick, concrete, landfill
 - brake-mk01, gearbox-mk01, shaft-mk01, steam-engine
 - These have deep ingredient chains themselves (brake-mk01 needs vitreloy, ceramic, glass, copper-plate, duralumin, small-parts, steel)
 
-## MAM pattern (Multi-purpose Assembler Mall)
+## MAM pattern (Make Anything Machine)
 
-*Term from the Pyanodon community (Discord). Not widely documented outside that circle — the mechanics are standard Factorio 2.0 + Pyanodon buildings.*
+*Community term from the Pyanodon Discord and r/pyanodons. "MAM" = Make Anything Machine (sometimes "Make Everything Machine"). The mechanics are standard Factorio 2.0 circuit-based recipe setting + Pyanodon warehouses. See [u/laserbeam3's r/factorio post](https://www.reddit.com/r/factorio/comments/1oxokr2/pyanodons_early_game_mall/) and [r/pyanodons MAM thread](https://www.reddit.com/r/pyanodons/comments/1qsf1n2/do_you_also_build_huge_mams_in_py/) for community examples.*
 
 Instead of 1 dedicated assembler per recipe, use Factorio 2.0's circuit-based recipe setting to have shared assemblers dynamically swap between recipes. Combined with Pyanodon's warehouses (450 slots) as smart buffers, this dramatically reduces assembler count.
 
@@ -129,6 +129,23 @@ Instead of 1 dedicated assembler per recipe, use Factorio 2.0's circuit-based re
 3. **Decider combinator compares** — for each item, if warehouse stock < target, output that item's signal. Uses the `each` virtual signal to compare all items in parallel.
 4. **Assembler reads signal → sets recipe** — the assembler is configured to "set recipe based on incoming signals." It picks whichever item is below threshold and crafts it. When the recipe signal changes, the assembler finishes its current craft, then switches.
 5. **Inserters feed from shared input chests/warehouses** — since recipes in the same crafting category share many inputs (iron-plate, copper-plate, etc.), the inserter setup can be simple.
+
+### Community implementations
+
+**u/laserbeam3's belt-based MAM** (r/factorio, 88 upvotes):
+- 4 `automated-factory-mk01` producing from a single warehouse
+- 3 configurable logistics groups carried as blueprints: **Mall Products** (outputs), **Mall Intermediates** (internal crafts like wires/solder), **Mall Inputs** (imports from bus)
+- A "brain" circuit checks warehouse inventory against desired quantities, enables recipes only when ingredients are sufficient
+- Assemblers keep a recipe active until satisfied or idle — not just threshold-based swapping
+- All outputs extracted from warehouse, resorted when product list changes
+- Works without bots — belts + circuits + warehouses only. Upgraded to better inserters and bots over time.
+
+**r/pyanodons community approaches**:
+- **Modular units** (u/BeanBayFrijoles): many smaller MAM units supplied by bots, each with its own recipe list. Higher-tier items on separate units to avoid dependency issues.
+- **Overfilling prevention** is a recurring theme — several players use circuits or inserter crane stack size control to avoid jamming assemblers with wrong ingredients during recipe switches.
+- **Hysteresis**: build until `amount > target + buffer`, don't restart until `amount < target`. Prevents rapid recipe oscillation (u/Miserable-Theme-1280).
+- **Dependency tiers** (u/Miserable-Theme-1280): successive tiers of MAM units — lower tiers craft ingredients for higher tiers. Avoids circular dependencies within a single MAM.
+- **Recipe Combinator mod** (u/bitwiseshiftleft): provides circuit signals for recipe ingredients/products/crafting times — useful for advanced MAM control logic.
 
 ### Why it works for malls
 
@@ -158,6 +175,7 @@ This collapses the import station list from ~15 (plates + intermediates) to ~6-8
 - **Cross-category recipes can't share** — a `crafting` assembler can't run `advanced-foundry` recipes. Group MAMs by crafting category.
 - **Fluid ingredients** — recipes needing fluids (fast-transport-belt needs lubricant, concrete needs water) require pipe connections. Recipes with different fluid inputs can't easily share one assembler unless you valve/switch the pipes.
 - **Recipe transition delay** — when the assembler switches recipes, it finishes the current craft first, then clears ingredients for the new recipe. Leftover ingredients from the old recipe go to the output, not back to input. Design inserter logic to handle this (filter inserters, or accept small waste).
+- **Ingredient overfilling** — inserters loading ingredients don't know when a recipe switch is coming. Large stack sizes can jam the assembler with wrong ingredients. Mitigations: inserter crane stack size control, circuit-controlled inserters that check the current recipe signal, or simply accepting slower loading with stack size 1.
 - **Signal priority** — when multiple items are below threshold simultaneously, the assembler picks one (lowest signal index). This is fine for malls — all items eventually get crafted.
 
 ### Pyanodon warehouse variants

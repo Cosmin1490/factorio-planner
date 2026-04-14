@@ -110,10 +110,13 @@ stone-brick, concrete, landfill
 ## Sub-components: inline vs import
 
 **Import from bus** (high consumer count, shared across many blocks):
-- small-parts-01, electronic-circuit, steel-plate, duralumin, iron-plate, copper-cable
+- electronic-circuit, steel-plate, duralumin, iron-plate, intermetallics, glass, solder
 
-**Inline in mall** (used only by mall recipes, no other consumers):
-- brake-mk01, gearbox-mk01, shaft-mk01, steam-engine
+**MAM self-crafted** (crafting category, cheap from imported plates — no dedicated block needed):
+- small-parts-01, bolts, copper-cable, iron-gear-wheel, pipe, iron-stick
+
+**Inline specialized buildings** (mall-adjacent, require non-crafting factories):
+- brake-mk01 (needs ceramic from hpf), gearbox-mk01, shaft-mk01, steam-engine
 - These have deep ingredient chains themselves (brake-mk01 needs vitreloy, ceramic, glass, copper-plate, duralumin, small-parts, steel)
 
 ## MAM pattern (Make Anything Machine)

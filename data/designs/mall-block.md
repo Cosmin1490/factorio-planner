@@ -7,7 +7,7 @@ A singleton setup that crafts low-volume infrastructure items. The one block typ
 - **Throughput doesn't matter** for most items (locomotives, buildings, tanks, poles). Belts and inserters may need higher throughput during expansion phases.
 - **Never stamped** — you only need one mall. The sole exception to rule 25.
 - **Can span 2-4+ adjacent city blocks** — belt coupling and bots between subblocks are fine since you never copy it.
-- **1 assembler per recipe**, buffer chests on outputs. The constraint is station count and ingredient variety, not building count.
+- **1 assembler per recipe** is the simple approach — buffer chests on outputs. But see the MAM pattern below for fewer assemblers via recipe swapping.
 
 ## Top shared ingredients
 
@@ -116,6 +116,60 @@ stone-brick, concrete, landfill
 - brake-mk01, gearbox-mk01, shaft-mk01, steam-engine
 - These have deep ingredient chains themselves (brake-mk01 needs vitreloy, ceramic, glass, copper-plate, duralumin, small-parts, steel)
 
+## MAM pattern (Multi-purpose Assembler Mall)
+
+Instead of 1 dedicated assembler per recipe, use Factorio 2.0's circuit-based recipe setting to have shared assemblers dynamically swap between recipes. Combined with Pyanodon's warehouses (450 slots) as smart buffers, this dramatically reduces assembler count.
+
+### How it works
+
+1. **Warehouse as buffer + inventory monitor** — a `py-warehouse-basic` (6x6, 450 slots) stores all outputs. Connect it to the circuit network — it broadcasts current stock levels for every item inside.
+2. **Constant combinator sets targets** — define desired stock per item (e.g., signal small-parts-01 = 200, signal bolts = 100, signal iron-gear-wheel = 50).
+3. **Decider combinator compares** — for each item, if warehouse stock < target, output that item's signal. Uses the `each` virtual signal to compare all items in parallel.
+4. **Assembler reads signal → sets recipe** — the assembler is configured to "set recipe based on incoming signals." It picks whichever item is below threshold and crafts it. When the recipe signal changes, the assembler finishes its current craft, then switches.
+5. **Inserters feed from shared input chests/warehouses** — since recipes in the same crafting category share many inputs (iron-plate, copper-plate, etc.), the inserter setup can be simple.
+
+### Why it works for malls
+
+- **Throughput doesn't matter** — a single assembler cycling through 5 recipes at 20% duty cycle each still produces far more than you consume of any individual item.
+- **Same crafting category** — recipes within a category (e.g., `crafting`) run on the same assembler type. Small-parts-01, bolts, iron-gear-wheel, copper-cable, pipe — all `crafting`, one `automated-factory` handles them all.
+- **Warehouses absorb variance** — 450 slots buffer enough stock to cover gaps while the assembler works on other recipes.
+
+### MAM vs dedicated assemblers
+
+| | Dedicated (1 per recipe) | MAM (shared + recipe swap) |
+|---|---|---|
+| Assembler count | 1 per recipe (~40 total) | ~5-10 total (grouped by crafting category) |
+| Circuit complexity | None | Moderate (combinator logic per group) |
+| Throughput | Continuous per item | Time-shared, lower per item |
+| Intermediates | Import or inline separately | **Can self-craft** — the MAM crafts its own intermediates (small-parts, bolts, copper-cable) between end-product runs, reducing import stations |
+| Space | More assemblers, simpler wiring | Fewer assemblers, more combinators + warehouses |
+
+### Self-crafting intermediates
+
+The MAM's strongest advantage: it can craft intermediates as part of its recipe rotation. Instead of importing small-parts-01, bolts, copper-cable, and iron-gear-wheel from bus blocks, the MAM imports only raw plates (iron, copper) and crafts the intermediates itself — the warehouse monitors stock of both intermediates and end products, and the assembler prioritizes whichever is lowest.
+
+This collapses the import station list from ~15 (plates + intermediates) to ~6-8 (plates only). The trade-off is throughput — intermediates share assembler time with end products — but since mall throughput doesn't matter, this is free.
+
+### Limitations
+
+- **Cross-category recipes can't share** — a `crafting` assembler can't run `advanced-foundry` recipes. Group MAMs by crafting category.
+- **Fluid ingredients** — recipes needing fluids (fast-transport-belt needs lubricant, concrete needs water) require pipe connections. Recipes with different fluid inputs can't easily share one assembler unless you valve/switch the pipes.
+- **Recipe transition delay** — when the assembler switches recipes, it finishes the current craft first, then clears ingredients for the new recipe. Leftover ingredients from the old recipe go to the output, not back to input. Design inserter logic to handle this (filter inserters, or accept small waste).
+- **Signal priority** — when multiple items are below threshold simultaneously, the assembler picks one (lowest signal index). This is fine for malls — all items eventually get crafted.
+
+### Pyanodon warehouse variants
+
+| Building | Size | Slots | Type |
+|---|---|---|---|
+| py-warehouse-basic | 6x6 | 450 | Container (no logistics) |
+| py-warehouse-passive-provider | 6x6 | 450 | Logistic — bots pick up |
+| py-warehouse-requester | 6x6 | 450 | Logistic — bots deliver |
+| py-warehouse-buffer | 6x6 | 450 | Logistic — bots use as overflow |
+| py-warehouse-storage | 6x6 | 450 | Logistic — bot storage |
+| py-warehouse-active-provider | 6x6 | 450 | Logistic — bots actively empty |
+
+Use **passive-provider** for output warehouses (bots or inserters pick up finished items) and **requester** for input warehouses (bots deliver raw materials from the train station area).
+
 ## When to build
 
-As soon as steel-plate, electronic-circuit, and small-parts-01 are available on the bus. Start with rail + belt + inserter groups (highest consumption during expansion), add train vehicles and other groups as ingredients become available.
+As soon as steel-plate, electronic-circuit, and small-parts-01 are available on the bus. Start with rail + belt + inserter groups (highest consumption during expansion), add train vehicles and other groups as ingredients become available. The MAM pattern can be adopted from the start or retrofitted onto a dedicated-assembler mall later.

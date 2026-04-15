@@ -3,7 +3,7 @@ import { writeFileSync } from 'fs';
 import { inflateSync } from 'zlib';
 import { resolve, dirname } from 'path';
 import { loadPrototypes } from '../data/PrototypeLoader.js';
-import type { PrototypeData, Recipe, Entity } from '../data/PrototypeLoader.js';
+import type { PrototypeData, Recipe, Entity, RecipeElement } from '../data/PrototypeLoader.js';
 
 export interface BlockInventory {
   name: string;
@@ -215,9 +215,9 @@ function detectMiners(
   for (const [recipeName] of recipeGroups) {
     const recipe = data.recipes[recipeName];
     if (!recipe) continue;
-    const ings = Array.isArray(recipe.ingredients) ? recipe.ingredients : Object.values(recipe.ingredients ?? {});
+    const ings = Array.isArray(recipe.ingredients) ? recipe.ingredients : Object.values(recipe.ingredients ?? {}) as RecipeElement[];
     for (const i of ings) blockConsumed.add(i.name);
-    const prods = Array.isArray(recipe.products) ? recipe.products : Object.values(recipe.products ?? {});
+    const prods = Array.isArray(recipe.products) ? recipe.products : Object.values(recipe.products ?? {}) as RecipeElement[];
     for (const p of prods) blockProduced.add(p.name);
   }
 
@@ -302,9 +302,9 @@ function detectFurnaces(
   for (const [recipeName] of recipeGroups) {
     const recipe = data.recipes[recipeName];
     if (!recipe) continue;
-    const prods = Array.isArray(recipe.products) ? recipe.products : Object.values(recipe.products ?? {});
+    const prods = Array.isArray(recipe.products) ? recipe.products : Object.values(recipe.products ?? {}) as RecipeElement[];
     for (const p of prods) blockProduced.add(p.name);
-    const ings = Array.isArray(recipe.ingredients) ? recipe.ingredients : Object.values(recipe.ingredients ?? {});
+    const ings = Array.isArray(recipe.ingredients) ? recipe.ingredients : Object.values(recipe.ingredients ?? {}) as RecipeElement[];
     for (const i of ings) blockConsumed.add(i.name);
   }
   for (const m of miners) {
@@ -332,7 +332,7 @@ function detectFurnaces(
     for (const [recipeName] of recipeGroups) {
       const recipe = data.recipes[recipeName];
       if (!recipe) continue;
-      const prods = Array.isArray(recipe.products) ? recipe.products : Object.values(recipe.products ?? {});
+      const prods = Array.isArray(recipe.products) ? recipe.products : Object.values(recipe.products ?? {}) as RecipeElement[];
       for (const p of prods) recipeProduced.add(p.name);
     }
 
@@ -345,13 +345,13 @@ function detectFurnaces(
       if (voidCategories.has(cat)) continue;
       const candidates = recipesByCategory.get(cat) ?? [];
       for (const recipe of candidates) {
-        const ings = Array.isArray(recipe.ingredients) ? recipe.ingredients : Object.values(recipe.ingredients ?? {});
+        const ings = Array.isArray(recipe.ingredients) ? recipe.ingredients : Object.values(recipe.ingredients ?? {}) as RecipeElement[];
         if (ings.length === 0) continue;
         const allAvailable = (ings as any[]).every((i: any) => blockProduced.has(i.name));
         if (!allAvailable) continue;
         // Score: prefer recipes with more recipe-produced ingredients,
         // tiebreak by product having a station (export) or being consumed by block recipes
-        const prods = Array.isArray(recipe.products) ? recipe.products : Object.values(recipe.products ?? {});
+        const prods = Array.isArray(recipe.products) ? recipe.products : Object.values(recipe.products ?? {}) as RecipeElement[];
         const ingScore = (ings as any[]).filter((i: any) => recipeProduced.has(i.name)).length;
         const hasExportProduct = (prods as any[]).some((p: any) => exportItems.has(p.name)) ? 1000 : 0;
         const hasConsumedProduct = (prods as any[]).some((p: any) => blockConsumed.has(p.name)) ? 100 : 0;
@@ -425,7 +425,7 @@ function detectBoilers(
     for (const [recipeName] of recipeGroups) {
       const recipe = data.recipes[recipeName];
       if (!recipe) continue;
-      const products = Array.isArray(recipe.products) ? recipe.products : Object.values(recipe.products ?? {});
+      const products = Array.isArray(recipe.products) ? recipe.products : Object.values(recipe.products ?? {}) as RecipeElement[];
       for (const p of products) {
         if (p.type === 'fluid' && data.fluids[p.name]?.fuel_value) {
           internalFluids.add(p.name);
@@ -450,7 +450,7 @@ function detectBoilers(
         }
         if (producers.length === 0) return true; // raw input
         for (const recipe of producers) {
-          const ings = Array.isArray(recipe.ingredients) ? recipe.ingredients : Object.values(recipe.ingredients ?? {});
+          const ings = Array.isArray(recipe.ingredients) ? recipe.ingredients : Object.values(recipe.ingredients ?? {}) as RecipeElement[];
           if ((ings as any[]).some((i: any) => i.name === 'steam')) continue;
           const allOk = (ings as any[]).every((i: any) => canProduceWithoutSteam(i.name, new Set(visited)));
           if (allOk) return true;
@@ -533,14 +533,14 @@ function computeSteadyState(
     const speed = getEffectiveSpeed(data, group.factory, group.modules);
     const maxCrafts = (speed / recipe.energy) * group.count;
 
-    const rawProducts = Array.isArray(recipe.products) ? recipe.products : Object.values(recipe.products ?? {});
+    const rawProducts = Array.isArray(recipe.products) ? recipe.products : Object.values(recipe.products ?? {}) as RecipeElement[];
     const products = rawProducts.map(p => {
       let amount = p.amount ?? ((p.amount_min ?? 0) + (p.amount_max ?? 0)) / 2;
       if (p.probability != null) amount *= p.probability;
       return { name: p.name, amount };
     });
 
-    const rawIngs = Array.isArray(recipe.ingredients) ? recipe.ingredients : Object.values(recipe.ingredients ?? {});
+    const rawIngs = Array.isArray(recipe.ingredients) ? recipe.ingredients : Object.values(recipe.ingredients ?? {}) as RecipeElement[];
     const ingredients = rawIngs.map(i => ({ name: i.name, amount: i.amount ?? 1 }));
 
     recipes.push({ name: recipeName, maxCraftsPerSec: maxCrafts, products, ingredients });
@@ -878,7 +878,7 @@ export function analyzeBlueprint(
       totalPowerMW += (entity.energy_usage * 60 * group.count * utilization) / 1_000_000;
     }
 
-    const products = Array.isArray(recipe.products) ? recipe.products : Object.values(recipe.products ?? {});
+    const products = Array.isArray(recipe.products) ? recipe.products : Object.values(recipe.products ?? {}) as RecipeElement[];
     for (const prod of products) {
       let amount: number;
       if (prod.amount != null) {
@@ -893,7 +893,7 @@ export function analyzeBlueprint(
       produced.set(prod.name, (produced.get(prod.name) ?? 0) + rate);
     }
 
-    const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : Object.values(recipe.ingredients ?? {});
+    const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : Object.values(recipe.ingredients ?? {}) as RecipeElement[];
     for (const ing of ingredients) {
       const amount = ing.amount ?? 1;
       const rate = crafts * amount;

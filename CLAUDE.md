@@ -8,6 +8,11 @@ npx tsx src/cli.ts <command>
 
 No build step needed for dev. The 16MB prototype JSON loads in ~0.6 seconds.
 
+## Rules
+
+- When working with encoded/compressed data (blueprint strings, Helmod export strings, base64, zlib), always write a script to decode/process programmatically. Never attempt to decode or parse inline or mentally.
+- When selecting factories or recipes for pipeline calculations, always use `--unlocked` and verify machine tier availability. Do not assume mk03/mk04 machines are available — ask if unsure.
+
 ## Key files
 
 - `src/cli.ts` — CLI entry point (commander)

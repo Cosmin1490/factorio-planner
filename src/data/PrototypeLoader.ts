@@ -61,6 +61,9 @@ export interface Entity {
   tile_height?: number;
   burner_prototype?: BurnerPrototype;
   hidden?: boolean;
+  fluid_energy_source?: { burns_fluid?: boolean; effectivity?: number; fuel_categories?: Record<string, boolean> };
+  max_energy_usage?: Record<string, number>;
+  target_temperature?: number;
 }
 
 export interface Item {

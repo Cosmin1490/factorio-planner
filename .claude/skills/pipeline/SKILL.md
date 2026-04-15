@@ -15,6 +15,10 @@ Solve a production pipeline with correct defaults and guardrails.
 
 User provides: recipe list, target or input amounts, and optionally factory/module/constraint overrides.
 
+## Context
+
+Before solving, consult [`docs/pyanodon-methodology.md`](../../docs/pyanodon-methodology.md) for recipe selection rationale, byproduct management strategy, constraint decisions, and block boundary rules. The methodology is the authoritative reference for *what* to solve; this skill handles *how* to solve it.
+
 ## Workflow
 
 ### 1. Gather parameters

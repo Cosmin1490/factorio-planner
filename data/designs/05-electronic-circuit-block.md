@@ -61,6 +61,12 @@ Per rule 23 recipe-variant staging: battery-mk00 has 1 consumer (inline, teardow
 | copper-cable | 8.00 | copper-cable (auto-factory) | inductor1 |
 | vacuum | 50.00 | vacuum (vacuum-pump) | vacuum-tube |
 
+### Helmod import string (Phase 1)
+
+```
+eJztlz9v2zAQxXd/CsJzBVjy3wxcOnTr4rUoDIq8NEQokiWPaY3A3720LEuKaAOaUg3exHd39ns/UbYoDFGGM0UO9H1GCFfMezr/bgSo+ZcovIHz0mhanBcoK6D5+aqMQ68HZwzWY+3g17NeDxIiBZ1f+vJG0SzOz7mxFlzGWamgKeDRxkKzMH80uHZVHg/WGRE4UnQBWvGZcTTuSJ+Z8o3qjYp2+wp/kUo40I1JQvZ5e9l63gOX9urkanyf9wUt4C9ddMLd4F0YdzwU5sUZ5h5p/4WpCQe6V0bVzPV6r4E7P63jr5dSr/nqiQW0FUcQWTOeVa+L/EPjfW+kxFWmaOwnnaSKthV4+n5qRVLXL4Fxo3vVtravoaIuEtR5EPUb4yFUc6EcUbPZcJn/qBd5Ns9SgXtMscZHB8SdvJwJ4GndYtVYzOuE87LWLo5Q9DOZnQAFXJ35krtJiGa/Rd0uGK+G7G14mWPe/AHqTtnVGILz/Mw6SAK6yV8gvR3LepuQ3iQvHMwyrh+o76DejUW9S1Bvh6hLhgiXNI9/xRT109hUT0nV+yHqbiNlXDoeJE4EeDw9WP8Szzjx1ejTUc96HU1a39r/cQvaz1660WQlQvXhFtmAtLhlQupfDoQEjY3NWq8PeLVwmjnA4DQ5zECLfx5+qxU=
+```
+
 ### Phase 1 notes
 
 - 43 buildings, 13 stations. Fits in 2 city blocks (sub-components in one, battery production + chipshooters in the other).
@@ -127,6 +133,12 @@ When the battery-mk01 supply chain is ready (cyanic-acid/urea/auog bio chain), s
 | copper-plate | 12.67/s | 6.00/s | -6.67/s |
 | e-circuit output | 2.00/s | 3.33/s | **+67%** |
 | All others | unchanged | unchanged | — |
+
+### Helmod import string (Phase 2)
+
+```
+eJztlztv2zAUhXf/CkJzVFiSH1m4ZMjWxWtQGBR50xDhq3ykNQL/99K2TCmSBWhqNXgTz73XPucTZdFMI6EpEWiPPxcIUUGcw9l3zUBkD1H4AOu4Vrg8LTyXgIvTVR2H3vdWa38eS4NPJ/08iBBnOLv0FY2iSJzPqDYGbE5JLaAp+IOJhWahfyuwaVUf9sZqFqjH3gZI4iuhXtsDfiXCNarTItrtKvSNC2ZBNSYR2hXpMnneAeXm6uRqfFd0BcXgD162wmiQNoztf2qT4gSzaNVfgQjuDzhT2koiOv3XgK3f5Pj5Uuo0Xy2R4LUkHljejOfyfVl8aRz/RoSI1EH5blKEZLQtwOHPYxKPbb0GQrXqVFNtV05FXQ5QF33UH4SGIGcC+WImN0Ga/4i3moq3GuAt+3jjk8PiTl7OBPCcdvFqKubVAHN1exfnPtRz+b0AAdRbrTh1M2C9nsp6PWC96rO24LiLeYo76RukN1NJbwak133SUQ70TnqE9HYq6e2A9GZw4CCGUH5HPYL6cSrqxwHqbR91myyn3NLAfV7OBHo81Br3Fo/e8Y39z2EvOh1NWpfsv9zAlv3opBtjOyDLPcgvN8kEj6tvVXXLB1c/LTAOyjdOj+kvylk4Liz4YBXaL0Cxv628UOo=
+```
 
 ### Phase 2 notes
 

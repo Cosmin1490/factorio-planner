@@ -12,7 +12,13 @@ No build step needed for dev. The 16MB prototype JSON loads in ~0.6 seconds.
 
 - When working with encoded/compressed data (blueprint strings, Helmod export strings, base64, zlib), always write a script to decode/process programmatically. Never attempt to decode or parse inline or mentally.
 - When selecting factories or recipes for pipeline calculations, always use `--unlocked` and verify machine tier availability. Do not assume mk03/mk04 machines are available — ask if unsure.
-- When computing building counts for ANY biological building (auog-paddock, vrauks-paddock, moss-farm, fwf, seaweed-crop, moondrop-greenhouse, ralesia-plantation, sap-extractor, prandium-lab, rc-mk01, fish-farm, incubator, bio-reactor), ALWAYS assume full bio modules in every slot. Without modules bio buildings are 5-21× slower — unmoduled counts are meaningless. See `docs/pyanodon-methodology.md` Bio organisms section for the module table. When using the solver, always pass `--modules` for bio recipes.
+- **Before presenting any pipeline, block design, or block delta analysis**, self-review against all applicable rules in `docs/pyanodon-methodology.md`. Each rule that applies to the current analysis must be verified as followed. Skipping a rule requires the user to explicitly say which specific rule(s) to skip for this specific case — "just skip the checks" doesn't count. Common failure modes to check:
+  - Units match between demand and supply before comparing (rule 11 step 1b)
+  - Bio buildings computed with full modules (rule 23 bio section)
+  - Solver-validated rates used, not hand-trace estimates (rule 10 step 6)
+  - Byproducts forward-traced for downstream value (rule 10 step 5)
+  - Existing waste streams checked before new production (rule 2)
+  - Conversion recipes checked for items with processing steps (log→wood, ore→plate)
 - When asked to solve a pipeline or compute production rates, use the `/pipeline` skill. When asked to design a block, use the `/block-design` skill.
 
 ## Key files

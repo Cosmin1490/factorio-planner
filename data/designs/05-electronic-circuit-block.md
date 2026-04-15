@@ -70,7 +70,7 @@ eJztlz9v2zAQxXd/CsJzBVjy3wxcOnTr4rUoDIq8NEQokiWPaY3A3720LEuKaAOaUg3exHd39ns/UbYo
 ### Phase 1 notes
 
 - 43 buildings, 13 stations. Fits in 2 city blocks (sub-components in one, battery production + chipshooters in the other).
-- Cellulose imported (3.33/s). 34 hpf if dedicated block, needs 23.3/s wood + 13.3/s limestone. Wood is the bottleneck — current log block produces 1.47/s, needs major scaling. Cellulose has 8 consumers, borderline Tier B boundary item.
+- Cellulose imported (3.33/s). 34 hpf if dedicated block, needs 23.3/s wood + 13.3/s limestone. Wood from log via log-wood-fast (4 log → 40 wood, 10:1 ratio), so 23.3/s wood = 2.33/s log. Current log block produces 1.47/s log — needs ~2× scaling (one more log stamp). Not a bottleneck. Cellulose has 8 consumers, borderline Tier B boundary item.
 - Water-saline imported as fluid (166.67/s). Stone-washer route at 2.5/s per washer needs 67 washers — dedicated commodity block. Copper plate block already produces some water-saline.
 - Copper-plate at 12.67/s is the highest solid import — battery-mk00 alone consumes 6.67/s. Current copper block produces 3.16/s, needs 4× scaling.
 - Zinc-plate at 6.67/s is entirely for battery-mk00. Needs zinc ore processing block (not yet designed).

@@ -1,3 +1,8 @@
+---
+name: block-design
+description: Design a city block following the Pyanodon methodology (rules 8-28). 9-phase guided checklist covering demand, recipes, boundaries, fuel, power, recycling, solving, layout feasibility, and Helmod export. Use when asked to design a block or plan a new production block.
+---
+
 # /block-design — City Block Design Checklist
 
 Design a production block following the Pyanodon methodology (rules 8-28).

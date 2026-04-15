@@ -1,3 +1,8 @@
+---
+name: pipeline
+description: Solve a production pipeline with correct defaults, unlocked validation, cycle handling, and pipeline summary formatting. Use when asked to solve production rates, compute a pipeline, or run the solver.
+---
+
 # /pipeline — Production Pipeline Solver
 
 Solve a production pipeline with correct defaults and guardrails.

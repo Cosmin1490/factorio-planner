@@ -12,6 +12,7 @@ No build step needed for dev. The 16MB prototype JSON loads in ~0.6 seconds.
 
 - When working with encoded/compressed data (blueprint strings, Helmod export strings, base64, zlib), always write a script to decode/process programmatically. Never attempt to decode or parse inline or mentally.
 - When selecting factories or recipes for pipeline calculations, always use `--unlocked` and verify machine tier availability. Do not assume mk03/mk04 machines are available — ask if unsure.
+- When computing building counts for ANY biological building (auog-paddock, vrauks-paddock, moss-farm, fwf, seaweed-crop, moondrop-greenhouse, ralesia-plantation, sap-extractor, prandium-lab, rc-mk01, fish-farm, incubator, bio-reactor), ALWAYS assume full bio modules in every slot. Without modules bio buildings are 5-21× slower — unmoduled counts are meaningless. See `docs/pyanodon-methodology.md` Bio organisms section for the module table. When using the solver, always pass `--modules` for bio recipes.
 - When asked to solve a pipeline or compute production rates, use the `/pipeline` skill. When asked to design a block, use the `/block-design` skill.
 
 ## Key files

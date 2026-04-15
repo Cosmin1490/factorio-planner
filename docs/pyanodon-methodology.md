@@ -238,7 +238,7 @@ All Pyanodon biological buildings use items (not standard modules) as modules wi
 | `sap-extractor-mk01` | 2 | `sap-tree` | 3x |
 | `fwf-mk01` (wood farm) | 10 | `tree-mk01` | 11x |
 
-Without modules, bio farms are unusably slow and dominate building count (757 buildings for logistic science). Adding bio modules drops this to ~326; LP cost minimization (rule 10 step 6) further reduces to ~163. mk02/mk03/mk04 tiers exist with 2x/3x/4x speed bonus per slot.
+**NEVER compute bio building counts without full modules.** Without modules, bio farms are unusably slow and dominate building count (757 buildings for logistic science). Adding bio modules drops this to ~326; LP cost minimization (rule 10 step 6) further reduces to ~163. Unmoduled counts are meaningless — a 5-21× error makes the entire analysis wrong (e.g., 67 auog paddocks without modules vs 14 with). Always use `effective_speed` (formula below) for manual calculations and `--modules` for solver runs. mk02/mk03/mk04 tiers exist with 2x/3x/4x speed bonus per slot.
 
 **Effective speed formula:** `effective_speed = base_crafting_speed × (1 + N_modules × module_bonus)`. Example: auog-paddock-mk01 (base 0.4) with 4 auog modules (+100% each): `0.4 × (1 + 4×1.0) = 2.0`. The "5x" in the table means full slots give 5x the base speed, not 5x some other number. Always compute effective craft time as `recipe_time / effective_speed` when sizing buildings.
 

@@ -12,6 +12,7 @@ No build step needed for dev. The 16MB prototype JSON loads in ~0.6 seconds.
 
 - When working with encoded/compressed data (blueprint strings, Helmod export strings, base64, zlib), always write a script to decode/process programmatically. Never attempt to decode or parse inline or mentally.
 - When selecting factories or recipes for pipeline calculations, always use `--unlocked` and verify machine tier availability. Do not assume mk03/mk04 machines are available — ask if unsure.
+- When asked to solve a pipeline or compute production rates, use the `/pipeline` skill. When asked to design a block, use the `/block-design` skill.
 
 ## Key files
 

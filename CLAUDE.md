@@ -97,7 +97,7 @@ npx tsx src/cli.ts inventory --blueprint bp7.txt --name "copper block" --save py
 - **Export classification**: `exports` = net-positive items WITH a load station. `surplus` = net-positive items WITHOUT a load station (voided, burned, recycled). Both fields are `Record<string, number>` in `BlockInventory`.
 - **Overproduction capping**: post-convergence pass detects recipes that consume valuable inputs (exports or imports) but massively overproduce intermediates (>5x demand). Caps them to match actual demand, then re-converges with bidirectional scaling until stable. Handles both self-reinforcing cycles (bp5 log→wood cycle exports 1.47/s) and import waste (bp2 log-wood-fast capped from 4→0.65 log/s).
 - **Burner fuel not modeled**: stone-furnace coal consumption is invisible in rates (same limitation as solver for burner factories).
-- **Save format**: `--name` required for `--save`. Existing entries matched by name — replaced if found, appended if new. `count` field defaults to 1, editable in JSON for multiple copies.
+- **Save format**: `--name` required for `--save`. Existing entries matched by name — replaced if found, appended if new. `count` field defaults to 1, editable in JSON for multiple copies. **When saving a block, always update both `data/saves/<name>.json` (via `--save`) AND `data/saves/<name>.md` (manually) to keep them in sync.**
 
 ## Helmod export format
 
@@ -141,14 +141,18 @@ Prioritized by impact per effort. Items 1-3 are solver code changes that compoun
 2. [x] **Temperature-linked fluids**: conditional temp-specific columns for fluids with temp-constrained consumers. `findTempConstrainedFluids()` pre-scans ingredients; `findIngredientColumn()` does temp-aware matching. Fluids without constrained consumers share one column (backward compatible).
 3. [x] **Power modeling in solver**: `totalPowerMW` and per-recipe `energyUsage` in solver output. Electric factories only; burner factories report 0. CLI displays building count + power summary.
 
-### P1 — Solver usability
+### P1 — Inventory accuracy
 
-4. [x] **Recipe cycle detection in solver**: Tarjan's SCC on item-recipe bipartite graph. Detects ash loops, coal-gas feedback, etc. Warnings with suggested `--constraint` excludes. Cycles cause 183M buildings in algebraic solver on a 4-recipe log pipeline; LP simplex handles them mathematically.
-5. [ ] **`--electric` / `--no-burner`**: auto-select best electric (non-burner) factory per recipe.
+4. [ ] **Cascade export detection**: when an intermediate has a load station but net production ≈ 0 (all consumed internally), the inventory command shows nothing in exports. Real behavior: when downstream demand drops, excess overflows to the station. Need to model variable-demand scenarios — e.g., coal-gas-syngas block exports 0–221/s coal-gas depending on syngas pull. Hard problem: requires modeling demand elasticity, not just max-throughput steady state. At minimum, annotate items that have load stations but show as intermediates (potential cascade exports with max rate = production rate).
 
-### P2 — Methodology gaps
+### P2 — Solver usability
 
-6. [ ] **Standard module/beacon strategy**: add methodology section for productivity/speed modules and beacons — the biggest late-game efficiency lever. Cover: when to apply productivity (most expensive recipes first), how it changes solver ratios (output up, craft time up), beacon placement strategy. **Factorio 2.0 note**: beacon effect is `distribution_efficiency / sqrt(n)` (2.0.7) — row-based arrays beat surrounding with max beacons.
-7. [ ] **Circuit patterns for deadlock prevention**: add circuit cookbook to methodology — SR latch hysteresis, overflow valve wiring, conditional inserter loading for multi-product balancing. **Factorio 2.0 note**: valve entity with threshold mechanics may simplify overflow-to-void patterns.
-8. [ ] **Train station throughput planning**: add capacity analysis to rule 30 — trains/minute per station, when to add parallel stations, validation that train network can deliver what block delta planning demands. **Factorio 2.0 note**: schedule interrupts and generic trains change the throughput calculus.
-9. [ ] **Early game methodology**: `docs/pyanodon-methodology.md` assumes mid-game+. Add a section covering coal processing bootstrap (coal → coke → tar → coal-gas progression), first automation, power bootstrap, and the burner-phase survival guide. This is where most Py players quit — the methodology gap matters for completeness.
+5. [x] **Recipe cycle detection in solver**: Tarjan's SCC on item-recipe bipartite graph. Detects ash loops, coal-gas feedback, etc. Warnings with suggested `--constraint` excludes. Cycles cause 183M buildings in algebraic solver on a 4-recipe log pipeline; LP simplex handles them mathematically.
+6. [ ] **`--electric` / `--no-burner`**: auto-select best electric (non-burner) factory per recipe.
+
+### P3 — Methodology gaps
+
+7. [ ] **Standard module/beacon strategy**: add methodology section for productivity/speed modules and beacons — the biggest late-game efficiency lever. Cover: when to apply productivity (most expensive recipes first), how it changes solver ratios (output up, craft time up), beacon placement strategy. **Factorio 2.0 note**: beacon effect is `distribution_efficiency / sqrt(n)` (2.0.7) — row-based arrays beat surrounding with max beacons.
+8. [ ] **Circuit patterns for deadlock prevention**: add circuit cookbook to methodology — SR latch hysteresis, overflow valve wiring, conditional inserter loading for multi-product balancing. **Factorio 2.0 note**: valve entity with threshold mechanics may simplify overflow-to-void patterns.
+9. [ ] **Train station throughput planning**: add capacity analysis to rule 30 — trains/minute per station, when to add parallel stations, validation that train network can deliver what block delta planning demands. **Factorio 2.0 note**: schedule interrupts and generic trains change the throughput calculus.
+10. [ ] **Early game methodology**: `docs/pyanodon-methodology.md` assumes mid-game+. Add a section covering coal processing bootstrap (coal → coke → tar → coal-gas progression), first automation, power bootstrap, and the burner-phase survival guide. This is where most Py players quit — the methodology gap matters for completeness.

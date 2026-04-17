@@ -473,5 +473,63 @@
       "steam": 75.595
     },
     "powerMW": 5.44
+  },
+  {
+    "name": "coal-gas-syngas",
+    "count": 1,
+    "recipes": {
+      "distilled-raw-coal": {
+        "factory": "distilator",
+        "count": 6
+      },
+      "coal-gas": {
+        "factory": "distilator",
+        "count": 3
+      },
+      "coal-gas-from-coke": {
+        "factory": "distilator",
+        "count": 2
+      },
+      "iron-oxide-smelting": {
+        "factory": "advanced-foundry-mk01",
+        "count": 1
+      },
+      "syngas": {
+        "factory": "gasifier",
+        "count": 14
+      },
+      "electric-mining-drill (mining raw-coal)": {
+        "factory": "electric-mining-drill",
+        "count": 16
+      }
+    },
+    "stations": {
+      "tar": "load",
+      "coal-gas": "load",
+      "syngas": "load"
+    },
+    "exports": {
+      "tar": 273.24,
+      "syngas": 309.96
+    },
+    "surplus": {
+      "ash": 4.698,
+      "iron-plate": 0.435,
+      "raw-coal": 34
+    },
+    "imports": {
+      "water": 442.8
+    },
+    "mined": {
+      "raw-coal": 64
+    },
+    "intermediates": {
+      "iron-oxide": 0.87,
+      "coal": 9,
+      "coal-gas": 221.4,
+      "coke": 5.4,
+      "raw-coal": 30
+    },
+    "powerMW": 11.85
   }
 ]

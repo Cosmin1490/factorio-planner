@@ -23,10 +23,10 @@ Mining block: borax ore → raw-borax → borax. Imports syngas as mining fluid.
 | Station | Direction | Item | Rate/s |
 |---|---|---|---|
 | syngas | unload | syngas (fluid) | 41.8 |
-| water | unload | water (fluid) | 71.4 |
+| water | unload | water (fluid) | 75.0 |
 | borax | load | borax (item) | 15.0 |
 
-Water trained in — 71.4/s is below mk01 fluid wagon threshold (75/s per rule 25). Block can go anywhere on a borax patch.
+Water trained in — 75.0/s is at the mk01 fluid wagon threshold (75/s per rule 25). Block can go anywhere on a borax patch.
 
 ## Mining math
 
@@ -41,30 +41,30 @@ Water trained in — 71.4/s is below mk01 fluid wagon threshold (75/s per rule 2
 - borax-washing: 10 raw-borax + 150 water → 10 borax + 100 muddy-sludge in 7s
 - Per washer (crafting_speed=1): 1.429/s raw-borax → 1.429/s borax
 - 11 washers: 15.71/s capacity (96% util at 15/s target)
-- Water consumed: 11 × 150/7 = 235.7/s (full capacity), 214.3/s at 15/s target
-- Muddy-sludge produced: 142.9/s at 15/s target
+- Water consumed: 225/s (solver-validated at 15/s)
+- Muddy-sludge produced: 150/s (solver-validated at 15/s)
 
 ## Water recycling (rule 5a)
 
 muddy-sludge-void-electrolyzer: 100 muddy-sludge → 100 water + 5 soil + 10 oxygen in 3s
 
 - Per electrolyzer-mk01 (crafting_speed=1): 33.33/s sludge → 33.33/s water
-- 5 electrolyzers: 166.7/s capacity (86% util at 142.9/s sludge)
-- Water returned: 142.9/s
-- **Net water import: 214.3 - 142.9 = 71.4/s** (67% reduction)
+- 5 electrolyzers: 166.7/s capacity (90% util at 150/s sludge)
+- Water returned: 150/s
+- **Net water import: 225 - 150 = 75/s** (67% reduction, solver-validated)
 
-Water loop: washers → muddy-sludge pipe → electrolyzers → water pipe → back to washers. Fresh water import tops up the 71.4/s deficit.
+Water loop: washers → muddy-sludge pipe → electrolyzers → water pipe → back to washers. Fresh water import tops up the 75.0/s deficit.
 
 ## Byproduct classification (rule 5)
 
 | Byproduct | Rate/s | Classification | Handling |
 |---|---|---|---|
-| oxygen | 14.29 | (d) pure waste | 1 py-gas-vent (void_energy_source, no fuel) |
-| soil | 7.14 | (d) pure waste | 3 py-burners (soil-pyvoid) |
-| ash (from soil-pyvoid) | 1.43 | (d) pure waste | 1 py-burner (ash-pyvoid) |
+| oxygen | 15.0 | (d) pure waste | 1 py-gas-vent (void_energy_source, no fuel) |
+| soil | 7.5 | (d) pure waste | 3 py-burners (soil-pyvoid) |
+| ash (from soil-pyvoid) | 1.5 | (d) pure waste | 1 py-burner (ash-pyvoid) |
 
-Oxygen: no consumer in this block, 14.29/s not worth a station. Vent.
-Soil: checked consumers (`recipes --consumes soil`) — moss farms, soil-separation, landfill. None in this block, 7.14/s not worth a station. Pyvoid.
+Oxygen: no consumer in this block, 15/s not worth a station. Vent.
+Soil: checked consumers (`recipes --consumes soil`) — moss farms, soil-separation, landfill. None in this block, 7.5/s not worth a station. Pyvoid.
 
 ## Pyvoid fuel: syngas canister closed loop
 
@@ -85,9 +85,9 @@ Fuel math:
 ## Ash convergence
 
 soil-pyvoid: 80% destroyed per cycle (1 in → 0.2 out)
-- 7.14/s soil → 1.43/s ash → 0.29/s ash → 0.057/s → ~0
+- 7.5/s soil → 1.5/s ash → 0.3/s ash → 0.06/s → ~0
 
-Ash burner (1 py-burner, speed 5) handles 3.33/s — 43% util for 1.43/s input. Uses ash loop pattern from methodology: ash recirculates on the same belt, converges exponentially.
+Ash burner (1 py-burner, speed 5) handles 3.33/s — 45% util for 1.5/s input. Uses ash loop pattern from methodology: ash recirculates on the same belt, converges exponentially.
 
 ## Power
 
@@ -114,6 +114,18 @@ Electrolyzers dominate. This is the cost of water recycling — 50 MW for 67% wa
 - Syngas block (02b) produces 310/s. This block uses 41.8/s — massive surplus for other consumers.
 - Helmod export covers washers + electrolyzers only. Miners are manual placement on ore patch. Pyvoid chain is manual.
 
+## Helmod import string
+
+Washers + electrolyzers. Miners and pyvoid chain are manual placement.
+
+Solver command: `--recipes "borax-washing,muddy-sludge-void-electrolyzer" --target "borax:15" --factory "borax-washing:washer" --factory "muddy-sludge-void-electrolyzer:electrolyzer-mk01" --max-import "water:75"`
+
+Note: the water recycling loop requires `--max-import "water:75"` to force the LP to use electrolyzers. Without the cap, the solver imports all water (cheaper) and skips recycling. Helmod may behave the same — set electrolyzer count manually if needed.
+
+```
+eJzNVMtugzAQvPMVFucihUg9+tJDb73wA8jYm8SK8VI/ktCIfy8QxzhJK7WHSr15Z2e0M4OEQKKQM0Vqes4I4YpZS/M3FKDypxE4gLESNV1Pg5Mt0HJ6NaNoXxtEN8ui8GXCZyEhUtD8wisDotmoz1svRF9Y5cUWigNKUYAC7gyq/gNMoLq+G6lhwKMGE6emrzuDwnNHnfEQwQ3jDk1PN0zZgFpUY4AU4TuphAEdbBNSlfEZU1TAZQfh3DVKVaaAFnCiqwX4RbQlnrm/E3JNhZcL+u6Zkq6nuUbTMpXwr5GXBDHD62WVkK8mU0tFu1+VN5zvjxHCWvTapbEJaUfHCiw9DxEcln0DjKNOtnFXrX/a+/qh9/K+9wYNOxVHZndSb/9JzZObm2/+991mCSNktNH03FESIWnuoTHpoL1pvfOOls9f3RkLNyAkaBecDPH/MANDZsB5o0mdgRafQmAt0A==
+```
+
 ## vs Previous design
 
 | | Old | New |
@@ -121,7 +133,7 @@ Electrolyzers dominate. This is the cost of water recycling — 50 MW for 67% wa
 | Output | 12/s borax | 15/s borax (+25%) |
 | Buildings | 18 | 34 |
 | Syngas import | 30/s | 41.8/s |
-| Water import | 193/s (piped, near water) | 71.4/s (trained, anywhere) |
+| Water import | 193/s (piped, near water) | 75.0/s (trained, anywhere) |
 | Stations | 2 | 3 |
 | Sludge | sinkhole 128.6/s | recycled → water |
 | Electric | 7.4 MW | 54.4 MW |

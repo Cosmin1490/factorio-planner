@@ -6,6 +6,20 @@ Most of these principles apply to any complex Factorio overhaul mod (SeaBlock, S
 
 ---
 
+## Core workflow
+
+The methodology and solver give you the **best possible answer**: optimal recipes, minimal buildings, correct recycling loops. This is a reference standard — the ceiling you design against.
+
+In practice, **deviate when reality demands it.** Stamp an inefficient block instead of redesigning. Skip a recycling loop that adds 50 MW you don't have. Use a worse recipe because the better one needs a block you haven't built yet. These are conscious trade-offs, not mistakes.
+
+Every block gets **recorded as-built** via the inventory command. The inventory captures what exists, not what was planned — surpluses, deficits, voided outputs, suboptimal recipes, all visible.
+
+The next expansion's **block delta** (rule 11) works from inventory, not from the original plan. If you built at 60% efficiency, the delta sizes imports to what you actually produce, not what you could have produced. The system self-corrects over time as you stamp, upgrade, or redesign.
+
+**Knowing the optimal answer before deviating from it is the point.** Every rule below describes the optimal decision. Uninformed shortcuts compound; informed trade-offs don't.
+
+---
+
 ## Comparing alternatives
 
 1. **Identify the bottleneck** — most expensive input (deep chain, slow buildings, rare ores, animal husbandry). When the target depends on a key intermediate, search for chains that maximize production of that intermediate — don't just compare recipes that directly produce the target. Example: acetylene needs coke; the tar refining chain yields 6x more coke per raw-coal than coke-coal, making it the better fuel path despite not producing fuel directly.

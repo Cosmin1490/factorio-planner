@@ -18,6 +18,7 @@ No build step needed for dev. The 16MB prototype JSON loads in ~0.6 seconds.
   - Solver-validated rates used, not hand-trace estimates (rule 10 step 6)
   - Byproducts forward-traced for downstream value (rule 10 step 5)
   - Existing waste streams checked before new production (rule 2)
+  - Byproduct recycling checked before voiding (rule 5a — run `recipes --consumes <byproduct>` to find recipes that convert it back to a chain input)
   - Conversion recipes checked for items with processing steps (log→wood, ore→plate)
 - When asked to solve a pipeline or compute production rates, use the `/pipeline` skill. When asked to design a block, use the `/block-design` skill.
 

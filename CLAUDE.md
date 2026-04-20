@@ -134,27 +134,24 @@ When showing pipeline summaries, use:
 
 ## TODO
 
-Prioritized by impact per effort. Items 1-3 are solver code changes that compound — batch them.
-
-### P0 — Solver correctness (batch together)
-
-1. [x] **LP cost minimization (target mode)**: two-phase simplex minimizes `sum(recipeCost × recipeRate)` using BFS-depth recipe costs. Eliminates cascade blowup (~326 → ~163 buildings on 100-recipe test). Input mode retains legacy cost-weighted pivot selection. Supersedes the original cost-weighted pivot approach.
-2. [x] **Temperature-linked fluids**: conditional temp-specific columns for fluids with temp-constrained consumers. `findTempConstrainedFluids()` pre-scans ingredients; `findIngredientColumn()` does temp-aware matching. Fluids without constrained consumers share one column (backward compatible).
-3. [x] **Power modeling in solver**: `totalPowerMW` and per-recipe `energyUsage` in solver output. Electric factories only; burner factories report 0. CLI displays building count + power summary.
+Prioritized by impact per effort.
 
 ### P1 — Inventory accuracy
 
-4. [ ] **Cascade export detection**: when an intermediate has a load station but net production ≈ 0 (all consumed internally), the inventory command shows nothing in exports. Real behavior: when downstream demand drops, excess overflows to the station. Need to model variable-demand scenarios — e.g., coal-gas-syngas block exports 0–221/s coal-gas depending on syngas pull. Hard problem: requires modeling demand elasticity, not just max-throughput steady state. At minimum, annotate items that have load stations but show as intermediates (potential cascade exports with max rate = production rate).
+1. [ ] **Cascade export detection**: when an intermediate has a load station but net production ≈ 0 (all consumed internally), the inventory command shows nothing in exports. Real behavior: when downstream demand drops, excess overflows to the station. Need to model variable-demand scenarios — e.g., coal-gas-syngas block exports 0–221/s coal-gas depending on syngas pull. Hard problem: requires modeling demand elasticity, not just max-throughput steady state. At minimum, annotate items that have load stations but show as intermediates (potential cascade exports with max rate = production rate).
+
+### P1b — Export mod
+
+2. [ ] **Export tech prerequisites and science costs**: `export-mod/` only captures `name`, `researched`, and `unlocks` per technology. Missing `research_unit_ingredients` (which science packs), `research_unit_count`, and `prerequisites`. Needed to answer "what does tech X require?" and "what new options does science pack Y unlock?" — currently unanswerable from prototype data alone.
 
 ### P2 — Solver usability
 
-5. [x] **Recipe cycle detection in solver**: Tarjan's SCC on item-recipe bipartite graph. Detects ash loops, coal-gas feedback, etc. Warnings with suggested `--constraint` excludes. Cycles cause 183M buildings in algebraic solver on a 4-recipe log pipeline; LP simplex handles them mathematically.
-6. [ ] **`--electric` / `--no-burner`**: auto-select best electric (non-burner) factory per recipe.
-6b. [ ] **`--fuel "recipe:item"`**: force a specific fuel for burner factories. Currently the solver auto-selects fuel and you can't override it. Needed for scenarios like forcing coke instead of coal in BOF (different fuel_value changes consumption rates and byproduct balance). Without this, inlined fuel production chains can't be solver-validated end-to-end.
+3. [ ] **`--electric` / `--no-burner`**: auto-select best electric (non-burner) factory per recipe.
+3b. [ ] **`--fuel "recipe:item"`**: force a specific fuel for burner factories. Currently the solver auto-selects fuel and you can't override it. Needed for scenarios like forcing coke instead of coal in BOF (different fuel_value changes consumption rates and byproduct balance). Without this, inlined fuel production chains can't be solver-validated end-to-end.
 
 ### P3 — Methodology gaps
 
-7. [ ] **Standard module/beacon strategy**: add methodology section for productivity/speed modules and beacons — the biggest late-game efficiency lever. Cover: when to apply productivity (most expensive recipes first), how it changes solver ratios (output up, craft time up), beacon placement strategy. **Factorio 2.0 note**: beacon effect is `distribution_efficiency / sqrt(n)` (2.0.7) — row-based arrays beat surrounding with max beacons.
-8. [ ] **Circuit patterns for deadlock prevention**: add circuit cookbook to methodology — SR latch hysteresis, overflow valve wiring, conditional inserter loading for multi-product balancing. **Factorio 2.0 note**: valve entity with threshold mechanics may simplify overflow-to-void patterns.
-9. [ ] **Train station throughput planning**: add capacity analysis to rule 30 — trains/minute per station, when to add parallel stations, validation that train network can deliver what block delta planning demands. **Factorio 2.0 note**: schedule interrupts and generic trains change the throughput calculus.
-10. [ ] **Early game methodology**: `docs/pyanodon-methodology.md` assumes mid-game+. Add a section covering coal processing bootstrap (coal → coke → tar → coal-gas progression), first automation, power bootstrap, and the burner-phase survival guide. This is where most Py players quit — the methodology gap matters for completeness.
+4. [ ] **Standard module/beacon strategy**: add methodology section for productivity/speed modules and beacons — the biggest late-game efficiency lever. Cover: when to apply productivity (most expensive recipes first), how it changes solver ratios (output up, craft time up), beacon placement strategy. **Factorio 2.0 note**: beacon effect is `distribution_efficiency / sqrt(n)` (2.0.7) — row-based arrays beat surrounding with max beacons.
+5. [ ] **Circuit patterns for deadlock prevention**: add circuit cookbook to methodology — SR latch hysteresis, overflow valve wiring, conditional inserter loading for multi-product balancing. **Factorio 2.0 note**: valve entity with threshold mechanics may simplify overflow-to-void patterns.
+6. [ ] **Train station throughput planning**: add capacity analysis to rule 30 — trains/minute per station, when to add parallel stations, validation that train network can deliver what block delta planning demands. **Factorio 2.0 note**: schedule interrupts and generic trains change the throughput calculus.
+7. [ ] **Early game methodology**: `docs/pyanodon-methodology.md` assumes mid-game+. Add a section covering coal processing bootstrap (coal → coke → tar → coal-gas progression), first automation, power bootstrap, and the burner-phase survival guide. This is where most Py players quit — the methodology gap matters for completeness.

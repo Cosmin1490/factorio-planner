@@ -150,6 +150,7 @@ Prioritized by impact per effort. Items 1-3 are solver code changes that compoun
 
 5. [x] **Recipe cycle detection in solver**: Tarjan's SCC on item-recipe bipartite graph. Detects ash loops, coal-gas feedback, etc. Warnings with suggested `--constraint` excludes. Cycles cause 183M buildings in algebraic solver on a 4-recipe log pipeline; LP simplex handles them mathematically.
 6. [ ] **`--electric` / `--no-burner`**: auto-select best electric (non-burner) factory per recipe.
+6b. [ ] **`--fuel "recipe:item"`**: force a specific fuel for burner factories. Currently the solver auto-selects fuel and you can't override it. Needed for scenarios like forcing coke instead of coal in BOF (different fuel_value changes consumption rates and byproduct balance). Without this, inlined fuel production chains can't be solver-validated end-to-end.
 
 ### P3 — Methodology gaps
 

@@ -181,7 +181,9 @@ Swap caster recipe from iron-plate-1 to hotair-iron-plate-1. Same 100 molten-iro
 
 Still fits one city block comfortably.
 
-**COG source:** only unlocked producer is coke-coal (hpf recipe, 250°C output) from coke processing. 24/s COG is modest — one coke-coal hpf at speed 1 produces 10/s, so ~3 hpf or tap existing coal-gas chain surplus.
+**COG source:** only unlocked producer is coke-coal (hpf, 2s: 10 raw-coal → 4 coke + 20 COG@250°C). Per hpf at speed 1: 10/s COG + 2/s coke. Need 24/s COG → 3 hpf (80% util).
+
+**Potential inline variant (not committed):** instead of importing COG, inline 3 hpf running coke-coal. Removes the COG fluid station, adds 3 hpf (7×7 each, 147 tiles, 6 MW). Produces 4.8/s coke as byproduct — route to BOF fuel slots to partially replace coal import. Napkin math (pending `--fuel` solver feature, TODO 6b): 12/s raw-coal (COG production) + 4.8/s coke covers ~75% of BOF fuel, top up with ~2.4/s coal. Total fuel imports ~14.4/s through one mixed station vs current 9/s coal + 24/s COG through two stations. Trade: +3 buildings, +147 tiles, +6 MW, but -1 station and self-contained fuel loop. Evaluate when `--fuel` flag is available for solver validation.
 
 **Retrofit summary:** +4 buildings + 1 gas-vent, +1 fluid station. Total block: 25 buildings, 7 stations, 913 tiles. No changes to existing infrastructure — pure add-on.
 

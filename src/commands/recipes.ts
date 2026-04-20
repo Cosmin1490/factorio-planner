@@ -17,10 +17,10 @@ export function recipesCommand(protoPath: string, options: { produces?: string; 
     const label = filterUnlocked ? ' (unlocked only)' : '';
     console.log(`Recipes that produce "${options.produces}" (${recipes.length})${label}:\n`);
     for (const r of recipes) {
-      const ingredients = r.ingredients.map(i => `${i.amount ?? '?'}x ${i.name}`).join(', ');
-      const products = r.products.map(p => `${p.amount ?? '?'}x ${p.name}`).join(', ');
+      const ingredients = (Array.isArray(r.ingredients) ? r.ingredients : []).map(i => `${i.amount ?? '?'}x ${i.name}`).join(', ');
+      const products = (Array.isArray(r.products) ? r.products : []).map(p => `${p.amount ?? '?'}x ${p.name}`).join(', ');
       console.log(`  ${r.name}  [${r.category}]  (${r.energy}s)`);
-      console.log(`    in:  ${ingredients}`);
+      console.log(`    in:  ${ingredients || '(none)'}`);
       console.log(`    out: ${products}`);
       console.log();
     }
@@ -41,10 +41,10 @@ export function recipesCommand(protoPath: string, options: { produces?: string; 
     const label = filterUnlocked ? ' (unlocked only)' : '';
     console.log(`Recipes that consume "${options.consumes}" (${results.length})${label}:\n`);
     for (const r of results) {
-      const ingredients = r.ingredients.map(i => `${i.amount ?? '?'}x ${i.name}`).join(', ');
-      const products = r.products.map(p => `${p.amount ?? '?'}x ${p.name}`).join(', ');
+      const ingredients = (Array.isArray(r.ingredients) ? r.ingredients : []).map(i => `${i.amount ?? '?'}x ${i.name}`).join(', ');
+      const products = (Array.isArray(r.products) ? r.products : []).map(p => `${p.amount ?? '?'}x ${p.name}`).join(', ');
       console.log(`  ${r.name}  [${r.category}]  (${r.energy}s)`);
-      console.log(`    in:  ${ingredients}`);
+      console.log(`    in:  ${ingredients || '(none)'}`);
       console.log(`    out: ${products}`);
       console.log();
     }

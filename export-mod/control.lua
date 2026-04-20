@@ -459,21 +459,31 @@ end
 local function export_technologies(player)
     local techs = {}
     for name, tech in pairs(player.force.technologies) do
-        if tech.researched then
-            local unlocks = {}
-            for _, effect in pairs(tech.prototype.effects) do
-                if effect.type == "unlock-recipe" then
-                    table.insert(unlocks, effect.recipe)
-                end
-            end
-            if #unlocks > 0 then
-                techs[name] = {
-                    name = name,
-                    researched = true,
-                    unlocks = unlocks,
-                }
+        local unlocks = {}
+        for _, effect in pairs(tech.prototype.effects) do
+            if effect.type == "unlock-recipe" then
+                table.insert(unlocks, effect.recipe)
             end
         end
+        local prereqs = {}
+        for _, prereq in pairs(tech.prototype.prerequisites) do
+            table.insert(prereqs, prereq.name)
+        end
+        local ingredients = {}
+        for _, ing in pairs(tech.prototype.research_unit_ingredients) do
+            table.insert(ingredients, {
+                name = ing.name,
+                amount = ing.amount,
+            })
+        end
+        techs[name] = {
+            name = name,
+            researched = tech.researched,
+            unlocks = unlocks,
+            prerequisites = prereqs,
+            research_unit_count = tech.prototype.research_unit_count,
+            research_unit_ingredients = ingredients,
+        }
     end
     return techs
 end

@@ -98,6 +98,9 @@ export interface Technology {
   name: string;
   researched: boolean;
   unlocks: string[];  // recipe names
+  prerequisites?: string[];
+  research_unit_count?: number;
+  research_unit_ingredients?: { name: string; amount: number }[];
 }
 
 export interface ForceData {
@@ -159,7 +162,7 @@ export function isRecipeUnlocked(data: PrototypeData, recipeName: string): boole
 export function findTechForRecipe(data: PrototypeData, recipeName: string): Technology | null {
   if (!data.technologies) return null;
   for (const tech of Object.values(data.technologies)) {
-    if (tech.unlocks.includes(recipeName)) return tech;
+    if (Array.isArray(tech.unlocks) && tech.unlocks.includes(recipeName)) return tech;
   }
   return null;
 }

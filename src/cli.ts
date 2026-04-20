@@ -135,11 +135,12 @@ program
 
 program
   .command('techs')
-  .description('Show which technology unlocks a recipe')
-  .requiredOption('--unlocks <recipe>', 'Recipe name to look up')
+  .description('Look up technology info by recipe or tech name')
+  .option('--unlocks <recipe>', 'Find technology that unlocks a recipe')
+  .option('--tech <name>', 'Look up a technology by name')
   .option('--proto <path>', 'Path to prototype JSON', DEFAULT_PROTO_PATH)
   .action((opts) => {
-    techsCommand(opts.proto, { unlocks: opts.unlocks });
+    techsCommand(opts.proto, { unlocks: opts.unlocks, tech: opts.tech });
   });
 
 program

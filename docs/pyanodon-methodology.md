@@ -181,6 +181,19 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
     **Mining fluids create hidden block ordering constraints.** If an ore needs acetylene to mine, the fuel chain must be operational first. If it needs aromatics, the tar refinery must export them. These dependencies don't appear in recipe-tree output (which only shows crafting recipes, not mining) and are easy to miss during block planning. Always verify mining fluid requirements before finalizing build order.
     
     **Soot/tailings are supplements, never primary ore sources.** Soot-separation and tailings-classification produce small amounts of ore as byproducts, but mining (even though deposits are finite) is always the primary supply. Design blocks around mining with soot/tailings routed in as a bonus to extend deposit lifetime.
+    
+    **Creature-based mining (dig sites).** Some ores use a non-standard mining mechanic: a `dino-dig-site` building (7×7 assembling machine) with creature modules (e.g., digosaurus) instead of conventional miners. The dig site has a fixed hidden recipe and accepts food items via a companion container entity (`dino-dig-site-food-input`). Food consumption is not modeled in the normal recipe system — Helmod provides virtual recipes (`digosaurus-helmod-recipe-*`) that capture the food→ore conversion rates. Currently only nexelit-ore uses this mechanic:
+    
+    | Food | Nexelit ore per feed | Cycle time |
+    |---|---|---|
+    | guts | 1 | 10s |
+    | dried-meat | 1 | 10s |
+    | meat | 2 | 10s |
+    | workers-food | 8 | 10s |
+    | workers-food-02 | 16 | 10s |
+    | workers-food-03 | 32 | 10s |
+    
+    The dig site has 4 module slots (digosaurus category only, +100% speed each = 5× base throughput with full modules). Since this mechanic is invisible to `recipe-tree`, `recipes --produces`, and `buildProducerIndex`, always check for `helmod-recipe` variants in the prototype data when an ore appears to have no recipe producers. Food sourcing (especially meat/guts from slaughterhouses) creates cross-block dependencies that must be planned explicitly.
 
 23. **Design for upgrade, build with what you have** — when higher-tier modules/buildings are unlocked but impractical to bootstrap (e.g., bio mk02 at 0.5% drop rate), design with the achievable tier but plan for the upgrade. Check **ratio stability**: (1) all buildings have matching tier upgrades -> ratios hold, just need more I/O; (2) only some upgrade -> ratios break, needs redesign; (3) no matching tier downstream -> bottleneck just moves. When ratios will break, consider **building to upgraded ratios now** — accept underproduction today for a drop-in module swap later with zero redesign.
     

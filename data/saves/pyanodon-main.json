@@ -531,5 +531,67 @@
       "raw-coal": 30
     },
     "powerMW": 11.85
+  },
+  {
+    "name": "borax block",
+    "count": 1,
+    "recipes": {
+      "borax-mine (mining raw-borax)": {
+        "factory": "borax-mine",
+        "count": 12
+      },
+      "borax-washing": {
+        "factory": "washer",
+        "count": 12
+      },
+      "muddy-sludge-void-electrolyzer": {
+        "factory": "electrolyzer-mk01",
+        "count": 6
+      },
+      "oxygen-pyvoid-gas": {
+        "factory": "py-gas-vent",
+        "count": 1
+      },
+      "soil-pyvoid": {
+        "factory": "py-burner",
+        "count": 3
+      },
+      "ash-pyvoid": {
+        "factory": "py-burner",
+        "count": 1
+      },
+      "fill-syngas-canister": {
+        "factory": "barrel-machine-mk01",
+        "count": 1
+      }
+    },
+    "stations": {
+      "water": "unload",
+      "syngas": "unload",
+      "borax": "load"
+    },
+    "exports": {
+      "borax": 15
+    },
+    "surplus": {},
+    "imports": {
+      "water": 75,
+      "syngas": 41.8
+    },
+    "mined": {
+      "raw-borax": 16
+    },
+    "intermediates": {
+      "raw-borax": 15,
+      "muddy-sludge": 150,
+      "water": 150,
+      "oxygen": 15,
+      "soil": 7.5,
+      "ash": 1.5,
+      "syngas-canister": 0.072,
+      "empty-fuel-canister": 0.072
+    },
+    "powerMW": 54.4,
+    "notes": "Belt-capped at 15/s borax (yellow belt limit). 12 mines produce 16/s raw-borax but washers only see 15/s. Sludge→water recycling: 150/s recycled of 225/s demand, 75/s imported. Recycling is switchable (rule 20) — can disable electrolyzers and import full 225/s water if placement allows. Syngas imported as mining fluid (40/s) + canister fuel for pyvoid (1.8/s). Built with 12 washers + 6 electrolyzers vs design's 11+5 — extra headroom. Inventory tool fails on this block (TODO 1b: import-aware convergence bug)."
   }
 ]

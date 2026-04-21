@@ -2,15 +2,55 @@
 
 ## Blocks
 
-| Block | Output | Rate | Stations | Buildings | Notes |
-|---|---|---|---|---|---|
-| Seaweed farm | seaweed | 6.4/s | 2 (water in, seaweed out) | 32 seaweed-crop-mk01 (seaweed-1) | 10 seaweed modules each |
-| Moss farm | moss | 12.0/s | 2 (stone in, moss out) | 60 moss-farm (Moss-2), 4 washer (muddy-sludge), 4 soil-extractor, 2 moondrop-greenhouse (moondrop-co2) | 15 moss modules each, soil/muddy-sludge/CO2 inlined |
-| Methanal | methanal (fluid) | 8.9/s | 3 (water, copper-plate in; methanal out) | 7 moondrop-greenhouse (moondrop-1), 4 moondrop-greenhouse (methane-co2), 1 moondrop-greenhouse (moondrop-co2), 1 botanical-nursery (moondrop-seeds), 1 hpf (methanal) | Methane-limited (4 greenhouses), HFP can do 12.5/s |
-| Log | log | 1.47/s | 4 (water, ash, moss in; log out) | 10 fwf-mk01 (log3), 5 botanical-nursery (wood-seedling), 1 assembling-machine-1 (wood-seeds), 1 wpu (log-wood-fast) | 10 tree-mk01 modules each, self-reinforcing cycle (log→wood→seeds→seedlings→log) consumes 0.03/s internally |
-| PCB1 | pcb1 | 0.125/s | 5 (creosote, log, methanal, copper-plate in; pcb1 out) | 50 sap-extractor (sap-01), 7 wpu (fiber-01), 1 wpu (log-wood-fast), 3 pulp-mill (formica), 1 tar-processing (treated-wood), 1 pcb-factory (pcb1), 1 vacuum-pump | 2 sap-tree modules each, sap-limited |
-| Tar refinery | middle-oil 60/s, creosote 48/s, gasoline 10.65/s, coke 15/s, pitch 280/s | 200/s tar in | 8 (tar, water in; 5 outputs + anthracene consumed) | 10 tar-processing (tar-refining), 12 distilator (anthracene-gasoline-cracking), 4 oil-boiler, 1 py-electric-boiler | Anthracene fully cracked to gasoline+coke, oil boilers consume 49.35/s gasoline internally (10.65/s net export), self-powered. Currently stalled — all outputs can back up without consumers. Needs overflow-to-void on every output without a steady consumer (pitch 280/s, middle-oil 60/s, coke 15/s). Fix before glass block (needs coke) |
-| Copper plate | copper-plate | 3.16/s | 3 (water, raw-coal in; copper-plate out) | 8 electric-mining-drill, 10 screener (grade-2-copper), 6 jaw-crusher (grade-1-copper-crush), 6 washer (saline-water), 6 stone-furnace (copper-plate-4) | On-site at ore patch, washers for stone disposal, mining-limited |
-| Aluminium plate | aluminium-plate | ~1.0/s (ore-limited, 1.33/s foundry capacity) | 2 (aluminium-plate out, tar out) | 10 fluid-drill-mk02, 8 advanced-foundry (aluminium-plate-1), 3 distilator (distilled-raw-coal), 2 distilator (coal-gas), 1 distilator (coal-gas-from-coke), 1 sinkhole, 1 burner, 1 tailings-pond | On-site at ore patch, raw-coal belted in (hack — needs cleanup), coal chain produces coal-gas (mining fluid, internal only) + tar export (overflow-to-void: station first, sinkhole surplus). Aluminium not voided — backs up if no consumer, stalling entire block |
-| Coal-gas-syngas | syngas, tar, coal-gas (cascade) | syngas 310/s, tar 273.2/s, coal-gas 0–221/s | 3 (syngas, tar, coal-gas out) | 14 gasifier (syngas), 6 distilator (distilled-raw-coal), 3 distilator (coal-gas), 2 distilator (coal-gas-from-coke), 1 advanced-foundry-mk01 (iron-oxide-smelting), 16 electric-mining-drill | On-site raw-coal mining (64/s, 34/s surplus), coal→coal-gas→syngas chain. Coal-gas is cascade export: 0–221/s depending on syngas demand (full demand = 0 coal-gas export, no demand = 221/s). Tar always exports at full rate. Iron-oxide smelting for syngas catalyst |
-| Creosote | creosote | 36.4/s | 2 (water in; creosote out) | 1 distilator (distilled-raw-coal), 1 distilator (coal-gas), 2 distilator (coal-gas-from-coke), 2 gasifier (syngas), 3 tar-processing (tar-refining), 3 tar-processing (pitch-refining), 1 tar-processing (tar-refining-tops), 1 tar-processing (light-oil-aromatics), 1 tar-processing (carbolic-oil-creosote), 1 tar-processing (naphthalene-oil-creosote), 2 tar-processing (anthracene-oil-creosote), 3 oil-boiler | Full coal→tar→cracking chain, all oil fractions cracked to creosote, coke recycled, 5 gas vents + 2 overflow valves + sinkhole + burner for byproducts, self-powered via oil boilers. Raw-coal belted from adjacent block (debt — cross-block coupling, needs train station) |
+### Seaweed farm
+- **Exports:** seaweed 6.4/s
+- **Imports:** water 128/s
+
+### Moss farm
+- **Exports:** moss 12/s
+- **Imports:** stone 15/s, water 480/s
+
+### Methanal
+- **Exports:** methanal 8.9/s
+- **Imports:** water 31.7/s, copper-plate 0.89/s
+
+### Log
+- **Exports:** log 1.47/s
+- **Imports:** water 150/s, ash 7.5/s, moss 1.25/s
+
+### PCB1
+- **Exports:** pcb1 0.125/s
+- **Imports:** creosote 25/s, methanal 12.5/s,
+  copper-plate 0.625/s, log 0.65/s
+
+### Tar refinery
+- **Exports:** middle-oil 60/s, creosote 48/s,
+  gasoline 10.65/s, coke 15/s, pitch 280/s
+- **Imports:** tar 200/s, water 300/s
+- **Note:** Stalled — needs overflow-to-void
+
+### Copper plate
+- **Exports:** copper-plate 3.16/s
+- **Imports:** water 30/s
+- **Note:** On-site mining, raw-coal belted
+
+### Aluminium plate
+- **Exports:** aluminium-plate 1.0/s, tar 70.2/s
+- **Imports:** raw-coal 15/s
+- **Note:** On-site mining
+
+### Borax block
+- **Exports:** borax 15/s
+- **Imports:** water 75–225/s, syngas 41.8/s
+- **Note:** Switchable sludge recycling
+
+### Coal-gas-syngas
+- **Exports:** syngas 310/s, tar 273.2/s,
+  coal-gas 0–221/s
+- **Imports:** water 442.8/s
+- **Note:** On-site mining, coal-gas cascade export
+
+### Creosote
+- **Exports:** creosote 36.4/s
+- **Imports:** water 142.3/s
+- **Note:** Raw-coal belted from adjacent (debt)

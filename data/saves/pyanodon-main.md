@@ -50,6 +50,11 @@
 - **Imports:** water 442.8/s
 - **Note:** On-site mining, coal-gas cascade export
 
+### Oxygen block
+- **Exports:** oxygen 240/s, hydrogen 0–480/s
+- **Imports:** water 914.5/s (piped from lake, no station)
+- **Note:** Hydrogen overflow-to-burn, 181 MW net electric
+
 ### Creosote
 - **Exports:** creosote 36.4/s
 - **Imports:** water 142.3/s

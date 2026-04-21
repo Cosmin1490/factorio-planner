@@ -593,5 +593,39 @@
     },
     "powerMW": 54.4,
     "notes": "Belt-capped at 15/s borax (yellow belt limit). 12 mines produce 16/s raw-borax but washers only see 15/s. Sludge→water recycling: 150/s recycled of 225/s demand, 75/s imported. Recycling is switchable (rule 20) — can disable electrolyzers and import full 225/s water if placement allows. Syngas imported as mining fluid (40/s) + canister fuel for pyvoid (1.8/s). Built with 12 washers + 6 electrolyzers vs design's 11+5 — extra headroom. Inventory tool fails on this block (TODO 1b: import-aware convergence bug)."
+  },
+  {
+    "name": "oxygen block",
+    "count": 1,
+    "recipes": {
+      "hydrogen": {
+        "factory": "electrolyzer-mk01",
+        "count": 24
+      },
+      "oil-boiler-mk01 (fluid burner)": {
+        "factory": "oil-boiler-mk01",
+        "count": 4
+      },
+      "steam-engine": {
+        "factory": "steam-engine",
+        "count": 16
+      }
+    },
+    "stations": {
+      "oxygen": "load",
+      "hydrogen": "load"
+    },
+    "exports": {
+      "oxygen": 240,
+      "hydrogen": 480
+    },
+    "surplus": {},
+    "imports": {},
+    "mined": {},
+    "intermediates": {
+      "steam": 194.5
+    },
+    "powerMW": 181,
+    "notes": "Water 914.5/s piped from nearby lake (no station). Hydrogen overflow-to-burn via 4 oil-boilers + 16 steam engines (design had 13, extra headroom). 48-59 MW power recovery depending on engine count active. Hydrogen export serves future consumers (ralesia, diborane); until then, all burned. Generic fluid load stations for both exports."
   }
 ]

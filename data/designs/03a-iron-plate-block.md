@@ -28,7 +28,7 @@ Chosen over low-grade smelting (3:1 ratio) after system-level cost analysis (rul
 | borax | unload | borax | 5.94 |
 | oxygen | unload | oxygen (fluid) | 108.0 |
 | sand-casting | unload | sand-casting | 0.18 |
-| coal | unload | coal | 9.0 |
+| coal | unload | coal | 10.0 |
 | iron-plate | load | iron-plate | 10.8 |
 
 On-site mining optional (rule 21: 5:1 ore:plate, on-site saves train capacity). If on-site: replace iron-ore station with 8 electric-mining-drills (no mining fluid needed). Add stone load station for byproduct export.
@@ -53,18 +53,18 @@ On-site mining optional (rule 21: 5:1 ore:plate, on-site saves train capacity). 
 
 ## BOF fuel (burner, not modeled by solver)
 
-bof-mk01: burner entity, `max_energy_usage`=100,000 J/tick = 6 MW per BOF. Accepts chemical + biomass fuel categories.
+bof-mk01: burner entity, `max_energy_usage`=83,333 J/tick = 5.0 MW per BOF. Accepts chemical + biomass fuel categories.
 
 - Coal fuel_value: 4 MJ, burnt_result: ash
-- fuel_rate per BOF = 6,000,000 / 4,000,000 = 1.5/s coal
-- 8 BOFs: **9.0/s coal → 9.0/s ash**
+- fuel_rate per BOF = 5,000,000 / 4,000,000 = 1.25/s coal
+- 8 BOFs: **10.0/s coal → 10.0/s ash**
 - Casting-unit-mk01 is electric (not a burner), no fuel needed
 
 ## Byproduct classification (rule 5)
 
 | Byproduct | Rate/s | Classification | Handling |
 |---|---|---|---|
-| ash | 9.0 | (d) waste | 3 py-burners (ash-pyvoid, ash loop pattern). Self-fueled: ash is burnt_result of coal, ash-pyvoid produces 0.2 ash per cycle, loop converges exponentially. |
+| ash | 10.0 | (d) waste | 3 py-burners (ash-pyvoid, ash loop pattern). Self-fueled: ash is burnt_result of coal, ash-pyvoid produces 0.2 ash per cycle, loop converges exponentially. |
 | stone | 3.0 | (b) valuable / (d) void | Export if consumer exists (moss farm 15/s, saline-water). Overflow to 1 py-burner (stone-pyvoid). |
 
 4 py-burners total for voiding. Negligible fuel cost (0.036/s coke each via canister loop or share coal import).
@@ -78,9 +78,9 @@ bof-mk01: burner entity, `max_energy_usage`=100,000 J/tick = 6 MW per BOF. Accep
 | 8 bof-mk01 | 0 (coal-fueled) |
 | 4 py-burners | 0 (fuel-powered) |
 | **Total electric** | **~7.4** |
-| Coal fuel (thermal) | 36.0 |
+| Coal fuel (thermal) | 40.0 |
 
-Very low electric draw. Fuel cost is 9/s coal (from tar refinery coke surplus or direct mining).
+Very low electric draw. Fuel cost is 10/s coal (from tar refinery coke surplus or direct mining).
 
 ## Tile footprint
 
@@ -144,7 +144,7 @@ Swap caster recipe from iron-plate-1 to hotair-iron-plate-1. Same 100 molten-iro
 | borax | 5.94 | same |
 | oxygen | 108.0 | same |
 | sand-casting | 0.18 | same |
-| coal | 9.0 | same |
+| coal | 10.0 | same |
 | COG (250°C) | 24.0 | new |
 | **iron-plate out** | **13.5** | **+25%** |
 
@@ -152,7 +152,7 @@ Swap caster recipe from iron-plate-1 to hotair-iron-plate-1. Same 100 molten-iro
 
 | Byproduct | Base rate/s | Upgraded rate/s | Classification | Handling |
 |---|---|---|---|---|
-| ash | 9.0 | 9.0 (same) | (d) waste | 3 py-burners (ash loop) |
+| ash | 10.0 | 10.0 (same) | (d) waste | 3 py-burners (ash loop) |
 | stone | 3.0 | 3.0 (same) | (b) export / (d) void | 1 py-burner or export |
 | cold COG (100°C) | — | 24.0 | (c) burnable / (d) vent | see below |
 
@@ -183,7 +183,18 @@ Still fits one city block comfortably.
 
 **COG source:** only unlocked producer is coke-coal (hpf, 2s: 10 raw-coal → 4 coke + 20 COG@250°C). Per hpf at speed 1: 10/s COG + 2/s coke. Need 24/s COG → 3 hpf (80% util).
 
-**Potential inline variant (not committed):** instead of importing COG, inline 3 hpf running coke-coal. Removes the COG fluid station, adds 3 hpf (7×7 each, 147 tiles, 6 MW). Produces 4.8/s coke as byproduct — route to BOF fuel slots to partially replace coal import. Napkin math (pending `--fuel` solver feature, TODO 6b): 12/s raw-coal (COG production) + 4.8/s coke covers ~75% of BOF fuel, top up with ~2.4/s coal. Total fuel imports ~14.4/s through one mixed station vs current 9/s coal + 24/s COG through two stations. Trade: +3 buildings, +147 tiles, +6 MW, but -1 station and self-contained fuel loop. Evaluate when `--fuel` flag is available for solver validation.
+**Potential inline variant (not committed):** instead of importing COG, inline 3 hpf running coke-coal + 1 solid-separator for ash recycling. Removes the COG fluid station, adds raw-coal import instead.
+
+Fuel budget (corrected napkin math, lab-verified):
+- 3 hpf coke-coal: 15/s raw-coal → 6/s coke + 30/s COG (need 24, 6/s excess)
+- BOF fuel demand: 8 × 5 MW = 40 MW
+- Coke from hpf: 6/s × 5 MJ = 30 MW (covers 75%)
+- Deficit: 10 MW
+- Ash loop (ash-separation: 10 ash → 1 coal-dust@3MJ): converges to ~2 MW recovery
+- Remaining deficit ~8 MW → 1.85/s coal (via crushed-coal: 3 raw-coal → 2 coal + 1 coal-dust + 1 crushed-coal, 3s, secondary-crusher) → ~2.8/s raw-coal
+- **Total: ~18/s raw-coal** (15 for hpf + 2.8 for crushed-coal fuel makeup)
+
+Additional buildings: +3 hpf (7×7, 147 tiles, 6 MW) + 1 secondary-crusher (coal, 7×7, 49 tiles) + 1 solid-separator (ash, 5×5, 25 tiles). Trade: -1 COG fluid station, -1 coal station, +1 raw-coal station. Self-contained fuel loop but ~18/s raw-coal throughput through one station.
 
 **Retrofit summary:** +4 buildings + 1 gas-vent, +1 fluid station. Total block: 25 buildings, 7 stations, 913 tiles. No changes to existing infrastructure — pure add-on.
 
@@ -231,4 +242,4 @@ eJzNlruO2zAQRXt9BaF6BZh+lGxSpEvjNlgYNDm2maU4ypDKRln436MHLdFyArhauxPvzIj3HgmUNDKL
 - 10.8/s iron plate covers most early-mid game demand. Stamp for higher throughput.
 - Stone export (3/s) partially offsets moss farm's 15/s stone import.
 - **Sand-casting inline variant (circuit-optimized).** Instead of importing sand-casting (0.18/s), inline the full chain: stone (byproduct) → gravel → sand → sand-casting. Requires 1 tar-processing-unit (sand-casting recipe, 9% util) and 0 new crushers — the 7th jaw-crusher (which exists due to solver ceiling from 6.0) handles both stone→gravel and gravel→sand via circuit-controlled recipe swap (~35% combined util). The 6 main crushers cover 100% of iron-crush demand (6 × 1.5 = 9.0/s processed = exact demand); the 7th serves as overflow buffer for iron spikes + gravel/sand when idle. Trade: swap sand-casting item station → creosote fluid station (1.8/s, from tar refinery). Stone byproduct drops 3.0 → 2.2/s. Net: same station count, +1 building, eliminates a niche item import in favor of a bulk commodity fluid. General pattern: circuit-swapping underutilized machines across multiple low-demand recipes reduces building count.
-- Coal from tar refinery coke surplus (15/s available) more than covers 9/s demand. Alternative: mine raw-coal, distill to coal.
+- Coal from tar refinery coke surplus (15/s available) covers 10/s demand. Alternative: mine raw-coal, distill to coal.

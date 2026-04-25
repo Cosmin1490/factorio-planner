@@ -183,18 +183,21 @@ Still fits one city block comfortably.
 
 **COG source:** only unlocked producer is coke-coal (hpf, 2s: 10 raw-coal → 4 coke + 20 COG@250°C). Per hpf at speed 1: 10/s COG + 2/s coke. Need 24/s COG → 3 hpf (80% util).
 
-**Potential inline variant (not committed):** instead of importing COG, inline 3 hpf running coke-coal + 1 solid-separator for ash recycling. Removes the COG fluid station, adds raw-coal import instead.
+**Inline variant (committed):** inline 3 hpf running coke-coal for COG production. BOF fuel: prioritize internal coke from hpf, import coke to cover deficit.
 
-Fuel budget (corrected napkin math, lab-verified):
+Fuel budget (lab-verified):
 - 3 hpf coke-coal: 15/s raw-coal → 6/s coke + 30/s COG (need 24, 6/s excess)
-- BOF fuel demand: 8 × 5 MW = 40 MW
-- Coke from hpf: 6/s × 5 MJ = 30 MW (covers 75%)
-- Deficit: 10 MW
-- Ash loop (ash-separation: 10 ash → 1 coal-dust@3MJ): converges to ~2 MW recovery
-- Remaining deficit ~8 MW → 1.85/s coal (via crushed-coal: 3 raw-coal → 2 coal + 1 coal-dust + 1 crushed-coal, 3s, secondary-crusher) → ~2.8/s raw-coal
-- **Total: ~18/s raw-coal** (15 for hpf + 2.8 for crushed-coal fuel makeup)
+- BOF fuel (coke, 5 MJ): 8 × 1.0/s = 8/s coke total
+- Internal coke from hpf: 6/s (30 MW, covers 75%)
+- Imported coke: 2/s (10 MW, covers deficit)
+- Ash from burning coke: 8/s (burnt_result), voided via py-burners
 
-Additional buildings: +3 hpf (7×7, 147 tiles, 6 MW) + 1 secondary-crusher (coal, 7×7, 49 tiles) + 1 solid-separator (ash, 5×5, 25 tiles). Trade: -1 COG fluid station, -1 coal station, +1 raw-coal station. Self-contained fuel loop but ~18/s raw-coal throughput through one station.
+Stations (replace base coal + add-on COG with raw-coal + coke):
+- raw-coal unload: 15/s (feeds hpf only, at belt limit)
+- coke unload: 2/s (deficit top-up from tar refinery surplus)
+- Internal coke prioritized over imported via inserter circuit control
+
+Additional buildings: +3 hpf (7×7, 147 tiles, 6 MW). No secondary-crusher or solid-separator needed — straight coke import is simpler.
 
 **Retrofit summary:** +4 buildings + 1 gas-vent, +1 fluid station. Total block: 25 buildings, 7 stations, 913 tiles. No changes to existing infrastructure — pure add-on.
 

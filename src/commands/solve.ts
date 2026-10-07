@@ -202,6 +202,11 @@ export function solveCommand(protoPath: string, options: SolveOptions) {
   if (options.maxImport) {
     const rawMaxImports = Array.isArray(options.maxImport) ? options.maxImport : [options.maxImport];
     solveInput.maxImports = rawMaxImports.map(parseAmountSpec);
+    if (options.input) {
+      console.error('  ⚠ --max-import in input mode uses post-processing, not hard LP constraints.');
+      console.error('    Caps may cause the solution to exceed input constraints.');
+      console.error('    For hard caps, use --target mode with --max-import (amount > 0).');
+    }
   }
 
   console.error('Running solver...');

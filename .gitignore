@@ -1,8 +1,7 @@
 node_modules/
 dist/
 *.js.map
-.claude/*
-!.claude/skills/
+.claude/
 .DS_Store
 Thumbs.db
 .env*

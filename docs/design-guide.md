@@ -67,7 +67,7 @@ Multi-product recipes stall completely when ANY output buffer is full. Every pro
     - **Self-power as ash source**: boilers burning raw-coal produce ash at the same rate they consume fuel. At typical block loads (5-10 MW), boiler ash alone (1.5-3.5/s) often covers the entire ash demand. Self-powering trades electricity import for raw-coal import + ash self-sufficiency — worth it when the block already imports raw-coal for burner machines, or when eliminating the ash import removes a train station
     - **Compute the ash balance manually** — exclude ash from every burner recipe in the solver (prevents LP from gaming furnace scaling for ash), then verify: total ash from burner machines + boiler fuel ≥ total ash consumed by recipes. The solver can't model this correctly because it treats ash production as a recipe output it can scale. See [solver-reference.md](solver-reference.md) § Solver setup checklist for the `--fuel` override and ash exclude pattern
     
-    Example: automation-science at 0.4/s needs 3.18/s ash (planter-box + log3). Burner assemblers + furnaces produce 1.70/s ash from fuel; 2 boilers (7.0 MW self-power) add 2.35/s → total 4.05/s, surplus 0.87/s. No ash import needed.
+    Example: automation-science at 0.4/s needs 3.18/s ash (planter-box + log3). Burner assemblers + furnaces produce 1.70/s ash from fuel; 4 boilers (7.0 MW self-power, engine effectivity 0.5) add 4.69/s → total 6.43/s, surplus 3.25/s. No ash import needed.
 
 ## Block delta planning
 

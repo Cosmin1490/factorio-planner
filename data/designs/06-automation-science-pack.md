@@ -1,4 +1,4 @@
-# Automation science pack — 0.4/s, 58 buildings
+# Automation science pack — 0.4/s, 61 buildings
 
 Fully self-contained: self-powered (boilers), ash-independent (burner fuel + boiler ash), no processed imports. All inputs are raw mined resources except native-flora (irreducible — no recipe exists).
 
@@ -10,7 +10,7 @@ Moondrop greenhouse provides free CO2 for Moss-2.
 
 ## Recipe table
 
-51 buildings solver-validated (simplex). 4 copper buildings + 3 power buildings manually computed.
+51 buildings solver-validated (simplex). 4 copper buildings + 6 power buildings manually computed.
 
 ```
 ┌─────────────────────────┬──────────────────────────┬───────┬───────────────┐
@@ -38,12 +38,12 @@ Moondrop greenhouse provides free CO2 for Moss-2.
 │ soil                    │ soil-extractor-mk01      │     3 │               │
 │ muddy-sludge            │ washer                   │     1 │               │
 │ moondrop-co2            │ moondrop-greenhouse-mk01 │     1 │               │
-│ (self-power)            │ boiler                   │     2 │               │
-│ (self-power)            │ steam-engine             │     1 │               │
+│ (self-power)            │ boiler                   │     4 │               │
+│ (self-power)            │ steam-engine             │     2 │               │
 └─────────────────────────┴──────────────────────────┴───────┴───────────────┘
 ```
 
-58 buildings total (55 production + 3 power), ~7.0 MW electric (self-powered).
+61 buildings total (55 production + 6 power), ~7.0 MW electric (self-powered).
 
 ## Imports
 
@@ -52,11 +52,11 @@ All raw mined resources — no processed items.
 | Item | /s | /60s |
 |---|---|---|
 | iron-ore | 11.00 | 660 |
-| raw-coal | 4.09 | 245 |
+| raw-coal | 6.43 | 386 |
 | stone | 3.77 | 226 |
 | copper-ore | 3.00 | 180 |
 | native-flora | 4.00 | 240 |
-| water | ~237 | ~14,200 |
+| water | ~252 | ~15,100 |
 
 ## Exports
 
@@ -64,7 +64,7 @@ All raw mined resources — no processed items.
 |---|---|---|
 | automation-science-pack | 0.40 | 24 |
 
-Voided: excess ash ~0.87/s.
+Voided: excess ash ~3.25/s.
 
 ## Key recipes
 
@@ -90,13 +90,13 @@ Ash excluded from solver (burner ash gaming). Balance computed manually from fue
 | Copper furnace (1 × 200 kW) | 0.04 |
 | Burner assemblers (11 × 75 kW) | 0.28 |
 | **Subtotal: burner machines** | **1.70** × utilization |
-| Boilers (2 × 3.70 MW thermal) | 2.35 |
-| **Total produced** | **~4.05** |
+| Boilers (4 × 3.70 MW, 0.5 effectivity) | 4.69 |
+| **Total produced** | **~6.43** |
 | Consumed by planter-box | −2.36 |
 | Consumed by log3 | −0.82 |
-| **Net surplus (void)** | **~0.87** |
+| **Net surplus (void)** | **~3.25** |
 
-Boiler ash alone (2.35/s) exceeds log3 demand (0.82/s). The combination of burner ash + boiler ash comfortably exceeds total ash demand (3.18/s).
+Boiler ash alone (4.69/s) exceeds total ash demand (3.18/s). Self-power is the dominant ash source.
 
 ## Power (self-contained)
 
@@ -105,11 +105,13 @@ Boiler ash alone (2.35/s) exceeds log3 demand (0.82/s). The combination of burne
 | Solver core (51 buildings) | 6.04 |
 | Copper chain (2 screeners + 1 crusher) | 1.00 |
 | **Total electric demand** | **7.04** |
-| 2 boilers + 1 steam engine capacity | 7.40 |
+| 4 boilers + 2 steam engines capacity | 7.40 |
 | **Headroom** | **5%** |
 
-Raw-coal for boilers: 7.04 MW / 3.0 MJ = 2.35/s. Ash from boilers: 2.35/s.
-Pyanodon water: heat_capacity 2100 J/unit/°C, ΔT = 235°C. Engine: 15/s steam → 7.4 MW.
+Steam engine effectivity = 0.5 → output per engine: 15/s × 2100 × 235 × 0.5 = 3.70 MW.
+2 engines = 7.40 MW, needing 30/s steam → 4 boilers (7.5/s each).
+Raw-coal for boilers: 4 × 3.70 MW / 3.0 MJ = 4.93/s at full load, ~4.69/s at actual demand.
+Ash from boilers: 4.69/s.
 
 ## Stone balance
 
@@ -183,6 +185,6 @@ npx tsx src/cli.ts solve \
 - Bio module base speeds: fwf-mk01 = 0.0909, moss-farm-mk01 = 0.0625. With full modules, effective speed = 1.0. Without modules: 12 FWF + 11 moss-farm (83 buildings total).
 - Copper chain solver-excluded: LP over-scales copper smelting to generate ash from burner fuel. Manual calculation avoids this.
 - Ash excluded from all burner recipes: prevents LP from gaming ash production. Manual overlay confirms self-sufficiency.
-- v1 imported ash (0.66/s), CO2 (2.58/s), and electricity (~7.5 MW). v2 eliminates all three by self-powering with boilers (ash source) and using log3 (ash consumer) + moondrop (free CO2). Trade: +1 building, +2.35/s raw-coal.
+- v1 imported ash (0.66/s), CO2 (2.58/s), and electricity (~7.5 MW). v2 eliminates all three by self-powering with boilers (ash source) and using log3 (ash consumer) + moondrop (free CO2). Trade: +4 buildings, +4.69/s raw-coal.
 - Moss-2 uses stone (vs Moss-1 which uses sand) — avoids sand byproduct, routes stone from crushers.
 - Solver warns tree-mk01/moss modules "not unlocked" — data limitation, modules are available in-game.

@@ -91,6 +91,7 @@ program
   .option('--solver <mode>', 'Solver algorithm: simplex (default) or algebra (legacy)')
   .option('--constraint <spec...>', 'Recipe constraint (e.g., "iron-plate:iron-plate:master")')
   .option('--max-import <item:amount...>', 'Cap import of item (amount=0 = produce internally)')
+  .option('--temp-variant <recipe:fluid:temp...>', 'Temperature variant (e.g., "warm-stone-brick-1:coke-oven-gas:500")')
   .option('--export <format>', 'Export as Helmod import string (format: helmod)')
   .option('--unlocked', 'Warn if any recipe is not unlocked in your save')
   .option('--json', 'Output raw JSON result')
@@ -108,6 +109,7 @@ program
       solver: opts.solver,
       constraint: opts.constraint,
       maxImport: opts.maxImport,
+      tempVariant: opts.tempVariant,
       export: opts.export,
       json: opts.json,
       unlocked: opts.unlocked,

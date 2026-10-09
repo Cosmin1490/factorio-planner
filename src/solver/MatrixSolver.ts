@@ -297,6 +297,30 @@ function buildMatrix(data: PrototypeData, input: SolveInput): SolverMatrix {
     resolved.push({ recipe, factory, fuel, recipeName: spec.recipeName, factoryName: spec.factoryName, effectiveSpeed: speed, effects });
   }
 
+  // Inject virtual recipes for --temp-variant
+  for (const tv of input.tempVariants ?? []) {
+    const base = resolved.find(r => r.recipeName === tv.recipeName);
+    if (!base) throw new Error(`--temp-variant: recipe "${tv.recipeName}" not found in recipe list`);
+    const clonedRecipe: Recipe = JSON.parse(JSON.stringify(base.recipe));
+    const fluidIng = clonedRecipe.ingredients.find(
+      ing => ing.type === 'fluid' && ing.name === tv.fluidName,
+    );
+    if (!fluidIng) throw new Error(`--temp-variant: recipe "${tv.recipeName}" has no fluid ingredient "${tv.fluidName}"`);
+    fluidIng.minimum_temperature = tv.temperature;
+    fluidIng.maximum_temperature = tv.temperature;
+    const variantName = `${tv.recipeName} (${tv.fluidName}@${tv.temperature})`;
+    clonedRecipe.name = variantName;
+    resolved.push({
+      recipe: clonedRecipe,
+      factory: base.factory,
+      fuel: base.fuel,
+      recipeName: variantName,
+      factoryName: base.factoryName,
+      effectiveSpeed: base.effectiveSpeed,
+      effects: base.effects,
+    });
+  }
+
   // Classify items
   const extraProduced = new Set<string>();
   const extraConsumed = new Set<string>();

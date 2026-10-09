@@ -36,6 +36,13 @@ export interface ConstraintSpec {
   type: 'master' | 'exclude';  // master = force this recipe, exclude = skip this recipe
 }
 
+/** Virtual recipe copy that binds a fluid ingredient to a specific temperature column */
+export interface TempVariant {
+  recipeName: string;
+  fluidName: string;
+  temperature: number;
+}
+
 /** Input to the solver */
 export interface SolveInput {
   recipes: RecipeSpec[];
@@ -45,6 +52,7 @@ export interface SolveInput {
   solver?: SolverMode;
   constraints?: ConstraintSpec[];
   maxImports?: { name: string; amount: number }[];
+  tempVariants?: TempVariant[];
 }
 
 /** Item/fluid flow in solver results */

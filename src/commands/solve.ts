@@ -1,7 +1,7 @@
 import { loadPrototypes, pickFactory, isRecipeUnlocked } from '../data/PrototypeLoader.js';
 import { solve } from '../solver/MatrixSolver.js';
 import { exportHelmod } from '../export/helmod.js';
-import type { RecipeSpec, SolveInput, ModuleSpec, BeaconSpec, SolverMode, ConstraintSpec } from '../solver/types.js';
+import type { RecipeSpec, SolveInput, ModuleSpec, BeaconSpec, SolverMode, ConstraintSpec, TempVariant } from '../solver/types.js';
 
 interface SolveOptions {
   recipes: string;
@@ -17,6 +17,7 @@ interface SolveOptions {
   solver?: string;
   constraint?: string[];
   maxImport?: string[];
+  tempVariant?: string[];
   unlocked?: boolean;
 }
 
@@ -207,6 +208,14 @@ export function solveCommand(protoPath: string, options: SolveOptions) {
       console.error('    Caps may cause the solution to exceed input constraints.');
       console.error('    For hard caps, use --target mode with --max-import (amount > 0).');
     }
+  }
+  if (options.tempVariant) {
+    const rawVariants = Array.isArray(options.tempVariant) ? options.tempVariant : [options.tempVariant];
+    solveInput.tempVariants = rawVariants.map((spec: string): TempVariant => {
+      const parts = spec.split(':');
+      if (parts.length !== 3) throw new Error(`Invalid --temp-variant format "${spec}" — expected "recipe:fluid:temp"`);
+      return { recipeName: parts[0], fluidName: parts[1], temperature: parseFloat(parts[2]) };
+    });
   }
 
   console.error('Running solver...');

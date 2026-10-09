@@ -11,6 +11,7 @@ Prioritized by impact per effort.
 ## P2 — Solver usability
 
 2. [ ] **`--electric` / `--no-burner`**: auto-select best electric (non-burner) factory per recipe.
+2b. [x] **`--temp-variant "recipe:fluid:temp"`**: create a virtual copy of a recipe that binds its fluid ingredient to a specific temperature column. Workaround for the solver's one-column-per-ingredient temperature limitation — when a recipe accepts a fluid range (e.g., COG ≥250°C) and multiple temperature sources exist (250°C from coke-coal, 500°C from reheat), the LP can only consume from one column. The variant lets it use both. Example: `--temp-variant "warm-stone-brick-1:coke-oven-gas:500"` creates `warm-stone-brick-1 (coke-oven-gas@500)` that binds to COG:500 instead of COG:250. Both the original and variant produce the same outputs; the LP splits demand between them.
 
 ## P3 — Methodology gaps
 

@@ -113,6 +113,8 @@ Steam engine effectivity = 0.5 → output per engine: 15/s × 2100 × 235 × 0.5
 Raw-coal for boilers: 4 × 3.70 MW / 3.0 MJ = 4.93/s at full load, ~4.69/s at actual demand.
 Ash from boilers: 4.69/s.
 
+**Without self-power (grid-connected):** burner machines alone produce 1.74/s ash; demand is 3.18/s → import 1.44/s ash. Electrically isolating the block guarantees boiler load = ash production. If grid-connected, boilers throttle when grid has surplus — ash breaks below 31% boiler utilization.
+
 ## Stone balance
 
 | Source | /60s |

@@ -11,7 +11,6 @@ Prioritized by impact per effort.
 ## P2 — Solver usability
 
 2. [ ] **`--electric` / `--no-burner`**: auto-select best electric (non-burner) factory per recipe.
-2b. [ ] **`--fuel "recipe:item"`**: force a specific fuel for burner factories. Currently the solver auto-selects fuel and you can't override it. Needed for scenarios like forcing coke instead of coal in BOF (different fuel_value changes consumption rates and byproduct balance). Without this, inlined fuel production chains can't be solver-validated end-to-end.
 
 ## P3 — Methodology gaps
 

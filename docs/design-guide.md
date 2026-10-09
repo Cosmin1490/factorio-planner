@@ -60,6 +60,14 @@ Multi-product recipes stall completely when ANY output buffer is full. Every pro
 9. **Burn block fluids for steam** — produce steam locally, never train it. Train in fuel fluids if local byproducts don't cover demand, but always boil on-site.
     
     **Fuel selection: evaluate ALL block fluids, including the main product.** Don't default to burning byproducts and preserving the main output — burning some of the main product for steam is a legitimate production cost, not waste. Compare candidates by opportunity cost: does the fluid have export value? Does it require an extra station? What's its fuel_value? Example: acetylene stamp produces acetylene (1 MJ), light-oil (900 kJ, aromatics feedstock), anthracene-oil (250 kJ, creosote cracking). Burning 34.6/s acetylene for steam is cheaper than burning light-oil + anthracene-oil — it's produced locally (no station), and freeing the byproducts for export captures more total value. For fuel_rate formulas and fuel category tables, see [solver-reference.md](solver-reference.md) § Power & energy formulas.
+    
+    **Burner machines and boilers as ash sources.** When a block consumes ash as a recipe ingredient (planter-box, log3), burner machines and boilers become ash *sources*, not just power costs. This inverts the solver-reference default ("use electric factories to avoid burnt-result coupling") — when ash is a wanted input, maximize burnt-result coupling instead:
+    - Prefer `assembling-machine-1` (75 kW burner, chemical+biomass) over `automated-factory-mk01` (electric) — every craft produces ash from fuel as `burnt_result`
+    - Prefer `stone-furnace` (200 kW burner) over `advanced-foundry-mk01` (electric) for the same reason
+    - **Self-power as ash source**: boilers burning raw-coal produce ash at the same rate they consume fuel. At typical block loads (5-10 MW), boiler ash alone (1.5-3.5/s) often covers the entire ash demand. Self-powering trades electricity import for raw-coal import + ash self-sufficiency — worth it when the block already imports raw-coal for burner machines, or when eliminating the ash import removes a train station
+    - **Compute the ash balance manually** — exclude ash from every burner recipe in the solver (prevents LP from gaming furnace scaling for ash), then verify: total ash from burner machines + boiler fuel ≥ total ash consumed by recipes. The solver can't model this correctly because it treats ash production as a recipe output it can scale. See [solver-reference.md](solver-reference.md) § Solver setup checklist for the `--fuel` override and ash exclude pattern
+    
+    Example: automation-science at 0.4/s needs 3.18/s ash (planter-box + log3). Burner assemblers + furnaces produce 1.70/s ash from fuel; 2 boilers (7.0 MW self-power) add 2.35/s → total 4.05/s, surplus 0.87/s. No ash import needed.
 
 ## Block delta planning
 

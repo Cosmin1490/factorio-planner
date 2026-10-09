@@ -179,9 +179,8 @@ export function buildProducerIndex(data: PrototypeData): ProducerIndex {
   for (const recipe of Object.values(data.recipes)) {
     if (recipe.hidden) continue;
 
-    // Skip barreling/unbarreling recipes
-    if (recipe.category === 'barreling' || recipe.category === 'unbarreling') continue;
-    if (recipe.name.startsWith('fill-') || recipe.name.startsWith('empty-')) continue;
+    // Skip barreling/unbarreling/canister recipes (by category, not name prefix)
+    if (['barreling', 'unbarreling', 'py-barreling', 'py-unbarreling'].includes(recipe.category)) continue;
 
     // Skip recycling recipes
     if (recipe.category === 'recycling') continue;
@@ -212,8 +211,7 @@ export function buildConsumerIndex(data: PrototypeData): ConsumerIndex {
 
   for (const recipe of Object.values(data.recipes)) {
     if (recipe.hidden) continue;
-    if (recipe.category === 'barreling' || recipe.category === 'unbarreling') continue;
-    if (recipe.name.startsWith('fill-') || recipe.name.startsWith('empty-')) continue;
+    if (['barreling', 'unbarreling', 'py-barreling', 'py-unbarreling'].includes(recipe.category)) continue;
     if (recipe.category === 'recycling') continue;
 
     const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];

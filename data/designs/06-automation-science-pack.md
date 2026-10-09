@@ -10,7 +10,7 @@ Moondrop greenhouse provides free CO2 for Moss-2.
 
 ## Recipe table
 
-51 core + 4 copper solver-validated (simplex). 6 power buildings manually computed.
+55 buildings solver-validated (simplex). 6 power buildings manually computed.
 
 ```
 ┌─────────────────────────┬──────────────────────────┬───────┬───────────────┐
@@ -156,11 +156,10 @@ Boiler ash alone (4.69/s) exceeds total ash demand (3.18/s). Self-power is the d
 
 | Component | MW |
 |---|---|
-| Solver core (51 buildings) | 6.04 |
-| Copper chain (2 screeners + 1 crusher) | 1.00 |
-| **Total electric demand** | **7.04** |
+| Solver (55 buildings, rated) | 7.48 |
+| **Total electric demand** | **7.48** |
 | 4 boilers + 2 steam engines capacity | 7.40 |
-| **Headroom** | **5%** |
+| **Headroom** | **−1% rated, positive actual** |
 
 Steam engine effectivity = 0.5 → output per engine: 15/s × 2100 × 235 × 0.5 = 3.70 MW.
 2 engines = 7.40 MW, needing 30/s steam → 4 boilers (7.5/s each).
@@ -180,15 +179,15 @@ Ash from boilers: 4.69/s.
 | Consumed by stone-brick (11 furnaces) | 6.40 |
 | Consumed by Moss-2 (1 farm) | 0.17 |
 
-## Solver commands
+## Solver command (55 buildings)
 
 Power (6 buildings) computed manually — solver doesn't model electricity generation.
 
-**Run 1: core (51 buildings)**
+`--max-import "copper-ore:180"` forces grade-1 recycling — without it the LP skips the crusher and wastes grade-1-copper (see solver reference § Recycling loops).
 
 ```bash
 npx tsx src/cli.ts solve \
-  --recipes "automation-science-pack,planter-box,empty-planter-box,small-parts-01,iron-gear-wheel,copper-cable,bolts,iron-stick,stone-brick,low-grade-smelting-iron,grade-1-iron-crush,log-wood-fast,log3,wood-seedling,wood-seeds,Moss-2,soil,muddy-sludge,moondrop-co2" \
+  --recipes "automation-science-pack,planter-box,empty-planter-box,small-parts-01,iron-gear-wheel,copper-cable,bolts,iron-stick,stone-brick,low-grade-smelting-iron,grade-1-iron-crush,log-wood-fast,log3,wood-seedling,wood-seeds,Moss-2,soil,muddy-sludge,moondrop-co2,grade-2-copper,grade-1-copper-crush,copper-plate-4" \
   --target "automation-science-pack:24" --time 60 \
   --factory "automation-science-pack:assembling-machine-1" \
   --factory "planter-box:assembling-machine-1" \
@@ -209,6 +208,9 @@ npx tsx src/cli.ts solve \
   --factory "soil:soil-extractor-mk01" \
   --factory "muddy-sludge:washer" \
   --factory "moondrop-co2:moondrop-greenhouse-mk01" \
+  --factory "grade-2-copper:automated-screener-mk01" \
+  --factory "grade-1-copper-crush:jaw-crusher" \
+  --factory "copper-plate-4:stone-furnace" \
   --modules "Moss-2:moss:15" --modules "log3:tree-mk01:10" \
   --fuel "automation-science-pack:raw-coal" \
   --fuel "planter-box:raw-coal" \
@@ -221,7 +223,9 @@ npx tsx src/cli.ts solve \
   --fuel "stone-brick:raw-coal" \
   --fuel "low-grade-smelting-iron:raw-coal" \
   --fuel "wood-seeds:raw-coal" \
+  --fuel "copper-plate-4:raw-coal" \
   --constraint "grade-1-iron-crush:stone:exclude" \
+  --constraint "grade-1-copper-crush:stone:exclude" \
   --constraint "automation-science-pack:ash:exclude" \
   --constraint "planter-box:ash:exclude" \
   --constraint "empty-planter-box:ash:exclude" \
@@ -233,24 +237,7 @@ npx tsx src/cli.ts solve \
   --constraint "stone-brick:ash:exclude" \
   --constraint "low-grade-smelting-iron:ash:exclude" \
   --constraint "wood-seeds:ash:exclude" \
-  --solver simplex \
-  --unlocked
-```
-
-**Run 2: copper chain (4 buildings)**
-
-Separated because the grade-1 recycling loop gives the LP too many byproduct-gaming degrees of freedom in a combined run. `--max-import "copper-ore:180"` forces full grade-1 recycling (5 ore/plate yield).
-
-```bash
-npx tsx src/cli.ts solve \
-  --recipes "grade-2-copper,grade-1-copper-crush,copper-plate-4" \
-  --target "copper-plate:36" --time 60 \
-  --factory "grade-2-copper:automated-screener-mk01" \
-  --factory "grade-1-copper-crush:jaw-crusher" \
-  --factory "copper-plate-4:stone-furnace" \
-  --fuel "copper-plate-4:raw-coal" \
   --constraint "copper-plate-4:ash:exclude" \
-  --constraint "grade-1-copper-crush:stone:exclude" \
   --max-import "copper-ore:180" \
   --solver simplex \
   --unlocked
@@ -260,7 +247,7 @@ npx tsx src/cli.ts solve \
 
 - Design 01 (py-science-pack-1) is a different science pack — no supersession.
 - Bio module base speeds: fwf-mk01 = 0.0909, moss-farm-mk01 = 0.0625. With full modules, effective speed = 1.0. Without modules: 12 FWF + 11 moss-farm (83 buildings total).
-- Copper chain in separate solver run: the grade-1 recycling loop has coupled byproducts (grade-2-copper + stone) that the LP exploits in a combined run. `--max-import` on copper-ore forces the recycling behavior.
+- Copper recycling loop needs `--max-import "copper-ore:180"` — without it the LP skips the crusher and wastes grade-1-copper because imports are free in the objective function.
 - Ash excluded from all burner recipes: prevents LP from gaming ash production. Manual overlay confirms self-sufficiency.
 - v1 imported ash (0.66/s), CO2 (2.58/s), and electricity (~7.5 MW). v2 eliminates all three by self-powering with boilers (ash source) and using log3 (ash consumer) + moondrop (free CO2). Trade: +4 buildings, +4.69/s raw-coal.
 - Moss-2 uses stone (vs Moss-1 which doesn't, but yields half the moss in 25% more time) — routes crusher stone byproduct into moss production.

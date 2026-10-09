@@ -45,24 +45,78 @@ Moondrop greenhouse provides free CO2 for Moss-2.
 
 61 buildings total (55 production + 6 power), ~7.0 MW electric (self-powered).
 
+## Intermediate flows
+
+All rates /s. Grouped by production chain.
+
+**Iron chain**
+| Item | /s | From | To |
+|---|---|---|---|
+| processed-iron-ore | 6.60 | grade-1-iron-crush | low-grade-smelting-iron |
+| iron-plate | 2.20 | low-grade-smelting-iron | empty-planter-box (0.80), iron-gear-wheel (0.80), iron-stick (0.60) |
+| iron-stick | 1.20 | iron-stick | bolts |
+| iron-gear-wheel | 0.40 | iron-gear-wheel | small-parts-01 |
+| bolts | 1.20 | bolts | small-parts-01 |
+| copper-cable | 1.20 | copper-cable | small-parts-01 |
+| small-parts-01 | 0.80 | small-parts-01 | automation-science-pack |
+
+**Copper chain**
+| Item | /s | From | To |
+|---|---|---|---|
+| grade-1-copper | 0.60 | grade-2-copper (screener) | grade-1-copper-crush |
+| grade-2-copper | 1.50 | grade-2-copper (1.20) + grade-1-copper-crush (0.30) | copper-plate-4 |
+| copper-plate | 0.60 | copper-plate-4 | copper-cable |
+
+**Wood / planter chain**
+| Item | /s | From | To |
+|---|---|---|---|
+| wood-seeds | 0.03 | wood-seeds | wood-seedling |
+| wood-seedling | 0.08 | wood-seedling | log3 |
+| log | 0.16 | log3 | log-wood-fast |
+| wood | 1.63 | log-wood-fast | empty-planter-box (1.60), wood-seeds (0.03) |
+| empty-planter-box | 0.80 | empty-planter-box | planter-box |
+| planter-box | 0.80 | planter-box | automation-science-pack |
+
+**Bio chain**
+| Item | /s | From | To |
+|---|---|---|---|
+| carbon-dioxide | 0.85 | moondrop-co2 | Moss-2 |
+| muddy-sludge | 0.85 | muddy-sludge (washer) | Moss-2 |
+| moss | 0.14 | Moss-2 | wood-seedling |
+| soil | 4.09 | soil (extractor) | planter-box (4.00), muddy-sludge (0.09) |
+
+**Fuel → ash**
+| Item | /s | From | To |
+|---|---|---|---|
+| raw-coal | 6.43 | import | burner machines (1.70), copper furnace (0.07), boilers (4.69) |
+| ash | 6.43 | burner machines + boilers (see ash balance) | planter-box (2.36), log3 (0.82), void (3.25) |
+
+Raw-coal and ash are 1:1 by burnt_result.
+
+**Stone flows**
+| Item | /s | From | To |
+|---|---|---|---|
+| stone | 6.57 | grade-1-iron-crush (2.20) + grade-1-copper-crush (0.60) + import (3.77) | stone-brick (6.40), Moss-2 (0.17) |
+| stone-brick | 3.20 | stone-brick (furnace) | empty-planter-box |
+
 ## Imports
 
 All raw mined resources — no processed items.
 
-| Item | /s | /60s |
-|---|---|---|
-| iron-ore | 11.00 | 660 |
-| raw-coal | 6.43 | 386 |
-| stone | 3.77 | 226 |
-| copper-ore | 3.00 | 180 |
-| native-flora | 4.00 | 240 |
-| water | ~252 | ~15,100 |
+| Item | /s |
+|---|---|
+| iron-ore | 11.00 |
+| raw-coal | 6.43 |
+| stone | 3.77 |
+| copper-ore | 3.00 |
+| native-flora | 4.00 |
+| water | ~252 |
 
 ## Exports
 
-| Item | /s | /60s |
-|---|---|---|
-| automation-science-pack | 0.40 | 24 |
+| Item | /s |
+|---|---|
+| automation-science-pack | 0.40 |
 
 Voided: excess ash ~3.25/s.
 
@@ -117,14 +171,14 @@ Ash from boilers: 4.69/s.
 
 ## Stone balance
 
-| Source | /60s |
+| Source | /s |
 |---|---|
-| grade-1-iron-crush (5 crushers) | 132 |
-| grade-1-copper-crush (1 crusher) | 36 |
-| Imported | 226 |
-| **Total** | **394** |
-| Consumed by stone-brick (11 furnaces) | 384 |
-| Consumed by Moss-2 (1 farm) | 10 |
+| grade-1-iron-crush (5 crushers) | 2.20 |
+| grade-1-copper-crush (1 crusher) | 0.60 |
+| Imported | 3.77 |
+| **Total** | **6.57** |
+| Consumed by stone-brick (11 furnaces) | 6.40 |
+| Consumed by Moss-2 (1 farm) | 0.17 |
 
 ## Solver command (core 51 buildings)
 
@@ -188,5 +242,5 @@ npx tsx src/cli.ts solve \
 - Copper chain solver-excluded: LP over-scales copper smelting to generate ash from burner fuel. Manual calculation avoids this.
 - Ash excluded from all burner recipes: prevents LP from gaming ash production. Manual overlay confirms self-sufficiency.
 - v1 imported ash (0.66/s), CO2 (2.58/s), and electricity (~7.5 MW). v2 eliminates all three by self-powering with boilers (ash source) and using log3 (ash consumer) + moondrop (free CO2). Trade: +4 buildings, +4.69/s raw-coal.
-- Moss-2 uses stone (vs Moss-1 which uses sand) — avoids sand byproduct, routes stone from crushers.
+- Moss-2 uses stone (vs Moss-1 which doesn't, but yields half the moss in 25% more time) — routes crusher stone byproduct into moss production.
 - Solver warns tree-mk01/moss modules "not unlocked" — data limitation, modules are available in-game.

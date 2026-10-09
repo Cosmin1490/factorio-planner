@@ -10,7 +10,7 @@ Moondrop greenhouse provides free CO2 for Moss-2.
 
 ## Recipe table
 
-51 buildings solver-validated (simplex). 4 copper buildings + 6 power buildings manually computed.
+51 core + 4 copper solver-validated (simplex). 6 power buildings manually computed.
 
 ```
 ┌─────────────────────────┬──────────────────────────┬───────┬───────────────┐
@@ -180,9 +180,11 @@ Ash from boilers: 4.69/s.
 | Consumed by stone-brick (11 furnaces) | 6.40 |
 | Consumed by Moss-2 (1 farm) | 0.17 |
 
-## Solver command (core 51 buildings)
+## Solver commands
 
-Copper chain and power excluded — computed manually.
+Power (6 buildings) computed manually — solver doesn't model electricity generation.
+
+**Run 1: core (51 buildings)**
 
 ```bash
 npx tsx src/cli.ts solve \
@@ -235,11 +237,30 @@ npx tsx src/cli.ts solve \
   --unlocked
 ```
 
+**Run 2: copper chain (4 buildings)**
+
+Separated because the grade-1 recycling loop gives the LP too many byproduct-gaming degrees of freedom in a combined run. `--max-import "copper-ore:180"` forces full grade-1 recycling (5 ore/plate yield).
+
+```bash
+npx tsx src/cli.ts solve \
+  --recipes "grade-2-copper,grade-1-copper-crush,copper-plate-4" \
+  --target "copper-plate:36" --time 60 \
+  --factory "grade-2-copper:automated-screener-mk01" \
+  --factory "grade-1-copper-crush:jaw-crusher" \
+  --factory "copper-plate-4:stone-furnace" \
+  --fuel "copper-plate-4:raw-coal" \
+  --constraint "copper-plate-4:ash:exclude" \
+  --constraint "grade-1-copper-crush:stone:exclude" \
+  --max-import "copper-ore:180" \
+  --solver simplex \
+  --unlocked
+```
+
 ## Notes
 
 - Design 01 (py-science-pack-1) is a different science pack — no supersession.
 - Bio module base speeds: fwf-mk01 = 0.0909, moss-farm-mk01 = 0.0625. With full modules, effective speed = 1.0. Without modules: 12 FWF + 11 moss-farm (83 buildings total).
-- Copper chain solver-excluded: LP over-scales copper smelting to generate ash from burner fuel. Manual calculation avoids this.
+- Copper chain in separate solver run: the grade-1 recycling loop has coupled byproducts (grade-2-copper + stone) that the LP exploits in a combined run. `--max-import` on copper-ore forces the recycling behavior.
 - Ash excluded from all burner recipes: prevents LP from gaming ash production. Manual overlay confirms self-sufficiency.
 - v1 imported ash (0.66/s), CO2 (2.58/s), and electricity (~7.5 MW). v2 eliminates all three by self-powering with boilers (ash source) and using log3 (ash consumer) + moondrop (free CO2). Trade: +4 buildings, +4.69/s raw-coal.
 - Moss-2 uses stone (vs Moss-1 which doesn't, but yields half the moss in 25% more time) — routes crusher stone byproduct into moss production.

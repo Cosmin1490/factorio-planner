@@ -17,7 +17,7 @@ User provides: recipe list, target or input amounts, and optionally factory/modu
 
 ## Context
 
-Before solving, consult [`docs/pyanodon-methodology.md`](../../docs/pyanodon-methodology.md) for recipe selection rationale, byproduct management strategy, constraint decisions, and block boundary rules. The methodology is the authoritative reference for *what* to solve; this skill handles *how* to solve it.
+Before solving, consult [`docs/design-guide.md`](../../docs/design-guide.md) for recipe selection rationale, byproduct management strategy, constraint decisions, and block boundary rules. The design guide is the authoritative reference for *what* to solve; this skill handles *how* to solve it. For solver mechanics and CLI details, see [`docs/solver-reference.md`](../../docs/solver-reference.md).
 
 ## Workflow
 

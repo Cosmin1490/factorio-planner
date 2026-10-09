@@ -1,14 +1,14 @@
-# Pyanodon Pipeline Methodology
+# Pyanodon Design Guide
 
-A framework for designing production pipelines in Factorio with the [Pyanodon modpack](https://mods.factorio.com/user/pyanodon). Developed through iterative play using Claude as a solver copilot — describing what to produce, exploring recipe alternatives, running the solver with constraints, and refining until the numbers work.
+Design knowledge for Pyanodon production pipelines, accumulated through iterative play with Claude as a solver copilot. Each section captures lessons learned — what works, what doesn't, and what traps to watch for. The solver gives you correct math; this guide helps you ask the right questions.
 
-Most of these principles apply to any complex Factorio overhaul mod (SeaBlock, Space Exploration, etc.), but the specific examples, numbers, and data quirks are Pyanodon-specific.
+Most of these principles apply to any complex Factorio overhaul mod (SeaBlock, Space Exploration, etc.), but the specific examples, numbers, and data quirks are Pyanodon-specific. For solver mechanics and prototype data reference, see [`solver-reference.md`](solver-reference.md).
 
 ---
 
 ## Core workflow
 
-The methodology and solver give you the **best possible answer**: optimal recipes, minimal buildings, correct recycling loops. This is a reference standard — the ceiling you design against.
+The solver gives you the **best possible answer**: optimal recipes, minimal buildings, correct recycling loops. This is a reference standard — the ceiling you design against.
 
 In practice, **deviate when reality demands it.** Stamp an inefficient block instead of redesigning. Skip a recycling loop that adds 50 MW you don't have. Use a worse recipe because the better one needs a block you haven't built yet. These are conscious trade-offs, not mistakes.
 
@@ -31,19 +31,17 @@ The next expansion's **block delta** (rule 11) works from inventory, not from th
 3. **Normalize to same output** — cost per 1 unit of output, not per craft. 4x output at 2 inputs beats 2x at 1.
 4. **Rank by:** efficiency (raw materials/output) > complexity (recipes/buildings) > convenience. Watch for "later game" recipes that exist to consume excess byproducts — traps at early tech. **Always run the numbers before eliminating** — two paths sharing an upstream input can have wildly different per-unit consumption. Don't dismiss on structural similarity alone; quantify first.
     
-    **Include upstream cost of new imports.** When recipe alternatives differ in imports, check the block inventory: does each import already have a supplier? If yes, it's free — just a train station. If not, the real cost includes the entire upstream block: power, buildings, byproduct handling, and design time. A recipe saving 6 local buildings but requiring a new 10 MW electrolyzer block with chlorine/hydrogen venting is more expensive in total, not less. Imports with many future consumers (NaOH serves electrochemistry broadly) amortize their upstream cost across blocks; single-purpose imports don't — prefer the alternative with an already-available or trivially-produced import. Example: cellulose-02 (2 biofactories, imports NaOH — no supplier, 10 MW electrolyzer, byproduct venting) vs cellulose-00 (8 hpf, imports limestone — trivial mining). The local savings are real but the system cost is higher.
+    **Include upstream cost of new imports.** When recipe alternatives differ in imports, check the block inventory: does each import already have a supplier? If yes, it's readily available — just a train station. If not, the real cost includes the entire upstream block: power, buildings, byproduct handling, and design time. A recipe saving 6 local buildings but requiring a new 10 MW electrolyzer block with chlorine/hydrogen venting is more expensive in total, not less. Imports with many future consumers (NaOH serves electrochemistry broadly) amortize their upstream cost across blocks; single-purpose imports don't — prefer the alternative with an already-available or trivially-produced import. Example: cellulose-02 (2 biofactories, imports NaOH — no supplier, 10 MW electrolyzer, byproduct venting) vs cellulose-00 (8 hpf, imports limestone — trivial mining). The local savings are real but the system cost is higher.
     
     **Trace both paths to system-level costs before deciding.** A recipe with fewer dependencies looks cheaper at the block level, but the comparison isn't complete until you trace the full consequences of each path: ore consumption rate and deposit depletion, byproduct volume and whether a clean void path exists, fuel burn as a permanent per-second cost, and number of stamps needed. The "complex" alternative's upfront infrastructure may amortize across future consumers — or it may not, if nothing else needs it. Neither path is inherently better; the point is to make the decision with full information rather than stopping at recipe-level dependency counts. Example: low-grade iron smelting (3:1 ratio, no new dependencies) vs BOF casting (1.4:1, needs oxygen + borax blocks). Low-grade requires 50/s ore (vs 9/s), produces 10/s stone to void or export, and burns 90/s acetylene — permanent ongoing costs. BOF needs two upstream blocks built first — upfront sequencing cost. The deciding factor was that both upstream blocks serve future consumers (oxygen → antimony, fish; borax → already needed), so the infrastructure amortizes. If oxygen had only one consumer, the calculus could go the other way.
 
 ## Byproduct management
 
-### Solver-level
+5. **Classify before linking** — (a) recyclable into the same chain -> recycle (reduces input demand, always check first), (b) valuable to another block -> export, (c) convertible to something valuable -> convert then export, (d) pure waste → void (see voiding buildings below). Prefer (a) > (b) > (c) > (d). Use overflow-to-void to combine: try to export, void only surplus. **Always check recycling before voiding** — if a byproduct converts back to an input of the same chain (even at a poor ratio), run the numbers. One extra building for 5-10% free efficiency is almost always worth it. For solver constraint mechanics (`--constraint`, `--max-import`), see [solver-reference.md](solver-reference.md) § Constraint system.
+6. **Match the limiting reagent** — don't force the abundant byproduct to zero; that over-scales the consumer and imports the scarce one. Let the scarce one set the pace.
+7. **Recycle intermediates through every producing step** — when multiple recipes produce the target as byproduct (coal chain: raw-coal -> coal -> coke -> coal-gas all produce tar), force intermediates back. Coal chain: 3x raw-material reduction (33 -> 11/s for 100 tar/s).
 
-5. **Classify before linking** — (a) recyclable into the same chain -> recycle (reduces input demand, always check first), (b) valuable to another block -> export, (c) convertible to something valuable -> convert then export, (d) pure waste → void (see voiding buildings below). Prefer (a) > (b) > (c) > (d). Use overflow-to-void to combine: try to export, void only surplus. **Always check recycling before voiding** — if a byproduct converts back to an input of the same chain (even at a poor ratio), run the numbers. One extra building for 5-10% free efficiency is almost always worth it.
-6. **Match the limiting reagent** — don't force the abundant byproduct to zero; that over-scales the consumer and imports the scarce one. Let the scarce one set the pace. Use `--constraint "recipe:product:exclude"` + `--max-import "scarce-input:0"`.
-7. **Recycle intermediates through every producing step** — when multiple recipes produce the target as byproduct (coal chain: raw-coal -> coal -> coke -> coal-gas all produce tar), force intermediates back with `--max-import item:0`. Coal chain: 3x raw-material reduction (33 -> 11/s for 100 tar/s).
-
-### In-game
+### In-game byproduct handling
 
 Multi-product recipes stall completely when ANY output buffer is full. Every product must have somewhere to go.
 
@@ -58,25 +56,10 @@ Multi-product recipes stall completely when ANY output buffer is full. Every pro
 
 **Steam producer throttling:** all boilers (electric and oil) stop when their steam output buffer is full. No steam draw -> no fuel/electricity consumed. Rated power is peak, not constant — actual cost tracks steam demand. Don't overestimate power budget based on rated values.
 
-8. **Account for power cost, use unlocked tiers** — total MW = count x energy_usage x 60. Electric boilers (25 MW rated) often dominate peak budget. Always `--factory` with unlocked tiers — solver auto-picks mk04 which are usually locked.
-9. **Burn block fluids for steam** — oil boiler mk01: effectivity=2, 0 MW electrical. `fuel_rate = (steam_rate x heat_capacity x dT) / (fuel_value x effectivity)`. Pyanodon water heat_capacity=2,100, dT=235. Fluid fuel_value in `data.fluids` not `data.items`. **Produce steam locally, never train it** — train in fuel fluids if local byproducts don't cover demand, but always boil on-site.
+8. **Account for power cost, use unlocked tiers** — always `--factory` with unlocked tiers — solver auto-picks mk04 which are usually locked. For power formulas and entity reference data, see [solver-reference.md](solver-reference.md) § Power & energy formulas.
+9. **Burn block fluids for steam** — produce steam locally, never train it. Train in fuel fluids if local byproducts don't cover demand, but always boil on-site.
     
-    **Fuel selection: evaluate ALL block fluids, including the main product.** Don't default to burning byproducts and preserving the main output — burning some of the main product for steam is a legitimate production cost, not waste. Compare candidates by opportunity cost: does the fluid have export value? Does it require an extra station? What's its fuel_value? Example: acetylene stamp produces acetylene (1 MJ), light-oil (900 kJ, aromatics feedstock), anthracene-oil (250 kJ, creosote cracking). Burning 34.6/s acetylene for steam is cheaper than burning light-oil + anthracene-oil — it's produced locally (no station), and freeing the byproducts for export captures more total value.
-
-    **Fuel categories are not interchangeable.** Solid fuels belong to distinct categories: `chemical` (coal, coke, raw-coal), `biomass` (wood), `jerry` (all canisters — acetylene, gasoline, light-oil, etc.), `nexelit`, `quantum`. Each burner entity accepts only specific categories — check `entity.burner_prototype.fuel_categories`. Key examples:
-    
-    | Entity | chemical | biomass | jerry | nuke | nexelit | quantum |
-    |---|---|---|---|---|---|---|
-    | locomotive (mk01) | yes | yes | — | yes | — | — |
-    | mk02-locomotive | — | — | yes | yes | — | — |
-    | ht-locomotive (mk03) | — | — | — | — | yes | — |
-    | stone-furnace | yes | yes | — | — | — | — |
-    | assembling-machine-1 | yes | yes | — | — | — | — |
-    | assembling-machine-2 | yes | yes | yes | — | — | — |
-    | assembling-machine-3 | yes | yes | yes | yes | — | — |
-    | py-burner | yes | yes | yes | yes | — | — |
-    
-    All canisters have the same fuel_value (10,000,000 J) regardless of the fluid inside. When planning fuel imports for a block, verify the consumer entity accepts the fuel category. Jerry fuels follow the container pattern (like barrels/cages) — fill at source (`empty-fuel-canister` + fluid → canister), burn at consumer, empty canister returns. No net canister consumption; plan for the return logistics (canister unload at filler, canister load at consumer).
+    **Fuel selection: evaluate ALL block fluids, including the main product.** Don't default to burning byproducts and preserving the main output — burning some of the main product for steam is a legitimate production cost, not waste. Compare candidates by opportunity cost: does the fluid have export value? Does it require an extra station? What's its fuel_value? Example: acetylene stamp produces acetylene (1 MJ), light-oil (900 kJ, aromatics feedstock), anthracene-oil (250 kJ, creosote cracking). Burning 34.6/s acetylene for steam is cheaper than burning light-oil + anthracene-oil — it's produced locally (no station), and freeing the byproducts for export captures more total value. For fuel_rate formulas and fuel category tables, see [solver-reference.md](solver-reference.md) § Power & energy formulas.
 
 ## Block delta planning
 
@@ -84,7 +67,7 @@ When planning a major expansion (new science tier, new end product), the macro-l
 
 10. **Derive consolidated demand from targets** — start from end-goal recipes (science packs, building recipes) and trace demand backward through every intermediate. **Consolidate shared intermediates** — when multiple end products need the same item (rubber for both logistic-science stoppers and py-science-1 flasks), sum all consumers before sizing the supplier. Missing this leads to undersized blocks or duplicate chains.
     
-    Steps: (1) write down end-goal recipes with **verified output counts** (rule 14) — multi-output recipes change demand by 10x+. (2) Trace each ingredient backward, recursively, until you hit a commodity boundary or existing block output. Watch for **container cycles** (water-barrel→bio recipe→barrel) and **catalyst cycles** (stone-brick→warm-stone-brick→stone-brick for hot-air) — these items appear as ingredients but have zero net consumption. The hand trace counts them; the solver correctly zeros them out. (3) At each intermediate, sum demand from ALL consumers — don't trace per-end-product. (4) Result: a demand table mapping item -> total rate -> source (existing block / new block / inline). (5) **Trace production recipes forward for byproducts** — for every supply source in the demand table, run `recipe-info` on its production recipe. If it has byproducts, immediately check: does any planned block consume this byproduct? Does the byproduct scale proportionally with demand? Is there a natural sink? If not, you need a consumer block or the byproduct will stall the producer. This is rules 5-7 applied at the planning stage, not just block design. Example: planning a COG@250 block without checking that `coke-coal` produces 4 coke per 20 COG — doubling COG demand doubles coke output with no sink. Acetylene production (via calcium-carbide) consumes coke, making it a necessary companion block, not an optional optimization. (6) **Solver-validate rates** — run the solver for each target down to boundary items and compare import rates against the hand-traced demand table. Hand traces are reliable for short chains (3-5 recipes) but systematically wrong for deep chains (10+ recipes): recycling loops zero out items the hand trace counted (barrel/cage cycling eliminated steel-plate demand entirely), shared intermediates get double-counted or misjudged, and byproduct credits flip items from deficit to surplus (logistic science produces 2.26/s coke, doesn't import it). The solver is the source of truth for rates; the hand trace is only for identifying *which* boundaries matter and *approximate* scale. Validation runs need the same rigor as production runs — include temperature-linked fluids, bio modules, and exclude constraints. A sloppy validation produces wrong numbers.
+    Steps: (1) write down end-goal recipes with **verified output counts** (see [solver-reference.md](solver-reference.md) § Recipe verification) — multi-output recipes change demand by 10x+. (2) Trace each ingredient backward, recursively, until you hit a commodity boundary or existing block output. Watch for **container cycles** (water-barrel→bio recipe→barrel) and **catalyst cycles** (stone-brick→warm-stone-brick→stone-brick for hot-air) — these items appear as ingredients but have zero net consumption. The hand trace counts them; the solver correctly zeros them out. (3) At each intermediate, sum demand from ALL consumers — don't trace per-end-product. (4) Result: a demand table mapping item -> total rate -> source (existing block / new block / inline). (5) **Trace production recipes forward for byproducts** — for every supply source in the demand table, run `recipe-info` on its production recipe. If it has byproducts, immediately check: does any planned block consume this byproduct? Does the byproduct scale proportionally with demand? Is there a natural sink? If not, you need a consumer block or the byproduct will stall the producer. This is rules 5-7 applied at the planning stage, not just block design. Example: planning a COG@250 block without checking that `coke-coal` produces 4 coke per 20 COG — doubling COG demand doubles coke output with no sink. Acetylene production (via calcium-carbide) consumes coke, making it a necessary companion block, not an optional optimization. (6) **Solver-validate rates** — run the solver for each target down to boundary items and compare import rates against the hand-traced demand table. Hand traces are reliable for short chains (3-5 recipes) but systematically wrong for deep chains (10+ recipes): recycling loops zero out items the hand trace counted (barrel/cage cycling eliminated steel-plate demand entirely), shared intermediates get double-counted or misjudged, and byproduct credits flip items from deficit to surplus (logistic science produces 2.26/s coke, doesn't import it). The solver is the source of truth for rates; the hand trace is only for identifying *which* boundaries matter and *approximate* scale. Validation runs need the same rigor as production runs — include temperature-linked fluids, bio modules, and exclude constraints. A sloppy validation produces wrong numbers.
 
 11. **Compute block delta from inventory** — compare consolidated demand against what's already built. The **block delta** is the set of new blocks needed to close the gap.
     
@@ -106,9 +89,7 @@ When planning a major expansion (new science tier, new end product), the macro-l
 
 ## Pipeline decomposition
 
-14. **Re-derive demand before designing** — when revisiting a sub-factory, trace demand from the current plan, not saved targets. Targets go stale as the overall pipeline evolves (e.g., vrauks sized for 0.2/s rubber turned out to need only 0.117/s for animal-sample-01 after rubber became a commodity import). Wrong demand -> wrong sizing -> wasted buildings or misleading bottleneck analysis. **Start from the recipe's actual output count** — multi-output recipes (e.g., 12 science packs per craft) change demand by an order of magnitude. The math downstream can be internally consistent yet completely wrong if the root output count is assumed rather than checked.
-    
-    **Verify every recipe attribute against prototype data** before committing it to a block design. Run `recipe-info <recipe>` and confirm: (1) **category** → which building runs it (coal-gas is distilator, NOT gasifier — this error survived 3+ plan versions), (2) **ingredients** → exact item names ("coal" ≠ "raw-coal" — wrong name means a missing supply chain stage), (3) **products** → exact output count and probability, (4) **craft time**. The solver command implicitly assumes all four. Never rely on memory for recipe attributes — memory of recipe details decays and mutates; the prototype JSON is ground truth.
+14. **Re-derive demand before designing** — when revisiting a sub-factory, trace demand from the current plan, not saved targets. Targets go stale as the overall pipeline evolves (e.g., vrauks sized for 0.2/s rubber turned out to need only 0.117/s for animal-sample-01 after rubber became a commodity import). Wrong demand -> wrong sizing -> wasted buildings or misleading bottleneck analysis. **Start from the recipe's actual output count** — multi-output recipes (e.g., 12 science packs per craft) change demand by an order of magnitude. The math downstream can be internally consistent yet completely wrong if the root output count is assumed rather than checked. **Verify every recipe attribute against prototype data** before committing — see [solver-reference.md](solver-reference.md) § Recipe verification.
 15. **Decompose at commodity boundaries** — split at natural handoff points, optimize each stage independently. When multiple end products share deep infrastructure, split by shared system (auog farm, plasmids, bio commons) not by end product. Map all dependencies first, identify natural service layers, then build bottom-up. Track exports/imports explicitly between sub-factories — surpluses become fuel (rule 9) or feed parallel consumers; deficits identify where to add recipes or accept imports.
 
 ## Boundary selection
@@ -136,6 +117,18 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
 
 **Handcrafting limitation.** In Pyanodon, most recipes beyond raw materials require specialized buildings (hpf, advanced-foundry, py-rawores-smelter, glassworks, electronics-factory, chipshooter, etc.) and **cannot be handcrafted**. Only items in the `crafting` category (automated-factory recipes) can be handcrafted — and even then, many are impractical due to ingredient depth. This means "handcraft it for now" is rarely a viable fallback. If an item needs a specialized building, it must be either inlined in a block or have its own production block — there is no middle ground. Check the recipe's crafting category before assuming handcrafting is an option.
 
+## Block boundary declaration
+
+**Declare the block boundary before solving.** Before writing any `--constraint` or `--max-import` flags, decide what items are readily available to import. All solver constraints flow from this one question. Classify each item in your recipe list:
+
+- **Readily available import** — already flowing through the train network from other blocks (ore, water, commodity byproducts like ash). No constraint needed; the solver imports by default.
+- **Byproduct, don't scale for it** — produced by a recipe, but the item itself is readily available (crusher stone when stone is readily available, burner ash when other blocks produce it). Without an exclude, the solver scales the recipe to meet demand for this byproduct. → `--constraint "recipe:product:exclude"`.
+- **Must consume internally** — a processed intermediate that can't be wasted because producing it cost scarce inputs (grade-1-copper from screening must be crushed, not discarded). Determined by recipe structure, not export policy: if making the item consumed something expensive, wasting it wastes that expense. The solver doesn't enforce "must be fully consumed" — if the sub-chain has a fixed ratio, compute it manually and feed the result as fixed imports to the solver.
+
+You don't need to know exports upfront — imports determine all pre-solve constraints. After solving, review net-positive outputs and decide what to export, void, or convert (rule 5). The solver is mathematically correct but design-unaware — it optimizes cost, not intent. Without the import decision, it will scale furnaces for ash or export processed intermediates. These aren't solver bugs; they're under-specified problems. Decide imports once, translate to constraints mechanically, solve once.
+
+**When in doubt, ask.** If the block inventory is empty or you're unsure what's on the bus, ask the user before classifying items. Don't guess — a wrong import assumption propagates through every constraint and produces a solution that's technically correct but practically wrong.
+
 ## Block design
 
 20. **City block space budget** — in train-based city block architectures, each block has finite space split between factories and train stations (1 station per item, input or output). Three tools to fit a sub-factory into a block:
@@ -147,9 +140,7 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
     
     **Inline vs dedicated is a spectrum, not a binary.** Some items are always inlined (vacuum). Some are always dedicated blocks (iron-plate — bus-scale, dozens of production consumers). Most live in between: inlined in some blocks, imported in others, or inlined now and extracted to a dedicated block later as more consumers appear. Inlining has a multiplication cost — each block duplicates the setup independently. If you find the same inline appearing in block after block, that's a smell: a dedicated block with one train station serving all of them might be cheaper. But mixed approaches (inline in the mall, import in a high-throughput production block) are perfectly valid. Revisit inline-vs-dedicated as the factory grows.
     
-    **Building count != building space.** Pyanodon building sizes range from 2x2 (stone-furnace, 4 tiles) to 15x15 (fwf-mk01, 225 tiles) — a 56x ratio. Always check tile footprint before concluding a recipe "costs too many buildings": 11 sap-extractors (5x5, 275 tiles total) take less space than 2 research-centers (10x10, 200 tiles). Conversely, 2 distilators (8x8, 128 tiles) take more space than 5 rhe (5x5, 125 tiles). Use `data.entities[name].tile_width/tile_height` to check.
-    
-    **Post-solver feasibility check.** After running the solver, compute total tile footprint (`count × tile_width × tile_height` per recipe) and count distinct fluid/item types that need separate routing (pipes, belts). If total footprint exceeds ~5,000 tiles or distinct routed types exceed ~6, the block probably won't fit comfortably in a single city block with stations and routing. **Split into 2-3 identical stamps** (rule 25) — divide the total input evenly across stamps, each sized to fit comfortably. The stamp count depends on building footprint and routing complexity, not a fixed ratio. This is cheaper than redesigning for density. The solver doesn't model physical constraints; this check bridges the gap.
+    **Building count != building space.** Pyanodon building sizes range from 2x2 (stone-furnace, 4 tiles) to 15x15 (fwf-mk01, 225 tiles) — a 56x ratio. Always check tile footprint before concluding a recipe "costs too many buildings": 11 sap-extractors (5x5, 275 tiles total) take less space than 2 research-centers (10x10, 200 tiles). Conversely, 2 distilators (8x8, 128 tiles) take more space than 5 rhe (5x5, 125 tiles). Use `data.entities[name].tile_width/tile_height` to check. After running the solver, verify the block fits — see [solver-reference.md](solver-reference.md) § Post-solver feasibility check.
     
     **Recycle when it saves a station, eliminates voiding, or reduces train traffic — but weigh the power cost.** Rule 5's recycle-first preference applied at the block design level. The LP solver minimizes recipe cost and biases toward importing cheap items over recycling byproducts. But each import costs a station (finite in a city block), and each unrecycled byproduct needs voiding infrastructure (sinkhole, gas vent, pyvoid). When a recycling recipe (a) eliminates an import station, (b) eliminates or reduces a voiding setup, (c) reduces import volume and train trips, or (d) any combination — prefer it over the LP's recommendation, even if it adds 1-2 buildings. Example: `slacked-lime-void` (evaporator: 60 slacked-lime → 1 lime + 1 gravel) recycles lime back into `calcium-carbide`, reducing limestone imports and eliminating slacked-lime sinkhole piping. The LP says "import limestone, sinkhole slacked-lime" because limestone is cheap; but that costs 1 extra import station + 1 sinkhole vs 2 evaporators (5x5 each, 50 tiles total). **Recycling isn't free** — the recycling buildings consume power and take space. When recycling adds significant MW (e.g., electrolyzers at 10 MW each for sludge→water), the trade-off is MW vs import volume, not just buildings vs stations. Always compute both sides: recycling mode (MW cost + reduced imports + fewer train trips) vs import mode (minimal MW + higher import volume + more train traffic). Example: borax sludge→water recycling costs 50 MW but cuts water imports from 225/s to 75/s — that's 67% fewer water train trips. The right answer depends on current power budget and train network load — and can change over time.
     
@@ -160,7 +151,7 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
 
     **Circuit-controlled recipe swapping on underutilized machines.** When a machine runs well below capacity on its primary recipe, it can time-share additional low-demand recipes via circuit-controlled recipe swap, eliminating the need for dedicated machines. Pattern: buffer chests on inputs/outputs, SR latch monitors fill levels, machine switches recipe when primary buffer is full and secondary buffer is low. The primary recipe always has priority — the machine finishes the current craft (≤1 cycle time), switches back when primary demand resumes. Works best when: (a) all recipes share the same machine type, (b) combined utilization stays under ~80% to absorb demand spikes, (c) cycle times are short (1-2s) so recipe switching doesn't starve the primary. Example: a jaw-crusher at 0% utilization on its primary recipe (iron-crush overflow) can circuit-swap between stone→gravel and gravel→sand (~35% combined util) to produce sand for an inlined sand-casting chain, avoiding 1-2 dedicated crushers. This is the building-count analog of switchable recycling — one machine, multiple roles, circuit-arbitrated. Evaluate whenever a solver-ceiling'd machine or a low-demand inline chain would otherwise require a dedicated building at <30% utilization.
 
-21. **Single-item smelting** — at bus-scale volumes, each plate gets its own city block. Prefer steel-furnace (2x2, speed 4, fluid-burning) over advanced-foundry (6x6, speed 1, electric) — 33x more plates per tile. The solver can use advanced-foundry for simplicity (see checklist); real builds use steel-furnace for density. Steel-furnace burns any fluid fuel — consumption rate scales inversely with fuel value: `fuel_rate = 6 MW / fuel_value`. **Solver limitation:** steel-furnace has `fluid_energy_source`, which the solver does not model — fuel consumption is silently ignored. Compute fuel needs manually using the formula above. The solver correctly reports building counts and recipe rates; only fuel is missing. Higher-value fuels (gasoline 1.2 MJ, COG 1.0 MJ) need less throughput; low-value fuels (coal-gas 0.2 MJ) need 5x more, which has real infrastructure impact (pipe capacity, train trips, station sizing). Choose fuel based on both availability and throughput cost.
+21. **Single-item smelting** — at bus-scale volumes, each plate gets its own city block. Prefer steel-furnace (2x2, speed 4, fluid-burning) over advanced-foundry (6x6, speed 1, electric) — 33x more plates per tile. The solver can use advanced-foundry for simplicity; real builds use steel-furnace for density. Steel-furnace fuel consumption is not modeled by the solver — see [solver-reference.md](solver-reference.md) § Power & energy formulas for the manual calculation. For smelting chain ore:plate ratios, see [solver-reference.md](solver-reference.md) § Smelting chains.
     
     **On-site vs centralized — stack size is the real driver.** The ore:plate ratio matters because of **train capacity**: raw ores typically have stack size 50, while plates and processed ores have stack size 100 — so raw ore carries half as many items per wagon. The decision tree:
     
@@ -170,38 +161,15 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
     4. **Full on-site smelting** eliminates an entire train route — no ore or processed-ore trains at all, just plates out. Trade-off: the smelter needs all its imports (borax, oxygen, sand-casting for BOF) delivered to the mine site, which may be remote. Self-contained chains (no extra imports) are the easiest case for on-site; chains with many imports push toward centralizing the smelter near shared infrastructure.
     5. **No single right answer.** The best split depends on distances, import count, train network topology, and how many smelter stamps share the same ore source. Use stack sizes and conversion ratios to evaluate the trade-offs, not as hard rules.
     
-    Smelting chains (Pyanodon, current tech) — ore:plate ratio:
-    - **Iron**: direct 8:1 -> crush+smelt 5:1 -> BOF casting 1.4:1 (needs borax/oxygen/sand-casting)
-    - **Copper**: direct 8:1 -> screen+crush 4.2:1 (no extra inputs, stone byproduct)
-    - **Tin**: direct 10:1 -> screen+crush 3.75:1 (no extra inputs, stone byproduct)
-    - **Lead**: direct 6:1 -> screen+smelt 2:1 (5 ore -> 1 grade-1 -> 2.5 plate)
-    - **Zinc**: direct 10:1 -> crush+screen+smelt 3.3:1 (5 ore -> 1 g1 -> 1 g2 -> 1.5 plate; needs iron-stick)
-    - **Titanium**: direct 10:1 -> screen+recycle+smelt 1.9:1 (5 ore -> 2 g1 -> 1.33 g3 -> 2.67 plate; ti-rejects recycled)
-    
     **Volume exception:** at niche volumes (< ~0.5/s plate), dedicating a full city block per metal wastes space. Combine low-volume metals that share the same ore source or mining fluid into one block — e.g., lead + zinc + tin + titanium smelting when each needs only a few furnaces. The "one block per plate" rule applies at bus-scale (Tier A/B consumers, multiple belts of throughput).
     
     **Upgrade path:** see rule 23. Start with the simpler chain to get plates flowing (e.g., stone-furnace before steel-furnace); swap internals when better inputs are available — station layout stays the same.
 
-22. **Ore sourcing: check mining requirements** — mining operations can require any combination of: a **specific fluid** (acetylene, steam, aromatics — piped to fluid-drills), a **specific solid item** (drill heads — consumed by dedicated miners), a **type of fuel** (any burner fuel — for burner-type miners like antimony-drill), or just **electricity**. Basic electric/burner miners only work on `basic-solid` resources (iron, copper, coal, stone). Other ores need fluid-drills, dedicated miners, or ground-borers. Check `required_fluid` on the resource entity, and the miner entity's `energy_source` type and `ingredient` requirements when planning a mining block.
-    
-    **Mining fluid consumption formula:** `fluid/s per mine = mining_speed × fluid_amount / (10 × mining_time)`. The `fluid_amount` on the resource prototype is NOT the per-operation or per-second rate — the game engine applies a ÷10 divisor. Verified against in-game Helmod for borax (syngas), titanium (acetylene), and tin (steam).
+22. **Ore sourcing: check mining requirements** — mining operations can require specific fluids (acetylene, steam, aromatics), solid items (drill heads), fuel types, or just electricity. Basic miners only work on `basic-solid` resources (iron, copper, coal, stone) — other ores need fluid-drills, dedicated miners, or ground-borers. Always verify requirements before finalizing build order. For the full mining requirements reference, fluid consumption formula, and dig site mechanics, see [solver-reference.md](solver-reference.md) § Mining.
     
     **Mining fluids create hidden block ordering constraints.** If an ore needs acetylene to mine, the fuel chain must be operational first. If it needs aromatics, the tar refinery must export them. These dependencies don't appear in recipe-tree output (which only shows crafting recipes, not mining) and are easy to miss during block planning. Always verify mining fluid requirements before finalizing build order.
     
     **Soot/tailings are supplements, never primary ore sources.** Soot-separation and tailings-classification produce small amounts of ore as byproducts, but mining (even though deposits are finite) is always the primary supply. Design blocks around mining with soot/tailings routed in as a bonus to extend deposit lifetime.
-    
-    **Creature-based mining (dig sites).** Some ores use a non-standard mining mechanic: a `dino-dig-site` building (7×7 assembling machine) with creature modules (e.g., digosaurus) instead of conventional miners. The dig site has a fixed hidden recipe and accepts food items via a companion container entity (`dino-dig-site-food-input`). Food consumption is not modeled in the normal recipe system — Helmod provides virtual recipes (`digosaurus-helmod-recipe-*`) that capture the food→ore conversion rates. Currently only nexelit-ore uses this mechanic:
-    
-    | Food | Nexelit ore per feed | Cycle time |
-    |---|---|---|
-    | guts | 1 | 10s |
-    | dried-meat | 1 | 10s |
-    | meat | 2 | 10s |
-    | workers-food | 8 | 10s |
-    | workers-food-02 | 16 | 10s |
-    | workers-food-03 | 32 | 10s |
-    
-    The dig site has 4 module slots (digosaurus category only, +100% speed each = 5× base throughput with full modules). Since this mechanic is invisible to `recipe-tree`, `recipes --produces`, and `buildProducerIndex`, always check for `helmod-recipe` variants in the prototype data when an ore appears to have no recipe producers. Food sourcing (especially meat/guts from slaughterhouses) creates cross-block dependencies that must be planned explicitly.
 
 23. **Design for upgrade, build with what you have** — when higher-tier modules/buildings are unlocked but impractical to bootstrap (e.g., bio mk02 at 0.5% drop rate), design with the achievable tier but plan for the upgrade. Check **ratio stability**: (1) all buildings have matching tier upgrades -> ratios hold, just need more I/O; (2) only some upgrade -> ratios break, needs redesign; (3) no matching tier downstream -> bottleneck just moves. When ratios will break, consider **building to upgraded ratios now** — accept underproduction today for a drop-in module swap later with zero redesign.
     
@@ -272,28 +240,7 @@ A good boundary is an item where you'd naturally put a train stop. Score candida
 
 ## Bio organisms
 
-### Module system
-
-All Pyanodon biological buildings use items (not standard modules) as modules with +100% speed each:
-
-| Building | Slots | Module item | Speed multiplier |
-|---|---|---|---|
-| `moss-farm-mk01` | 15 | `moss` | 16x |
-| `moondrop-greenhouse-mk01` | 16 | `moondrop` | 17x |
-| `ralesia-plantation-mk01` | 12 | `ralesia` | 13x |
-| `prandium-lab-mk01` (cottongut) | 20 | `cottongut-mk01` | 21x |
-| `vrauks-paddock-mk01` | 10 | `vrauks` | 11x |
-| `auog-paddock-mk01` | 4 | `auog` | 5x |
-| `rc-mk01` (breeding center) | 2 | matching animal | 3x |
-| `seaweed-crop-mk01` | 10 | `seaweed` | 11x |
-| `sap-extractor-mk01` | 2 | `sap-tree` | 3x |
-| `fwf-mk01` (wood farm) | 10 | `tree-mk01` | 11x |
-
-**NEVER compute bio building counts without full modules.** Without modules, bio farms are unusably slow and dominate building count (757 buildings for logistic science). Adding bio modules drops this to ~326; LP cost minimization (rule 10 step 6) further reduces to ~163. Unmoduled counts are meaningless — a 5-21× error makes the entire analysis wrong (e.g., 67 auog paddocks without modules vs 14 with). Always use `effective_speed` (formula below) for manual calculations and `--modules` for solver runs. mk02/mk03/mk04 tiers exist with 2x/3x/4x speed bonus per slot.
-
-**Effective speed formula:** `effective_speed = base_crafting_speed × (1 + N_modules × module_bonus)`. Example: auog-paddock-mk01 (base 0.4) with 4 auog modules (+100% each): `0.4 × (1 + 4×1.0) = 2.0`. The "5x" in the table means full slots give 5x the base speed, not 5x some other number. Always compute effective craft time as `recipe_time / effective_speed` when sizing buildings.
-
-**Variable-output recipes:** Some bio recipes produce a range (e.g., auog-pooping-1 yields 3-8 manure). Use the **average** `(min+max)/2` for throughput calculations — variance averages out over time. When sizing for a hard minimum guarantee (e.g., a critical-path item with no buffer), use `amount_min` instead and note the conservative assumption.
+For bio module tables, effective speed formula, and variable-output handling, see [solver-reference.md](solver-reference.md) § Bio module system.
 
 ### Bootstrap + self-sustaining loops
 
@@ -314,25 +261,7 @@ Once you have critical mass, only the steady-state matters for pipeline planning
 | Fish | Catch from water | 12->25 eggs->25 fish | Surplus loads more farms |
 | Native-flora | Mine (ore-bioreserve) | No loop — treat like ore | Bioreserve-farm locked |
 
-## Solver setup checklist
-
-- **Recipe selection determines solution quality** — the solver finds a feasible solution given the recipes you chose. It does NOT search for better recipe alternatives. Every recipe in the `--recipes` list is a human decision: does this recipe use the cheapest path? Is there an alternative that avoids an expensive intermediate? Are there newer unlocked recipes that obsolete this one? Run `recipes --produces <item> --unlocked` for every non-trivial intermediate before locking in the recipe list. The solver is a calculator, not an optimizer — garbage recipes in, garbage solution out.
-- **Declare the block boundary before solving.** Before writing any `--constraint` or `--max-import` flags, decide what items are readily available to import. All solver constraints flow from this one question. Classify each item in your recipe list:
-    - **Readily available import** — already flowing through the train network from other blocks (ore, water, commodity byproducts like ash). No constraint needed; the solver imports by default.
-    - **Byproduct, don't scale for it** — produced by a recipe, but the item itself is readily available (crusher stone when stone is readily available, burner ash when other blocks produce it). Without an exclude, the solver scales the recipe to meet demand for this byproduct. → `--constraint "recipe:product:exclude"`.
-    - **Must consume internally** — a processed intermediate that can't be wasted because producing it cost scarce inputs (grade-1-copper from screening must be crushed, not discarded). Determined by recipe structure, not export policy: if making the item consumed something expensive, wasting it wastes that expense. The solver doesn't enforce "must be fully consumed" — if the sub-chain has a fixed ratio, compute it manually and feed the result as fixed imports to the solver.
-    
-    You don't need to know exports upfront — imports determine all pre-solve constraints. After solving, review net-positive outputs and decide what to export, void, or convert (rule 5). The solver is mathematically correct but design-unaware — it optimizes cost, not intent. Without the import decision, it will scale furnaces for ash or export processed intermediates. These aren't solver bugs; they're under-specified problems. Decide imports once, translate to constraints mechanically, solve once.
-- **Use electric factories for crafting** — `automated-factory-mk01` (crafting). For smelting, prefer `steel-furnace` (2x2, speed 4, fluid fuel) in city blocks — solver can use `advanced-foundry-mk01` for simplicity but real builds should use steel-furnace for density.
-- **Exclude byproducts that drive scaling** — `--constraint "recipe:product:exclude"` for every item you classified as "byproduct, don't scale for it" in the boundary declaration. Excludes reduce degrees of freedom, helping the LP find better solutions faster. **Note:** excluded production is invisible to the solver — if the same item is also consumed by another recipe (crusher stone → stone-brick), the solver overstates the import. Subtract excluded production manually from solver-reported import rates.
-- **Force internal production** — `--max-import "item:0"` for items the solver would otherwise import from the bus (iron-gear-wheel, iron-plate, processed ores). Cascading deficits push to raw materials. Distinct from "must consume internally" (boundary declaration) — `--max-import` prevents import, not export.
-- **Recycle byproducts** — add recycling recipes + `--max-import "item:0"` to force items through the loop.
-- **Always use target mode** — target mode uses LP simplex with cost minimization, which handles complex chains (100+ recipes) without cascade blowup. Input mode uses legacy simplex — use it when sizing production to a fixed supply (e.g., resource patch output, existing block export). To cap specific inputs in target mode, use `--max-import "item:amount"`.
-- **Ash is readily available** — a common instance of "readily available import" in the boundary declaration. Nearly every block with burner buildings produces ash; it's always available from existing infrastructure. Exclude it from every burner recipe.
-- **Watch for cycle warnings** — the solver detects cycles (Tarjan's SCC) and warns before solving. Common cause: burner factories producing ash as `burnt_result`. Use electric factories or `--constraint exclude` to break cycles. See CLAUDE.md Solver notes for details.
-- **Always add `--modules` for biological recipes** — without modules, bio farms are unusably slow and dominate building count.
-- **Use `--time 1` for per-second targets** — see CLAUDE.md Solver notes for the time base explanation. Without `--time 1`, `--target "item:0.2"` means 0.2 per 60 seconds (0.003/s), not 0.2/s. Check the output denominator (`/1s` vs `/60s`).
-- **Entity names: no universal suffix rule** — check `data.entities` keys. See CLAUDE.md Solver notes for the full list. The solver errors with "Factory not found" on wrong names.
+---
 
 ## Examples
 

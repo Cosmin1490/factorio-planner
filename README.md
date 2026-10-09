@@ -15,7 +15,7 @@ The typical workflow loop:
 3. **Solve** — build a solver command with recipes, constraints, and module overrides; iterate until the numbers work
 4. **Export** — generate a Helmod import string and paste it into Factorio for in-game reference
 
-Claude drives the entire process — you describe what you want to produce ("I need electronic circuits at 1/s using only unlocked recipes"), and Claude explores the recipe graph, selects factories, adds constraints to tame byproduct cascades, and refines the solver input across multiple iterations. The [Pyanodon methodology](docs/pyanodon-methodology.md) documents the heuristics and patterns that emerged from this workflow.
+Claude drives the entire process — you describe what you want to produce ("I need electronic circuits at 1/s using only unlocked recipes"), and Claude explores the recipe graph, selects factories, adds constraints to tame byproduct cascades, and refines the solver input across multiple iterations. The [design guide](docs/design-guide.md) documents the heuristics and patterns that emerged from this workflow; the [solver reference](docs/solver-reference.md) covers solver mechanics and prototype data.
 
 This approach is particularly valuable for overhaul mods like Pyanodon's where recipe chains are too deep and interconnected for manual calculation — a single end product can involve 100+ recipes across petrochemistry, biology, and metallurgy.
 
@@ -38,7 +38,7 @@ npm install
   - `src/data/` — Prototype data loader
 - `tests/` — Vitest test suite (solver validation, inventory regression, data loader tests)
 - `data/` — Prototype JSON export (recipes, entities, items, fluids from Factorio + mods), per-save block inventories (`data/saves/`)
-- `docs/` — [Pyanodon pipeline methodology](docs/pyanodon-methodology.md) (byproduct management, block design, boundary selection, bio modules)
+- `docs/` — [Design guide](docs/design-guide.md) (byproduct management, block design, boundary selection, bio modules) + [Solver reference](docs/solver-reference.md) (solver mechanics, prototype data, CLI reference)
 - `export-mod/` — Factorio mod that generates the prototype JSON export (includes force/technology data)
 
 ## Usage

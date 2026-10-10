@@ -1,45 +1,49 @@
-# Logistic science pack — 0.1/s, 209 buildings
+# Logistic science pack — 0.1/s, 218 buildings
 
-Fully self-contained chain from raw resources. mk01 buildings, stone furnaces, bio modules on all farms. 209 buildings, 106.14 MW.
+Fully self-contained chain from raw resources. mk01 buildings, stone furnaces, bio modules on all farms. 218 buildings, 106.92 MW (213 solver + 5 mining fluid chain).
 
-All factories mk01 tier. Stone furnaces for smelting (iron, copper, lead, tin, zinc, titanium, nexelit). Advanced-foundry-mk01 for steel (stone-furnace can't do advanced-foundry category). Bio modules on all farms/paddocks at mk01 slot counts.
+All factories mk01 tier. Stone furnaces for smelting (iron, copper, lead, tin, zinc, titanium, nexelit). Advanced-foundry-mk01 for steel (stone-furnace can't do advanced-foundry category). Bio modules on all farms/paddocks at mk01 slot counts. Stopper-2 (rubber-based) instead of stopper (coal+latex). Mining fluid production (acetylene, aromatics) covers all ore drilling requirements except steam.
 
 ## Optimization analysis
 
-Full recycling mode with ore crushing, barrel loop, and grade-2-tin consumption. Cage recycling (vrauks loop is net-zero: 1 cage in → 1 cage out) — no cage recipe needed, no cage exclude constraint. Barrel recycling (water-barrel loop is net-zero: 1 barrel in → 1 barrel out) — water-barrel recipe closes the barrel cycle. Stone-import optimization — stone imported instead of sourced from antimony screening (see [§ Stone-import optimization](#stone-import-optimization)).
+Full recycling mode with ore crushing, barrel loop, and grade-2-tin consumption. Cage recycling (vrauks loop is net-zero: 1 cage in → 1 cage out) — no cage recipe needed, no cage exclude constraint. Barrel recycling (water-barrel loop is net-zero: 1 barrel in → 1 barrel out) — water-barrel recipe closes the barrel cycle. Stone-import optimization — stone imported instead of sourced from antimony screening (see [§ Stone-import optimization](#stone-import-optimization)). Dedicated muddy-sludge recipe eliminates clean-nexelit overproduction. Slacked-lime recycled back to lime via evaporator.
 
-### Design approach (209 buildings)
+### Design approach (218 buildings)
 
-Maximizes waste reduction, syngas export, and ore crushing optimization. Uses `--max-import "raw-coal:600"` to force recycling, `--max-import "copper-ore:55"` to force copper crushing, `--max-import "ore-tin:51"` to force grade-2-tin consumption, and ore crushing for iron/copper/tin/lead (see [§ Ore crushing optimization](#ore-crushing-optimization)).
+213 solver-validated buildings + 5 manual mining fluid chain buildings. Maximizes waste reduction, syngas export, and ore crushing optimization. Uses `--max-import "raw-coal:600"` to force recycling, `--max-import "copper-ore:55"` to force copper crushing, `--max-import "ore-tin:51"` to force grade-2-tin consumption, and ore crushing for iron/copper/tin/lead (see [§ Ore crushing optimization](#ore-crushing-optimization)). Dedicated muddy-sludge recipe (washer) eliminates clean-nexelit overproduction — see [§ Clean-nexelit handling](#clean-nexelit-handling). Mining fluid chain (acetylene + aromatics) covers all fluid-drill requirements — see [§ Mining fluid accounting](#mining-fluid-accounting).
 
 **Oil refining recipes (design 03/05 patterns):**
 1. **pitch-refining** (distilator): 100 pitch + 100 steam → 10 coke + 10 hydrogen + 20 light-oil + 20 naphthalene-oil + 30 anthracene-oil — eliminates pitch waste
 2. **tar-refining-tops** (tar-processing-unit): 100 middle-oil + 100 steam → 50 light-oil + 50 carbolic-oil + 100 naphthalene-oil — eliminates middle-oil waste
 3. **light-oil-aromatics** (distilator): 50 light-oil → 50 aromatics + 25 gasoline — converts light-oil to aromatics + gasoline fuel
 4. **coal-gas-from-coke** (distilator): uses excess coke from pitch-refining to produce more coal-gas + tar
-5. **syngas** scale-up (1→2 gasifiers): converts coal-gas to syngas fuel export
-6. `naphthalene-oil-creosote`, `carbolic-oil-creosote`, `anthracene-gasoline-cracking` — included in recipe list but LP does not use them
+5. **syngas** scale-up (1→3 gasifiers): converts coal-gas to syngas fuel export
+6. **anthracene-gasoline-cracking** (distilator): excess anthracene-oil → coke + gasoline
+7. `naphthalene-oil-creosote`, `carbolic-oil-creosote` — included in recipe list but LP does not use them
 
 **Recycling loops:**
 7. **water-barrel** (barrel-machine-mk01): 1 barrel + 50 water → 1 water-barrel — closes barrel cycle (animal recipes consume water-barrel, produce barrel back)
 8. **grade-2-crush-tin** (jaw-crusher): 1 grade-2-tin → 1 grade-1-tin + 1 stone — recycles grade-2-tin (screening byproduct) back into the tin chain. Forced via ore-tin import cap.
-9. **clean-nexelit** handled outside solver: nexelit-plate-2 furnace runs at 0.24 utilization (up from solver's 0.03), consuming all 4.31/60s clean-nexelit from washer. Produces 3.73/60s excess nexelit-plate — **consumer TBD** (see [§ Clean-nexelit handling](#clean-nexelit-handling)).
+9. **muddy-sludge** (washer): 10 soil + 100 water → 100 muddy-sludge — dedicated source for Moss-2. `clean-nexelit:muddy-sludge:exclude` + `borax-washing:muddy-sludge:exclude` constraints prevent LP from scaling clean-nexelit or borax-washing for muddy-sludge. Clean-nexelit now runs at exact demand (0.58/60s).
+10. **stopper-2** (1 rubber → 2 stopper) replaces stopper (5 coal + 2 latex → 4 stopper) — taps existing rubber chain, cleaner routing.
 
 | Recipe | Notes |
 |---|---|
-| distilled-raw-coal: **2 bldg** (1.07) | raw-coal cap forces recycling |
-| syngas: **2 bldg** (1.99) | coal-gas → syngas export |
-| pitch-refining: **1 bldg** (0.58) | pitch → coke + hydrogen + oils |
-| tar-refining-tops: **1 bldg** (0.07) | middle-oil → light-oil |
-| light-oil-aromatics: **1 bldg** (0.13) | light-oil → aromatics |
-| coal-gas-from-coke: **1 bldg** (0.23) | coke → coal-gas + tar feedback |
-| hydrogen: **1 bldg** (0.61) | −39% (pitch-refining provides hydrogen) |
+| distilled-raw-coal: **2 bldg** (1.15) | raw-coal cap forces recycling |
+| syngas: **3 bldg** (2.16) | coal-gas → syngas export |
+| pitch-refining: **1 bldg** (0.83) | pitch → coke + hydrogen + oils |
+| tar-refining-tops: **1 bldg** (0.17) | middle-oil → light-oil |
+| light-oil-aromatics: **1 bldg** (0.26) | light-oil → aromatics |
+| coal-gas-from-coke: **1 bldg** (0.49) | coke → coal-gas + tar feedback |
+| anthracene-gasoline-cracking: **1 bldg** (0.02) | anthracene-oil → coke + gasoline |
+| hydrogen: **1 bldg** (0.58) | −42% (pitch-refining provides hydrogen) |
 | water-barrel: **1 bldg** (0.13) | barrel loop — closes water-barrel/barrel cycle |
 | grade-2-crush-tin: **1 bldg** (0.28) | recycles grade-2-tin → grade-1-tin |
+| muddy-sludge: **1 bldg** (0.75) | dedicated muddy-sludge — eliminates clean-nexelit overproduction |
 
 ### Steam accounting note
 
-The solver reports steam as both import (50.32/s) and byproduct (48.61/s). Polybutadiene produces 48.61/s steam internally but the solver doesn't net it against consuming recipes. Actual net steam import is ~1.71/s.
+The solver reports steam as both import (60.70/s) and byproduct (58.33/s). Polybutadiene produces 58.33/s steam internally but the solver doesn't net it against consuming recipes. Actual net steam import is ~2.37/s.
 
 ### Self-power analysis
 
@@ -47,17 +51,16 @@ Available byproduct fuels (oil-boiler-mk01, effectivity 2):
 
 | Fuel | /s | fuel_value (MJ) | MW electrical |
 |---|---:|---:|---:|
-| syngas | 43.19 | 0.40 | 17.28 |
-| gasoline | 1.57 | 1.20 | 1.88 |
-| naphthalene-oil | 3.96 | 0.30 | 1.19 |
-| carbolic-oil | 0.82 | 0.35 | 0.29 |
-| middle-oil | 0.86 | 0.20 | 0.17 |
-| coal 0.71 (solid, boiler eff 1) | 0.71 | 4.00 | 1.42 |
-| **Total** | | | **22.23** |
+| syngas | 47.22 | 0.40 | 18.89 |
+| gasoline | 3.42 | 1.20 | 4.10 |
+| naphthalene-oil | 6.86 | 0.30 | 2.06 |
+| carbolic-oil | 1.78 | 0.35 | 0.62 |
+| coal 1.08 (solid, boiler eff 1) | 1.08 | 4.00 | 2.16 |
+| **Total** | | | **27.83** |
 
-Self-power covers **22 MW / 106 MW (21%)**. Remaining 84 MW must be imported.
+Self-power covers **28 MW / 107 MW (26%)**. Remaining 79 MW must be imported.
 
-**Recommendation:** Syngas is more valuable as a bus fuel export (43/s at 0.4 MJ = 17.28 MW worth) than burned locally. Without syngas self-power: ~5 MW from minor fuels.
+**Recommendation:** Syngas is more valuable as a bus fuel export (47/s at 0.4 MJ = 18.89 MW worth) than burned locally. Without syngas self-power: ~9 MW from minor fuels.
 
 ## Flow diagram
 
@@ -89,7 +92,7 @@ Self-power covers **22 MW / 106 MW (21%)**. Remaining 84 MW must be imported.
         │                                                       │  │  │  │  │
         ▼                                                       │  │  │  │  │
   ┌─────────────────────────────────────────────────────────────┐│  │  │  │  │
-  │                    BIO / FARMING (102 bldgs)                ││  │  │  │  │
+  │                    BIO / FARMING (103 bldgs)                ││  │  │  │  │
   │                                                            ││  │  │  │  │
   │  COTTONGUT  11x prandium + 1x rc + 1x slaughterhouse       ││  │  │  │  │
   │  VRAUKS    10x paddock + 3x rc + 1x slaughterhouse         ││  │  │  │  │
@@ -100,7 +103,7 @@ Self-power covers **22 MW / 106 MW (21%)**. Remaining 84 MW must be imported.
   │  SAP        9x sap-extractor                               ││  │  │  │  │
   │  WOOD       2x fwf + 1x wpu + 1x nursery                  ││  │  │  │  │
   │  AUOG       2x auog-paddock ──▶ manure ──▶ urea cycle      ││  │  │  │  │
-  │  SOIL       4x soil-extractor + 1x limestone + 1x separator││  │  │  │  │
+  │  SOIL       5x soil-extractor + 1x limestone + 1x separator││  │  │  │  │
   └────────────────────────────────────────────────────────────┘│  │  │  │  │
                                                                 │  │  │  │  │
         ┌───────────────────────────────────────────────────────┘  │  │  │  │
@@ -111,18 +114,19 @@ Self-power covers **22 MW / 106 MW (21%)**. Remaining 84 MW must be imported.
   │                  │                                             │  │  │  │
   │ manure ──▶ liquid-manure ──▶ urea ──▶ urea-decomposition      │  │  │  │
   │                                       ├──▶ cyanic-acid ────────┘  │  │  │
-  │ muddy-sludge ◄── clean-nexelit        └──▶ ammonia ──▶ melamine──┘  │  │
-  │      └──▶ Moss-2                                                   │  │
+  │ muddy-sludge ◄── dedicated recipe     └──▶ ammonia ──▶ melamine──┘  │  │
+  │      └──▶ Moss-2  (soil+water, washer)                             │  │
+  │ clean-nexelit ◄── washer (exact demand)                            │  │
   └──────────────────┘                                                 │  │
                                                                        │  │
         ┌──────────────────────────────────────────────────────────────┘  │
         ▼                                                                │
   ┌──────────────────────────────────────────────────────────────┐       │
-  │ COAL & TAR CHEMISTRY (15 bldgs) — OPTIMIZED                 │       │
+  │ COAL & TAR CHEMISTRY (16 bldgs) — OPTIMIZED                 │       │
   │                                                              │       │
   │ raw-coal ──▶ distilled-raw-coal (2x)                         │       │
-  │              ├──▶ coal-gas ──▶ syngas (2x gasifier)          │       │
-  │              │                 ├──▶ syngas EXPORT (42/s fuel)│       │
+  │              ├──▶ coal-gas ──▶ syngas (3x gasifier)          │       │
+  │              │                 ├──▶ syngas EXPORT (47/s fuel)│       │
   │              │                 ├──▶ tar (feedback!) ──┐      │       │
   │              │                 └──▶ aromatics-to-plastic     │       │
   │              ├──▶ tar ──┬──▶ tar-distilation ──▶ aromatics   │       │
@@ -135,11 +139,12 @@ Self-power covers **22 MW / 106 MW (21%)**. Remaining 84 MW must be imported.
   │              │               │         ──▶ hydrogen ──┼──▶ ralesia  │
   │              │               │         ──▶ light-oil ─┘    │       │
   │              │               │         ──▶ anthracene ──▶ C-black  │
+  │              │               │         ──▶ anthrac-gas-crack│       │
   │              │               └──▶ creosote ──▶ treated-wood │       │
   │              └──▶ coal (fuel for smelting)                   │       │
   │                                                              │       │
   │ light-oil ──▶ light-oil-aromatics ──▶ aromatics + gasoline  │       │
-  │ aromatics ──▶ polybutadiene ──▶ rubber ──▶ lab-instrument   │       │
+  │ aromatics ──▶ polybutadiene ──▶ rubber ──▶ lab-inst+stopper │       │
   │ carbon-black + latex ──▶ rubber-01                          │       │
   │ treated-wood + methanal + raw-fiber ──▶ formica ──▶ pcb1    │       │
   └──────────────────────────────────────────────────────────────┘       │
@@ -182,13 +187,28 @@ Self-power covers **22 MW / 106 MW (21%)**. Remaining 84 MW must be imported.
   │ iron-gear+bolts ──▶ small-parts ──▶ lab│
   │ lens (glass) ──▶ lab-instrument        │
   └────────────────────────────────────────┘
+
+  ┌────────────────────────────────────────────┐
+  │ MINING FLUID CHAIN (5 bldgs, manual)       │
+  │                                            │
+  │ coke ──▶ lime (hpf) ──▶ calcium-carbide   │
+  │   ◄── limestone        (hpf)              │
+  │                          └──▶ acetylene    │
+  │                               (gasifier)   │
+  │                               └──▶ EXPORT  │
+  │ slacked-lime ──▶ evaporator ──▶ lime ──┘   │
+  │                  (recycled)                │
+  │                                            │
+  │ pitch-refining +1 ──▶ extra coke           │
+  │ aromatics (extra) ──▶ EXPORT (zinc mining) │
+  └────────────────────────────────────────────┘
 ```
 
-## Recipe tables (209 buildings)
+## Recipe tables (218 buildings)
 
-Solver-validated (simplex, cage-recycled, stone-import, ore crushing, oil refining with pitch-refining + coal-gas-from-coke, `--max-import "raw-coal:600"`, `--max-import "copper-ore:55"`, `--max-import "ore-tin:51"`). Self-power potential: 22 MW from all byproduct fuels, or ~5 MW if syngas exported.
+213 solver-validated + 5 mining fluid chain (simplex, cage-recycled, stone-import, ore crushing, oil refining with pitch-refining + coal-gas-from-coke + anthracene-gasoline-cracking, dedicated muddy-sludge, stopper-2, `--max-import "raw-coal:600"`, `--max-import "copper-ore:55"`, `--max-import "ore-tin:51"`). Self-power potential: 28 MW from all byproduct fuels, or ~9 MW if syngas exported.
 
-### Bio — farms & paddocks (102 buildings)
+### Bio — farms & paddocks (103 buildings)
 
 | Recipe | Factory | Count | Modules |
 |---|---|---:|---|
@@ -209,7 +229,7 @@ Solver-validated (simplex, cage-recycled, stone-import, ore crushing, oil refini
 | wood-seeds | automated-factory-mk01 | 1 (0.37) | |
 | auog-pooping-1 | auog-paddock-mk01 | 2 (1.93) | 4x auog |
 | methane-co2 | moondrop-greenhouse-mk01 | 1 (0.09) | 16x moondrop |
-| soil | soil-extractor-mk01 | 4 (3.76) | |
+| soil | soil-extractor-mk01 | 5 (4.13) | |
 | extract-limestone-01 | soil-extractor-mk01 | 1 (0.44) | |
 | soil-separation-2 | solid-separator | 1 (0.83) | |
 
@@ -251,7 +271,7 @@ Cage is recycled natively: full-render-vrauks produces 1 cage → caged-vrauks c
 | empty-petri-dish | glassworks-mk01 | 1 (0.28) | |
 | zogna-bacteria | incubator-mk01 | 1 (0.15) | |
 | flask | glassworks-mk01 | 1 (0.03) | |
-| stopper | automated-factory-mk01 | 1 (0.05) | |
+| stopper-2 | automated-factory-mk01 | 1 (0.02) | |
 | lab-instrument | automated-factory-mk01 | 1 (0.07) | |
 
 ### Urea cycle (4 buildings)
@@ -263,29 +283,30 @@ Cage is recycled natively: full-render-vrauks produces 1 cage → caged-vrauks c
 | urea-decomposition | distilator | 1 (0.23) | |
 | melamine | fbreactor-mk01 | 1 (0.03) | |
 
-### Coal & tar chemistry (15 buildings)
+### Coal & tar chemistry (17 buildings)
 
 | Recipe | Factory | Count | Modules |
 |---|---|---:|---|
-| distilled-raw-coal | distilator | 2 (1.07) | |
-| syngas | gasifier | 2 (1.99) | |
+| distilled-raw-coal | distilator | 2 (1.15) | |
+| syngas | gasifier | 3 (2.16) | |
 | tar-distilation | distilator | 1 (0.20) | |
-| tar-refining | tar-processing-unit | 1 (0.42) | |
-| **pitch-refining** | distilator | 1 (0.58) | |
-| **tar-refining-tops** | tar-processing-unit | 1 (0.07) | |
-| **light-oil-aromatics** | distilator | 1 (0.13) | |
-| **coal-gas-from-coke** | distilator | 1 (0.23) | |
+| tar-refining | tar-processing-unit | 1 (0.59) | |
+| **pitch-refining** | distilator | 1 (0.83) | |
+| **tar-refining-tops** | tar-processing-unit | 1 (0.17) | |
+| **light-oil-aromatics** | distilator | 1 (0.26) | |
+| **coal-gas-from-coke** | distilator | 1 (0.49) | |
+| **anthracene-gasoline-cracking** | distilator | 1 (0.02) | |
 | graphite | hpf | 1 (0.13) | |
 | aromatics-to-plastic | biofactory-mk01 | 1 (0.05) | |
 | treated-wood | tar-processing-unit | 1 (0.01) | |
 | formica | pulp-mill-mk01 | 1 (0.04) | |
 | methanal | hpf | 1 (0.02) | |
 
-Removed vs baseline: `coke-coal` (pitch-refining provides coke). Added: `coal-gas-from-coke` (excess coke from pitch-refining → coal-gas + tar feedback).
+Removed vs baseline: `coke-coal` (pitch-refining provides coke). Added: `coal-gas-from-coke` (excess coke → coal-gas + tar feedback), `anthracene-gasoline-cracking` (excess anthracene-oil → coke + gasoline).
 
-### Smelting & metals (28 buildings)
+### Smelting, metals & muddy-sludge (29 buildings)
 
-Cage recycling slashes metal demand: iron-plate −57%, lead −71%, tin −66%, titanium −83%. Ore crushing replaces direct smelting for iron, copper, tin, lead — 25–67% ore savings (see [§ Ore crushing optimization](#ore-crushing-optimization)). Grade-2-tin crusher recycles screening byproduct back into the tin chain (ore-tin import cap at 51/60s forces the LP to use it). Stone-import optimization reduces antimony screening from 6→1 buildings (see [§ Stone-import optimization](#stone-import-optimization)).
+Cage recycling slashes metal demand: iron-plate −57%, lead −71%, tin −66%, titanium −83%. Ore crushing replaces direct smelting for iron, copper, tin, lead — 25–67% ore savings (see [§ Ore crushing optimization](#ore-crushing-optimization)). Grade-2-tin crusher recycles screening byproduct back into the tin chain (ore-tin import cap at 51/60s forces the LP to use it). Stone-import optimization reduces antimony screening from 6→1 buildings (see [§ Stone-import optimization](#stone-import-optimization)). Dedicated muddy-sludge recipe eliminates clean-nexelit overproduction (see [§ Clean-nexelit handling](#clean-nexelit-handling)).
 
 | Recipe | Factory | Count | Modules |
 |---|---|---:|---|
@@ -301,8 +322,9 @@ Cage recycling slashes metal demand: iron-plate −57%, lead −71%, tin −66%,
 | lead-plate-2 | stone-furnace | 1 (0.71) | |
 | zinc-plate-1 | stone-furnace | 2 (1.21) | |
 | titanium-plate-1 | stone-furnace | 1 (0.73) | |
-| nexelit-plate-2 | stone-furnace | 1 (0.03) | |
-| clean-nexelit | washer | 1 (0.22) | |
+| nexelit-plate-2 | stone-furnace | 1 (0.06) | |
+| clean-nexelit | washer | 1 (0.03) | |
+| muddy-sludge | washer | 1 (0.75) | |
 | glass-1 | glassworks-mk01 | 4 (3.75) | |
 | molten-glass | glassworks-mk01 | 1 (0.06) | |
 | sb-grade-01 | automated-screener-mk01 | 1 (0.22) | |
@@ -352,6 +374,20 @@ Cage recycling slashes metal demand: iron-plate −57%, lead −71%, tin −66%,
 | water-barrel | barrel-machine-mk01 | 1 (0.13) | |
 | logistic-science-pack | research-center-mk01 | 1 (0.75) | |
 
+### Mining fluid chain (5 buildings, manual)
+
+Not in solver (solver supports single target only). Computed manually from Step 1b ore import rates and ÷10 mining fluid formula (see [§ Mining fluid accounting](#mining-fluid-accounting)).
+
+| Recipe | Factory | Count | Purpose |
+|---|---|---:|---|
+| acetylene | gasifier | 1 (0.47) | 352.7/60s acetylene for titanium + lead mining |
+| calcium-carbide | hpf | 1 (0.24) | feeds acetylene gasifier |
+| lime | hpf | 1 (0.05) | feeds calcium-carbide (reduced by recycling) |
+| slacked-lime-void | evaporator | 1 (0.05) | recycles slacked-lime → lime |
+| pitch-refining (scale-up) | distilator | +1 (0.83→1.10) | extra coke for acetylene chain |
+
+Extra aromatics for zinc mining (194/60s) absorbed by existing oil chain capacity — extra tar from pitch-refining + tar-refining scaling fits within existing distilled-raw-coal (2 bldg) and syngas (3 bldg) buildings.
+
 ## Intermediate flows
 
 All rates /s. Cage-recycled baseline.
@@ -360,39 +396,39 @@ All rates /s. Cage-recycled baseline.
 
 | Item | /s | Produced by | Consumed by |
 |---|---:|---|---|
-| syngas | 46.37 | syngas gasifier | aromatics-to-plastic (3.18) |
-| tar | 36.90 | syngas (19.87) + distilled-raw-coal (16.10) + coal-gas-from-coke (0.93) | tar-distilation (28.59), tar-refining (8.31) |
-| coal-gas | 33.12 | distilled-raw-coal (32.20) + coal-gas-from-coke (0.93) | syngas (33.12) |
-| hydrogen | 13.30 | electrolyzer (12.14) + pitch-refining (1.16) | diborane (0.65), ralesia-1 (12.66) |
+| syngas | 50.40 | syngas gasifier | aromatics-to-plastic (3.18) |
+| tar | 40.42 | syngas (21.60) + distilled-raw-coal (17.18) + coal-gas-from-coke (1.64) | tar-distilation (28.59), tar-refining (11.83) |
+| coal-gas | 36.00 | distilled-raw-coal (34.36) + coal-gas-from-coke (1.64) | syngas (36.00) |
+| hydrogen | 13.30 | electrolyzer (11.65) + pitch-refining (1.66) | diborane (0.65), ralesia-1 (12.66) |
 | creamy-latex | 11.67 | washer | latex-slab |
 | formic-acid | 11.67 | full-render-vrauks | latex-slab |
-| pitch | 11.63 | tar-refining | pitch-refining (11.63) |
-| aromatics | 11.31 | tar-distilation (8.17) + light-oil-aromatics (3.14) | aromatics-to-plastic (1.59), polybutadiene (9.72) |
-| anthracene-oil | 9.72 | tar-refining (6.23) + pitch-refining (3.49) | carbon-black (9.72) |
+| pitch | 16.57 | tar-refining | pitch-refining (16.57) |
+| aromatics | 13.25 | tar-distilation (8.17) + light-oil-aromatics (5.09) | aromatics-to-plastic (1.59), polybutadiene (11.67) |
+| anthracene-oil | 13.84 | tar-refining (8.88) + pitch-refining (4.97) | carbon-black (11.67), anthracene-gasoline-cracking (2.18) |
 | carbon-dioxide | 8.25 | tar-distilation (8.17), melamine (0.08) | Moss-2 (7.59), methane-co2 (0.58) |
-| muddy-sludge | 7.59 | clean-nexelit (7.19), melamine (0.13), borax (0.26) | Moss-2 |
-| soil | 7.52 | soil (extractor) | soil-separation-2 (5.56), ralesia-1 (1.90) |
+| muddy-sludge | 8.82 | muddy-sludge recipe (7.45), clean-nexelit (0.97), melamine (0.13), borax (0.26) | Moss-2 |
+| soil | 8.26 | soil (extractor) | soil-separation-2 (5.56), ralesia-1 (1.90), muddy-sludge (0.75) |
 | molten-glass | 7.50 | glass-1 | empty-petri-dish, flask, lens, molten-glass |
-| oxygen | 6.07 | electrolyzer | sb-oxide-01 (1.59) |
+| oxygen | 5.82 | electrolyzer | sb-oxide-01 (1.59) |
+| vacuum | 6.08 | pump | carbon-black (5.83), pcb1, vacuum-tube |
+| polybutadiene | 5.83 | cracker | rubber-01 |
 | pressured-water | 5.56 | pump | subcritical-water-01 |
-| vacuum | 5.10 | pump | carbon-black (4.86), pcb1, vacuum-tube |
-| polybutadiene | 4.86 | cracker | rubber-01 |
-| naphthalene-oil | 3.96 | pitch-refining (2.33) + tar-refining-tops (1.63) | *none (void)* |
-| light-oil | 3.14 | pitch-refining (2.33) + tar-refining-tops (0.82) | light-oil-aromatics (3.14) |
+| naphthalene-oil | 6.86 | pitch-refining (3.31) + tar-refining-tops (3.55) | *none (void)* |
+| light-oil | 5.09 | pitch-refining (3.31) + tar-refining-tops (1.78) | light-oil-aromatics (5.09) |
+| middle-oil | 3.55 | tar-refining | tar-refining-tops (3.55) |
 | sb-grade-02 | 0.56 | sb-grade-01 (0.13) + sb-grade-02 (0.43) | sb-grade-03 |
-| middle-oil | 2.49 | tar-refining | tar-refining-tops (1.63) |
 | sb-grade-01 | 0.22 | sb-grade-01 | sb-grade-02 |
 | ralesia-seeds | 2.02 | botanical-nursery | bio-sample01, caged-cottongut-1, cottongut-cub-1, ralesia-1 |
 | blood | 2.00 | full-render-cottongut | animal-sample-01 |
-| creosote | 1.99 | tar-refining | treated-wood (0.39) |
+| creosote | 2.84 | tar-refining | treated-wood (0.39) |
 | boric-acid | 1.94 | electrolyzer | boron-trioxide |
-| coal | 1.61 | distilled-raw-coal | smelting fuel (furnaces + stopper) |
-| ash | 1.34 | smelting + syngas + coal-gas-from-coke | *none (void)* |
+| coke | 1.87 | pitch-refining (1.66) + anthracene-gasoline-cracking (0.22) | graphite, resistor1, boron-trioxide, **coal-gas-from-coke (1.64)** |
+| coal | 1.72 | distilled-raw-coal | smelting fuel (furnaces) |
+| ash | 1.44 | smelting + syngas + coal-gas-from-coke | *none (void)* |
 | pressured-air | 1.47 | pump | zogna-bacteria |
 | subcritical-water | 1.39 | heat-exchanger | depolymerized-organics |
 | ralesia | 1.27 | ralesia-1 | ralesia-seeds |
 | moss | 1.21 | Moss-2 | vrauks-cocoon, auog, vrauks-1, etc. |
-| coke | 1.16 | pitch-refining | graphite, resistor1, boron-trioxide, **coal-gas-from-coke (0.93)** |
 | seaweed | 1.04 | seaweed-1 | sodium-alginate, agar |
 
 ### Ore crushing intermediates
@@ -426,66 +462,69 @@ All rates /s. Cage-recycled baseline.
 
 ## Imports
 
-All raw mined resources — no processed items.
+All raw mined resources — no processed items. Mining fluid chain adds ~85/60s raw-coal and ~6/60s limestone.
 
-| Resource | /s |
-|---|---:|
-| water | 666.57 |
-| steam | 50.32 (gross; net ~1.71 after polybutadiene steam) |
-| raw-coal | 5.37 |
-| ore-quartz | 4.50 |
-| stone | 1.57 |
-| native-flora | 1.57 |
-| iron-ore | 1.02 |
-| ore-zinc | 0.81 |
-| copper-ore | 0.78 |
-| ore-tin | 0.69 |
-| ore-titanium | 0.49 |
-| antimonium-ore | 0.43 |
-| ore-lead | 0.35 |
-| nexelit-ore | 0.22 |
-| raw-borax | 0.03 |
+| Resource | /s | Notes |
+|---|---:|---|
+| water | 719.80 | |
+| steam | 60.70 (gross; net ~2.37 after polybutadiene steam) | |
+| raw-coal | 7.14 | +1.41/s for mining fluid chain |
+| ore-quartz | 4.50 | |
+| stone | 1.57 | |
+| native-flora | 1.57 | |
+| iron-ore | 1.02 | |
+| ore-zinc | 0.81 | |
+| copper-ore | 0.78 | |
+| ore-tin | 0.69 | |
+| ore-titanium | 0.58 | |
+| antimonium-ore | 0.43 | |
+| ore-lead | 0.35 | |
+| nexelit-ore | 0.03 | (exact demand, no overproduction) |
+| raw-borax | 0.03 | |
+| limestone | 0.09 | for mining fluid lime chain |
 
 ## Exports
 
 | Item | /s | Notes |
 |---|---:|---|
 | logistic-science-pack | 0.10 | |
-| syngas | 43.19 | Bus fuel (0.4 MJ), from coal-gas→syngas conversion |
-| nexelit-plate | 0.06 | From clean-nexelit overproduction (see [§ Clean-nexelit handling](#clean-nexelit-handling)) |
+| syngas | 47.22 | Bus fuel (0.4 MJ), from coal-gas→syngas conversion |
+| acetylene | 5.88 | Mining fluid for titanium + lead drilling (see [§ Mining fluid accounting](#mining-fluid-accounting)) |
+| aromatics | 3.23 | Mining fluid for zinc drilling (see [§ Mining fluid accounting](#mining-fluid-accounting)) |
 
 ## Byproducts (voidable)
 
 | Byproduct | /s | Notes |
 |---|---:|---|
-| steam | 48.61 | from polybutadiene (→ cooling-tower) |
+| steam | 58.33 | from polybutadiene (→ cooling-tower) |
 | flue-gas | 40.84 | from smelting; no consumer; retrofit after filtration tech |
-| oxygen | 4.48 | from electrolysis |
-| naphthalene-oil | 3.96 | from pitch-refining + tar-refining-tops |
+| naphthalene-oil | 6.86 | from pitch-refining + tar-refining-tops |
+| oxygen | 4.23 | from electrolysis |
 | sand | 3.61 | from soil-separation-2 |
-| gasoline | 1.57 | from light-oil-aromatics (fuel) |
-| creosote | 1.61 | from tar-refining |
-| ash | 1.34 | from smelting + syngas |
+| gasoline | 3.42 | from light-oil-aromatics + anthracene-gasoline-cracking (fuel) |
+| creosote | 2.45 | from tar-refining |
+| ash | 1.44 | from smelting + syngas + coal-gas-from-coke |
+| carbolic-oil | 1.78 | from tar-refining-tops |
+| muddy-sludge | 1.23 | phantom from clean-nexelit + borax-washing (excluded from solver) |
 | blood | 1.17 | excess from full-render-cottongut |
-| coal | 0.93 | excess (fuel) |
-| middle-oil | 0.86 | residual |
+| coal | 1.08 | excess (fuel) |
 | coarse | 0.83 | from soil-separation-2; process with 1 classifier (see [§ Coarse processing](#coarse-processing)) |
-| carbolic-oil | 0.82 | from tar-refining-tops |
 | ammonia | 0.81 | from urea decomposition |
-| gravel | 0.17 | phantom from sb-grade-03 (excluded from solver) |
-| iron-oxide | 0.12 | phantom from sb-grade-01 (excluded from solver) |
+| slacked-lime | 0 | fully recycled via evaporator → lime (see [§ Mining fluid accounting](#mining-fluid-accounting)) |
+| gravel | 0.19 | phantom from sb-grade-03 + slacked-lime-void (excluded from solver) |
+| iron-oxide | 0.13 | phantom from sb-grade-01 (excluded from solver) |
 
-**Phantom byproducts from ore crushing:** stone ~0.36/s (from grade-1-iron-crush + grade-1-copper-crush + grade-2-crush-tin, excluded from solver but physically produced in-game). Supplements stone import or buffers.
+**Phantom byproducts from ore crushing:** stone ~0.53/s (from grade-1-iron-crush + grade-1-copper-crush + grade-2-crush-tin, excluded from solver but physically produced in-game). Supplements stone import or buffers.
 
-Major waste streams eliminated: coal-gas (100% consumed), pitch (100% consumed), sb-grade-01/02 (100% consumed via stone-import optimization), grade-2-tin (100% consumed via grade-2-crush-tin), clean-nexelit (100% consumed via nexelit-plate-2 overfeeding — see [§ Clean-nexelit handling](#clean-nexelit-handling)). Remaining byproducts are either fuel-capable (gasoline, coal, creosote) or must be voided.
+Major waste streams eliminated: coal-gas (100% consumed), pitch (100% consumed), sb-grade-01/02 (100% consumed via stone-import optimization), grade-2-tin (100% consumed via grade-2-crush-tin), clean-nexelit (100% consumed — dedicated muddy-sludge recipe eliminates overproduction, see [§ Clean-nexelit handling](#clean-nexelit-handling)), slacked-lime (100% recycled back to lime). Remaining byproducts are either fuel-capable (gasoline, coal, creosote) or must be voided.
 
 ## Key design decisions
 
-- **Urea cycle closes without dedicated muddy-sludge recipe.** LP scales up clean-nexelit production to get enough muddy-sludge as a byproduct. The urea demand is driven by cyanic-acid for batteries (0.81/s), not melamine (0.05/s).
+- **Dedicated muddy-sludge recipe eliminates clean-nexelit overproduction.** Muddy-sludge recipe (10 soil + 100 water → 100 muddy-sludge, washer) provides bulk muddy-sludge for Moss-2 demand. `clean-nexelit:muddy-sludge:exclude` + `borax-washing:muddy-sludge:exclude` constraints prevent LP from scaling those recipes for muddy-sludge. Clean-nexelit now runs at exact demand (0.58/60s = nexelit-plate-2 demand). See [§ Clean-nexelit handling](#clean-nexelit-handling).
 - **Cage recycling is net-zero.** The vrauks loop (caged-vrauks → vrauks-1 → vrauks-cocoon-1 → full-render-vrauks → cage output → caged-vrauks) recycles cage at 0.058/s with no loss. No cage recipe needed, no `full-render-vrauks:cage:exclude` constraint needed. Saves 18 buildings in smelting (iron −57%, lead −71%, tin −66%, titanium −83%) because cage consumed iron-stick, titanium-plate, and solder.
 - **Bio modules are the dominant factor.** Without modules: 1000+ buildings. With mk01 modules: 206. The 5-21x speed multiplier on farms dwarfs the mk01-mk04 building tier difference.
 - **Growth cycles self-sustaining.** Cottongut, wood, ralesia, moondrop seed loops are all net-positive. No seed imports needed.
-- **Seven solver constraints required:**
+- **Nine solver constraints required:**
   - `melamine:carbon-dioxide:exclude` — prevents melamine CO2 from feeding back into the urea cycle
   - `sb-grade-01:stone:exclude` — prevents LP from using antimony screening as a stone source (see [§ Stone-import optimization](#stone-import-optimization))
   - `sb-grade-02:stone:exclude` — same, for the crusher recipe
@@ -493,31 +532,35 @@ Major waste streams eliminated: coal-gas (100% consumed), pitch (100% consumed),
   - `grade-1-iron-crush:stone:exclude` — prevents LP from scaling iron crushing as a stone source (see [§ Ore crushing optimization](#ore-crushing-optimization))
   - `grade-1-copper-crush:stone:exclude` — same, for copper crushing
   - `grade-2-crush-tin:stone:exclude` — same, for tin crushing
+  - `clean-nexelit:muddy-sludge:exclude` — prevents LP from overscaling clean-nexelit for muddy-sludge (see [§ Clean-nexelit handling](#clean-nexelit-handling))
+  - `borax-washing:muddy-sludge:exclude` — prevents LP from using borax-washing as muddy-sludge source
 - **Three max-import caps:**
   - `--max-import "raw-coal:600"` — forces internal coal-gas recycling
   - `--max-import "copper-ore:55"` — forces copper crushing (screening-only needs 58.71/60s, exceeding cap)
   - `--max-import "ore-tin:51"` — forces grade-2-crush-tin, consuming all grade-2-tin (41.53/60s under cap vs 51.92/60s screening-only)
 - **Water-barrel produced internally.** Barrel-machine-mk01 runs water-barrel recipe (1 barrel + 50 water → 1 water-barrel). Barrel is net-zero (animal recipes produce barrel, water-barrel recipe consumes it), same loop structure as cage. 1 building at 0.13 utilization.
-- **Clean-nexelit handled outside solver.** The LP overproduces clean-nexelit (4.31/60s) because the washer runs for muddy-sludge demand (100:1 ratio). Only 0.58/60s consumed by nexelit-plate-2. In-game: overfeed the nexelit-plate-2 furnace to consume all 4.31/60s at 0.24 utilization. Produces 3.73/60s excess nexelit-plate — **consumer TBD**. See [§ Clean-nexelit handling](#clean-nexelit-handling).
+- **Clean-nexelit exactly matched to demand.** Dedicated muddy-sludge recipe + two exclude constraints eliminate overproduction. Clean-nexelit washer runs at 0.03 utilization, producing exactly 0.58/60s = nexelit-plate-2 demand. No excess nexelit-plate. See [§ Clean-nexelit handling](#clean-nexelit-handling).
+- **Stopper-2 (rubber-based) replaces stopper (coal+latex).** stopper-2 (1 rubber → 2 stopper) taps the existing rubber chain. Rubber demand increases from 5.83/60s (lab-instrument only) to 7.00/60s (lab-instrument 5.83 + stopper-2 1.17). Cleaner routing than coal+latex stopper.
+- **Mining fluid production covers all fluid-drill requirements.** Acetylene chain (3 buildings: gasifier + 2 hpf) produces 352.7/60s acetylene for titanium + lead mining. Extra aromatics (194/60s) for zinc mining absorbed by oil chain capacity scaling. Slacked-lime recycled back to lime (1 evaporator). See [§ Mining fluid accounting](#mining-fluid-accounting).
 - **Ore crushing replaces direct smelting for iron, copper, tin, lead.** Screening → crushing → smelting gives 25–67% ore savings over direct smelting at +1 building (26→27). Stone byproduct excluded from solver to prevent LP stone-source exploitation. See [§ Ore crushing optimization](#ore-crushing-optimization).
 - **Stone-import optimization eliminates sb-grade waste.** The LP was running 5.25 screeners for stone demand (Moss-2 + sodium-alginate), not antimony demand. Excluding stone/gravel from antimony recipe products forces stone import (1.64/s with ore crushing) and drops screening to 0.22x — the exact rate needed for sb-grade-04 production. All sb-grade-01/02 consumed internally. See [§ Stone-import optimization](#stone-import-optimization).
 - **Pitch-refining replaces coke-coal.** Pitch-refining (design 03/05 pattern) converts pitch waste into coke + hydrogen + light-oil + anthracene-oil. The hydrogen from pitch-refining reduces the electrolyzer from 100% to 61% utilization.
 - **coal-gas-from-coke completes the coke loop.** Excess coke from pitch-refining feeds coal-gas-from-coke (distilator), producing additional coal-gas + tar. This recipe was previously unused by the LP but activates with cage recycling because the reduced coke demand creates an excess.
-- **Syngas conversion captures coal-gas value.** Coal-gas routed through syngas recipe (50 coal-gas + 100 water → 70 syngas + 30 tar + 1 ash). The syngas (43/s) exports as bus fuel (0.4 MJ/unit). Tar feedback reduces distilled-raw-coal to 2 buildings.
-- **Raw-coal 67% reduction via `--max-import "raw-coal:600"`.** Without the cap, the LP wastes coal-gas rather than processing it. The raw-coal cap forces recycling (5.37/s raw-coal).
-- **Self-power at 21% from byproducts.** ~22 MW from byproduct fuels. Remaining ~84 MW imported.
+- **Syngas conversion captures coal-gas value.** Coal-gas routed through syngas recipe (50 coal-gas + 100 water → 70 syngas + 30 tar + 1 ash). The syngas (47/s) exports as bus fuel (0.4 MJ/unit). Tar feedback reduces distilled-raw-coal to 2 buildings.
+- **Raw-coal 67% reduction via `--max-import "raw-coal:600"`.** Without the cap, the LP wastes coal-gas rather than processing it. The raw-coal cap forces recycling (5.73/s raw-coal base + 1.41/s mining fluid chain = 7.14/s total).
+- **Self-power at 26% from byproducts.** ~28 MW from byproduct fuels. Remaining ~79 MW imported.
 - **Iron-oxide-smelting is incompatible with oil refining in the LP.** When both are present without stone-import, the LP scales sb-grade-01 +45% to source iron-oxide.
-- **Cooling-water (cooling-tower-mk01) for steam recovery.** polybutadiene produces 48.61/s excess steam. Route through cooling-water (400 steam → 400 water@100°C, 1 tower) to recover ~48/s water. Not in solver — the LP abuses it.
+- **Cooling-water (cooling-tower-mk01) for steam recovery.** polybutadiene produces 58.33/s excess steam. Route through cooling-water (400 steam → 400 water@100°C, 1 tower) to recover ~58/s water. Not in solver — the LP abuses it.
 - **coarse-classification handled manually.** Adding coarse-classification to the solver causes LP infeasibility, but 1 classifier at 4% utilization handles 0.83/s coarse outside the solver (see [§ Coarse processing](#coarse-processing)).
 - **Flue-gas: no consumer at current tech.** fluegas-filtration and fluegas-to-syngas require `filtration` tech, which costs logistic-science-pack — bootstrap problem. Initial build must vent; retrofit after research.
 
-## Solver command (209 buildings)
+## Solver command (213 buildings)
 
-Oil refining variant with pitch-refining + tar-refining-tops + light-oil-aromatics + coal-gas-from-coke, raw-coal cap, copper-ore cap, ore-tin cap, and ore crushing for iron/copper/tin/lead. Cage-recycled (no cage recipe, no cage exclude constraint). Stone-import (sb-grade stone/gravel excluded). Ore crushing (stone excluded from all crushing recipes). Water-barrel produced internally (barrel-machine-mk01).
+Oil refining variant with pitch-refining + tar-refining-tops + light-oil-aromatics + coal-gas-from-coke, raw-coal cap, copper-ore cap, ore-tin cap, and ore crushing for iron/copper/tin/lead. Cage-recycled (no cage recipe, no cage exclude constraint). Stone-import (sb-grade stone/gravel excluded). Ore crushing (stone excluded from all crushing recipes). Water-barrel produced internally (barrel-machine-mk01). Dedicated muddy-sludge recipe (clean-nexelit + borax-washing muddy-sludge excluded). Stopper-2 (rubber-based).
 
 ```bash
 npx tsx src/cli.ts solve \
-  --recipes "logistic-science-pack,battery-mk01,animal-sample-01,alien-sample01,cottongut-science-red-seeds,pbsb-alloy,sb-oxide-01,sb-grade-01,sb-grade-02,sb-grade-03,sb-grade-04,melamine,urea-decomposition,graphite,bolts,iron-stick,glass-1,molten-glass,zinc-plate-1,aromatics-to-plastic,syngas,distilled-raw-coal,tar-distilation,hydrogen,ground-sample01,rich-clay,soil,electronic-circuit-2,capacitor1,inductor1,resistor1,pcb1,vacuum-tube,solder-0,ceramic,clay,formica,treated-wood,fiber-01,methanal,vacuum,pressured-air,plasmids,flask,stopper,lab-instrument,equipment-chassi,fenxsb-alloy-2,lens,small-parts-01,iron-gear-wheel,copper-cable,small-lamp,petri-dish-bacteria,petri-dish,empty-petri-dish,agar,zogna-bacteria,rubber-01,carbon-black,polybutadiene,latex,latex-slab,sodium-alginate,creamy-latex,boron-trioxide,boric-acid,diborane,borax-washing,iron-plate,copper-plate,titanium-plate-1,steel-plate,nexelit-plate-2,clean-nexelit,seaweed-1,sap-01,tar-refining,bio-sample01,bone-to-bonemeal-2,full-render-cottongut,full-render-vrauks,caged-vrauks,vrauks-1,vrauks-cocoon-1,fawogae-substrate,cellulose-00,depolymerized-organics,fawogae-1,fawogae-spore,pressured-water,extract-limestone-01,soil-separation-2,subcritical-water-01,Moss-2,methane-co2,liquid-manure,auog-pooping-1,urea-from-liquid-manure,caged-cottongut-1,cottongut-cub-1,log-wood-fast,log2,wood-seedling,wood-seeds,ralesia-1,ralesia-seeds,moondrop-1,moondrop-seeds,pitch-refining,tar-refining-tops,light-oil-aromatics,naphthalene-oil-creosote,carbolic-oil-creosote,anthracene-gasoline-cracking,coal-gas-from-coke,tin-plate-1,lead-plate-1,grade-1-iron-crush,low-grade-smelting-iron,grade-2-copper,grade-1-copper-crush,copper-plate-4,grade-1-tin,grade-2-crush-tin,tin-plate-2,grade-1-lead,lead-plate-2,water-barrel" \
+  --recipes "logistic-science-pack,battery-mk01,animal-sample-01,alien-sample01,cottongut-science-red-seeds,pbsb-alloy,sb-oxide-01,sb-grade-01,sb-grade-02,sb-grade-03,sb-grade-04,melamine,urea-decomposition,graphite,bolts,iron-stick,glass-1,molten-glass,zinc-plate-1,aromatics-to-plastic,syngas,distilled-raw-coal,tar-distilation,hydrogen,ground-sample01,rich-clay,soil,electronic-circuit-2,capacitor1,inductor1,resistor1,pcb1,vacuum-tube,solder-0,ceramic,clay,formica,treated-wood,fiber-01,methanal,vacuum,pressured-air,plasmids,flask,stopper-2,lab-instrument,equipment-chassi,fenxsb-alloy-2,lens,small-parts-01,iron-gear-wheel,copper-cable,small-lamp,petri-dish-bacteria,petri-dish,empty-petri-dish,agar,zogna-bacteria,rubber-01,carbon-black,polybutadiene,latex,latex-slab,sodium-alginate,creamy-latex,boron-trioxide,boric-acid,diborane,borax-washing,iron-plate,copper-plate,titanium-plate-1,steel-plate,nexelit-plate-2,clean-nexelit,seaweed-1,sap-01,tar-refining,bio-sample01,bone-to-bonemeal-2,full-render-cottongut,full-render-vrauks,caged-vrauks,vrauks-1,vrauks-cocoon-1,fawogae-substrate,cellulose-00,depolymerized-organics,fawogae-1,fawogae-spore,pressured-water,extract-limestone-01,soil-separation-2,subcritical-water-01,Moss-2,methane-co2,liquid-manure,auog-pooping-1,urea-from-liquid-manure,caged-cottongut-1,cottongut-cub-1,log-wood-fast,log2,wood-seedling,wood-seeds,ralesia-1,ralesia-seeds,moondrop-1,moondrop-seeds,pitch-refining,tar-refining-tops,light-oil-aromatics,naphthalene-oil-creosote,carbolic-oil-creosote,anthracene-gasoline-cracking,coal-gas-from-coke,tin-plate-1,lead-plate-1,grade-1-iron-crush,low-grade-smelting-iron,grade-2-copper,grade-1-copper-crush,copper-plate-4,grade-1-tin,grade-2-crush-tin,tin-plate-2,grade-1-lead,lead-plate-2,water-barrel,muddy-sludge" \
   --constraint "melamine:carbon-dioxide:exclude" \
   --constraint "sb-grade-01:stone:exclude" \
   --constraint "sb-grade-02:stone:exclude" \
@@ -525,6 +568,8 @@ npx tsx src/cli.ts solve \
   --constraint "grade-1-iron-crush:stone:exclude" \
   --constraint "grade-1-copper-crush:stone:exclude" \
   --constraint "grade-2-crush-tin:stone:exclude" \
+  --constraint "clean-nexelit:muddy-sludge:exclude" \
+  --constraint "borax-washing:muddy-sludge:exclude" \
   --max-import "raw-coal:600" \
   --max-import "copper-ore:55" \
   --max-import "ore-tin:51" \
@@ -574,7 +619,7 @@ npx tsx src/cli.ts solve \
   --factory "pressured-air:vacuum-pump-mk01" \
   --factory "plasmids:biofactory-mk01" \
   --factory "flask:glassworks-mk01" \
-  --factory "stopper:automated-factory-mk01" \
+  --factory "stopper-2:automated-factory-mk01" \
   --factory "lab-instrument:automated-factory-mk01" \
   --factory "equipment-chassi:automated-factory-mk01" \
   --factory "fenxsb-alloy-2:smelter-mk01" \
@@ -659,6 +704,7 @@ npx tsx src/cli.ts solve \
   --factory "grade-1-lead:automated-screener-mk01" \
   --factory "lead-plate-2:stone-furnace" \
   --factory "water-barrel:barrel-machine-mk01" \
+  --factory "muddy-sludge:washer" \
   --modules "seaweed-1:seaweed:10" \
   --modules "sap-01:sap-tree:2" \
   --modules "vrauks-1:vrauks:10" \
@@ -677,8 +723,10 @@ Additional recipes available in the solver but not used by the LP (included for 
 - `coke-coal` — removed (pitch-refining provides coke)
 - `naphthalene-oil-creosote` — LP prefers exporting naphthalene-oil (could burn for 0.30 MJ/unit)
 - `carbolic-oil-creosote` — LP prefers exporting carbolic-oil (could burn for 0.35 MJ/unit)
-- `anthracene-gasoline-cracking` — LP uses carbon-black for anthracene-oil instead
 - `iron-plate`, `copper-plate`, `tin-plate-1`, `lead-plate-1` — replaced by ore crushing paths (LP sets count to 0)
+
+Recipes now used by LP (previously unused):
+- `anthracene-gasoline-cracking` — LP now uses it (1 bldg, 0.02 util) to convert excess anthracene-oil to coke + gasoline
 
 ## Irreducible waste
 
@@ -687,15 +735,22 @@ These byproducts have no consumers at current tech level — voiding is the only
 | Byproduct | /s | Why irreducible |
 |---|---:|---|
 | flue-gas | 40.84 | No consumer at current tech; `filtration` tech (needs logistic-science-pack) unlocks fluegas-filtration and fluegas-to-syngas — retrofit after research |
-| oxygen | 4.48 | Excess from electrolysis; only consumer is sb-oxide-01 (1.59/s) |
+| naphthalene-oil | 6.86 | From pitch-refining + tar-refining-tops; could burn for 0.30 MJ/unit |
+| oxygen | 4.23 | Excess from electrolysis; only consumer is sb-oxide-01 (1.59/s) |
 | sand | 3.61 | From soil-separation-2; no useful consumer at scale |
+| gasoline | 3.42 | From light-oil-aromatics + anthracene-gasoline-cracking; fuel (1.20 MJ/unit) |
+| creosote | 2.45 | From tar-refining; only 0.39/s consumed by treated-wood |
+| carbolic-oil | 1.78 | From tar-refining-tops; could burn for 0.35 MJ/unit |
+| ash | 1.44 | From smelting + syngas + coal-gas-from-coke |
+| muddy-sludge | 1.23 | Phantom from excluded constraints; buffers or void |
 | blood | 1.17 | Excess from full-render-cottongut; only consumer is animal-sample-01 |
+| coal | 1.08 | Excess from distilled-raw-coal; fuel (4.00 MJ/unit) |
 | coarse | 0.83 | From soil-separation-2; processed by 1 classifier (see [§ Coarse processing](#coarse-processing)) |
 | ammonia | 0.81 | From urea-decomposition; no consumer at current tech |
-| gravel | 0.17 | Phantom from sb-grade-03 (excluded from solver); negligible |
-| iron-oxide | 0.12 | Phantom from sb-grade-01 (excluded from solver); negligible |
+| gravel | 0.19 | Phantom from sb-grade-03 + slacked-lime-void; negligible |
+| iron-oxide | 0.13 | Phantom from sb-grade-01; negligible |
 
-**Eliminated by stone-import optimization:** sb-grade-01/02 (was 7.84/s combined). All sb-grade intermediates now fully consumed internally — see [§ Stone-import optimization](#stone-import-optimization).
+**Eliminated:** sb-grade-01/02 overproduction (stone-import optimization), clean-nexelit overproduction (dedicated muddy-sludge recipe), slacked-lime waste (recycled to lime via evaporator).
 
 ## Rejected optimizations
 
@@ -704,24 +759,24 @@ Investigated and rejected during design:
 | Optimization | Why rejected |
 |---|---|
 | **Dedicated cage recipe** | Cage loop is net-zero (1 in → 1 out from vrauks rendering). Removing saves 18 smelting buildings |
-| **stopper-2** (rubber) vs stopper (coal+latex) | stopper-2 is more expensive — rubber costs more to produce than coal+latex at current scale |
+| ~~**stopper-2** (rubber) vs stopper (coal+latex)~~ | ~~Rejected~~ → **Adopted.** stopper-2 (1 rubber → 2 stopper) taps existing rubber chain, cleaner routing |
 | **sand-void-glass** (5 sand + 4 ore-quartz → 10 molten-glass) | LP includes it in recipe list but doesn't use it — glass-1 (6 ore-quartz → 10 molten-glass) is cheaper because sand is free to void |
 | **coarse-classification in solver** | Causes LP Phase 1 infeasibility when added to recipe set. Handled manually with 1 classifier instead (see [§ Coarse processing](#coarse-processing)) |
 | **Full self-power from raw-coal** | Would need ~57/s additional raw-coal, worse than baseline total. Byproduct self-power (~22 MW) is sufficient |
 | **wpu-mk01-turd** | Not available — must use wpu-mk01 for wood processing |
 | **Zinc ore crushing** | zinc-plate-1 recipe has 3.33:1 ore ratio via crushing, but needs iron-stick input — adds iron demand complexity |
 | **Titanium ore crushing** | 4-step crushing chain produces gravel (another stone-source exploit risk), and the 1.875:1 ratio savings don't justify 4 extra buildings at this scale (only 1 titanium furnace) |
-| **clean-nexelit:muddy-sludge:exclude** | Swaps 3.73/60s clean-nexelit waste for 43.14/60s borax waste — LP replaces dedicated washer with borax-washing as muddy-sludge source. Handle outside solver instead (see [§ Clean-nexelit handling](#clean-nexelit-handling)) |
+| ~~**clean-nexelit:muddy-sludge:exclude**~~ | ~~Rejected~~ → **Adopted** with `borax-washing:muddy-sludge:exclude` added. Both excludes together + dedicated muddy-sludge recipe prevents LP from using either as muddy-sludge source. See [§ Clean-nexelit handling](#clean-nexelit-handling) |
 
 ## Design notes for block layout
 
-- **cooling-tower-mk01**: place 1 after polybutadiene's steam output, converts 48.61/s excess steam → water@100°C. Reduces water import by ~8%. ~0.8 kW power draw. Not in solver — LP abuses it to replace all water imports with steam imports.
+- **cooling-tower-mk01**: place 1 after polybutadiene's steam output, converts 58.33/s excess steam → water@100°C. Reduces water import by ~8%. ~0.8 kW power draw. Not in solver — LP abuses it to replace all water imports with steam imports.
 - **Byproduct fuels for self-power** (oil-boiler-mk01 eff 2 + steam engine eff 0.5, net MW = rate × fuel_value):
-  - Burn all: syngas 17.28 + gasoline 1.88 + naphthalene-oil 1.19 + carbolic-oil 0.29 + middle-oil 0.17 + coal 1.42 (solid boiler eff 1) = **22 MW** (21% of 106 MW)
-  - Export syngas, burn rest: 22 − 17.28 = **~5 MW** (5% of 106 MW)
-  - Syngas (43/s) is more valuable as bus fuel export than burned locally
+  - Burn all: syngas 18.89 + gasoline 4.10 + naphthalene-oil 2.06 + carbolic-oil 0.62 + coal 2.16 (solid boiler eff 1) = **28 MW** (26% of 107 MW)
+  - Export syngas, burn rest: 28 − 18.89 = **~9 MW** (8% of 107 MW)
+  - Syngas (47/s) is more valuable as bus fuel export than burned locally
 - **Flue-gas**: no consumer at current tech. Exhaust pipe void only. Retrofit with fluegas-filtration after `filtration` tech is researched (requires logistic-science-pack).
-- **Sand**: 3.61/s excess. sand-void-glass available but LP doesn't use it (voiding sand is cheaper than the ore-quartz savings).
+- **Sand**: 3.61/s excess from soil-separation-2. sand-void-glass available but LP doesn't use it (voiding sand is cheaper than the ore-quartz savings).
 - **Coarse-classification**: 1 classifier outside solver, 4% utilization. See [§ Coarse processing](#coarse-processing).
 
 ## Ore crushing optimization
@@ -789,13 +844,54 @@ All products are negligible at this scale. The classifier exists to prevent coar
 
 ## Clean-nexelit handling
 
-The LP overproduces clean-nexelit because the washer runs for muddy-sludge demand, not clean-nexelit demand. The clean-nexelit recipe produces 10 clean-nexelit + 1000 muddy-sludge per run — a 100:1 ratio. Moss-2 drives the muddy-sludge demand (455.11/60s), which forces the washer to produce 4.31/60s clean-nexelit. Only 0.58/60s is consumed by nexelit-plate-2.
+**Solved.** Dedicated muddy-sludge recipe (10 soil + 100 water → 100 muddy-sludge, washer) provides bulk muddy-sludge for Moss-2 demand (455.11/60s). Two exclude constraints prevent the LP from using other recipes as muddy-sludge sources:
 
-**Solver-side fixes attempted and rejected:**
-- `clean-nexelit:muddy-sludge:exclude` — LP replaces the dedicated washer with borax-washing as muddy-sludge source (cheaper in buildings), creating 43.14/60s borax waste instead of 3.73/60s clean-nexelit waste. Much worse.
-- Dedicated muddy-sludge recipe (10 soil + 100 water → 100 muddy-sludge) — LP won't use it because borax-washing is cheaper.
+- `clean-nexelit:muddy-sludge:exclude` — prevents LP from scaling clean-nexelit washer for muddy-sludge
+- `borax-washing:muddy-sludge:exclude` — prevents LP from using borax-washing as muddy-sludge source (was the failure mode when only clean-nexelit was excluded)
 
-**In-game solution:** Overfeed the nexelit-plate-2 furnace to consume all 4.31/60s clean-nexelit. The furnace runs at 0.24 utilization (same 1 building). This produces 3.73/60s nexelit-plate above what the solver expects — **consumer TBD** (cannot export to bus; must find an internal sink or rework the muddy-sludge source). No extra buildings needed.
+With both excludes, the LP uses the dedicated muddy-sludge recipe (1 washer, 0.75 util) for bulk demand. Clean-nexelit runs at exact demand: 0.58/60s produced, 0.58/60s consumed by nexelit-plate-2. No overproduction, no excess nexelit-plate, no "consumer TBD".
+
+The physically-produced muddy-sludge from clean-nexelit (58.33/60s) and borax-washing (15.56/60s) is phantom — excluded from the solver but exists in-game. At 73.89/60s it's a minor surplus that supplements the dedicated recipe or buffers. Total muddy-sludge in-game: ~529/60s produced vs 455/60s consumed = ~74/60s excess (void or buffer).
+
+## Mining fluid accounting
+
+Coal processing covers all mining fluid requirements for this block's ore imports (except steam for ore-tin, excluded by design).
+
+**Mining fluid formula:** `fluid/s = mining_speed × fluid_amount / (10 × mining_time)`. The `fluid_amount` in prototype data is 10x the actual in-game per-ore cost (Factorio engine constant — see [reference memory](../../.claude/projects/-Volumes-git-factorio-planner/memory/reference_fluid_amount_10x.md)). Verified 2026-10-10 with in-game tests.
+
+**Per-ore fluid costs (÷10 corrected):**
+
+| Ore | Fluid | Per ore | Import rate (/60s) | Fluid needed (/60s) |
+|---|---|---:|---:|---:|
+| ore-titanium | acetylene | 4 | 35.00 | 140.0 |
+| ore-lead | acetylene | 10 | 21.27 | 212.7 |
+| ore-zinc | aromatics | 4 | 48.50 | 194.0 |
+| ore-tin | steam | 10 | 41.53 | (excluded) |
+| borax | syngas | 2.5 | 1.56 | 3.9 |
+
+**Acetylene chain (352.7/60s = 5.88/s):**
+
+| Recipe | Factory | Fraction | Inputs | Outputs |
+|---|---|---:|---|---|
+| acetylene (8s) | gasifier | 0.47 | 0.59/s calcium-carbide, 17.6/s water | 5.88/s acetylene, 1.47/s slacked-lime |
+| calcium-carbide (4s) | hpf | 0.24 | 0.41/s coke, 0.12/s lime | 0.59/s calcium-carbide |
+| lime (5s) | hpf | 0.05 | 0.14/s coke, 0.09/s limestone | 0.09/s lime (after recycling), 1.18/s CO2 |
+| slacked-lime-void (2s) | evaporator | 0.05 | 1.47/s slacked-lime | 0.02/s lime (recycled), 0.02/s gravel |
+
+Total coke for acetylene: 0.55/s = 33.07/60s. Sourced from pitch-refining scale-up (+1 distilator, 0.83→1.10 utilization). Limestone: 0.09/s = 5.59/60s (new import).
+
+**Extra aromatics for zinc mining (194/60s = 3.23/s):**
+
+Absorbed by scaling the existing oil chain — extra pitch-refining produces extra light-oil → light-oil-aromatics → aromatics. The extra tar demand cascades through tar-refining → distilled-raw-coal → syngas, but all fit within existing building capacities (distilled-raw-coal 2 bldg at 1.50/2, syngas 3 bldg at 2.67/3). Extra raw-coal: ~85/60s.
+
+**Syngas for borax mining (3.9/60s):** Trivially covered by existing syngas export (2833/60s).
+
+**5 additional buildings total:**
+1. gasifier (acetylene) — 47% util
+2. hpf (calcium-carbide) — 24% util
+3. hpf (lime) — 5% util
+4. evaporator (slacked-lime-void) — 5% util
+5. distilator (pitch-refining scale-up) — 1→2 buildings
 
 ## TODO
 

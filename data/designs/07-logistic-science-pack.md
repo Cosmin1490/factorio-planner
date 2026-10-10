@@ -1,4 +1,4 @@
-# Logistic science pack — 0.1/s, 206–209 buildings
+# Logistic science pack — 0.1/s, 202–206 buildings
 
 Fully self-contained chain from raw resources. mk01 buildings, stone furnaces, bio modules on all farms.
 Block splitting into 3 blocks (battery/chemistry, bio/farming, assembly) not yet done.
@@ -7,18 +7,21 @@ All factories mk01 tier. Stone furnaces for smelting (iron, copper, lead, tin, z
 
 ## Optimization analysis
 
-Two optimization axes, each LP-validated independently. All produce 0.1/s logistic-science-pack from raw resources. Cage recycling (vrauks loop is net-zero: 1 cage in → 1 cage out) is the baseline for both variants — no cage recipe needed, no cage exclude constraint.
+Two optimization axes, each LP-validated independently. All produce 0.1/s logistic-science-pack from raw resources. Cage recycling (vrauks loop is net-zero: 1 cage in → 1 cage out) is the baseline for both variants — no cage recipe needed, no cage exclude constraint. Stone-import optimization is the baseline for both variants — stone imported instead of sourced from antimony screening (see [§ Stone-import optimization](#stone-import-optimization)).
 
 ### Variant comparison
 
 | Metric | A: LP-optimized | B: Max recycling |
 |---|---:|---:|
-| Buildings | **206** | 209 |
-| Power (MW) | 106.60 | 106.12 |
+| Buildings | **202** | 206 |
+| Power (MW) | 105.26 | 105.83 |
 | raw-coal (/s) | 16.41 | **5.37 (−67%)** |
-| iron-ore (/s) | **0 (eliminated)** | 1.63 |
-| ore-lead (/s) | 1.06 | 1.06 |
-| ore-tin (/s) | 1.15 | 1.15 |
+| stone (/s) | 2.00 | 1.64 |
+| antimonium-ore (/s) | 0.43 | 0.43 |
+| iron-ore (/s) | 0.25 | **1.02** |
+| copper-ore (/s) | 1.25 | **0.78** |
+| ore-lead (/s) | 1.06 | **0.35 (−67%)** |
+| ore-tin (/s) | 1.15 | **0.87 (−25%)** |
 | ore-titanium (/s) | 0.49 | 0.49 |
 | water (/s) | 566.68 | 626.64 |
 | steam (/s) | 41.71 | 50.32 (gross) |
@@ -26,15 +29,17 @@ Two optimization axes, each LP-validated independently. All produce 0.1/s logist
 | pitch waste (/s) | 18.15 | **0 (consumed)** |
 | middle-oil waste (/s) | 3.89 | **0.86 (−78%)** |
 | syngas export (/s) | 0 | **43.19** |
-| Unique recipes | +2, −1 | +7, −1 |
+| sb-grade waste (/s) | **0** | **0** |
+| grade-2-tin waste (/s) | — | 0.09 |
+| Unique recipes | +2, −1 | +17, −5 |
 
-### Variant A — LP-optimized (206 buildings, recommended)
+### Variant A — LP-optimized (202 buildings, recommended)
 
-Fewest buildings, lowest imports. Cage recycling eliminates most metal demand; iron-oxide-smelting covers remaining iron from byproducts — **zero iron-ore imports**.
+Fewest buildings, lowest imports. Cage recycling eliminates most metal demand; stone import eliminates sb-grade waste; iron-oxide-smelting covers most iron from distilled-raw-coal + coal-gas byproducts, with a small 0.25/s iron-ore import for the remainder.
 
 **Recipes added:**
 1. **coal-gas** (distilator): 10 coal → 6 coke + 1 iron-oxide + 40 coal-gas + 50 tar — converts waste coal into useful products.
-2. **iron-oxide-smelting** (stone-furnace): 20 iron-oxide → 10 iron-plate — converts iron-oxide byproduct (from sb-grade-01 probability output) to iron-plate. With cage removed, iron demand is so low that iron-oxide from sb-grade-01 alone covers it — **zero iron-ore imports**.
+2. **iron-oxide-smelting** (stone-furnace): 20 iron-oxide → 10 iron-plate — converts iron-oxide byproduct (from distilled-raw-coal + coal-gas) to iron-plate. With stone import, sb-grade-01 screening runs at minimum (0.22x), so iron-oxide comes primarily from coal processing, not antimony.
 
 **Recipe eliminated:** `coke-coal` — the coal-gas recipe produces enough coke to replace it.
 
@@ -42,12 +47,12 @@ Fewest buildings, lowest imports. Cage recycling eliminates most metal demand; i
 |---|---|
 | distilled-raw-coal: **4 bldg** (3.28) | +2 (more raw-coal, no oil refining) |
 | coal-gas: **1 bldg** (0.12) | Converts waste coal |
-| iron-oxide-smelting: **1 bldg** (0.07) | Covers all iron demand from byproduct iron-oxide |
-| iron-plate: **0** | Eliminated — iron-oxide-smelting provides all iron |
+| iron-oxide-smelting: **1 bldg** | Covers most iron from coal-processing iron-oxide |
+| iron-plate: **1 bldg** (0.40) | Small supplement (0.25/s iron-ore) |
 
-### Variant B — Max recycling (209 buildings)
+### Variant B — Max recycling (206 buildings)
 
-Trades +3 buildings and +21% gross steam for massive waste reduction and syngas export. Uses `--max-import "raw-coal:600"` to force the LP to maximize internal recycling.
+Trades +4 buildings and +21% gross steam for massive waste reduction, syngas export, and ore crushing optimization. Uses `--max-import "raw-coal:600"` to force recycling, `--max-import "copper-ore:55"` to force copper crushing, and ore crushing for iron/copper/tin/lead (see [§ Ore crushing optimization](#ore-crushing-optimization)).
 
 **Recipes added (design 03/05 patterns):**
 1. **pitch-refining** (distilator): 100 pitch + 100 steam → 10 coke + 10 hydrogen + 20 light-oil + 20 naphthalene-oil + 30 anthracene-oil — eliminates pitch waste
@@ -72,7 +77,7 @@ Trades +3 buildings and +21% gross steam for massive waste reduction and syngas 
 Adding pitch-refining recipes to Variant A's recipe list changes the solver's `computeItemDepths` output — the depth computation runs on the original matrix before LP constraints. Even if the LP wouldn't use pitch-refining, the additional recipes create new item→recipe→item paths that inflate recipe costs, changing the LP solution. Tested:
 
 - **Without raw-coal cap:** Adding pitch-refining + tar-refining-tops + light-oil-aromatics to Variant A produces 225 buildings with coal-gas at 0.05 instead of 0.71 — the LP "forgets" to recycle coal because recipe costs shifted. The LP rejects all three oil-refining recipes.
-- **With raw-coal cap:** The LP scales antimony screening to 20 buildings (from 6) and imports 38.96/s antimonium-ore (from 10.50) to source iron-oxide from sb-grade-01's probability output — technically optimal but +14 wasteful antimony buildings.
+- **With raw-coal cap:** The LP scales antimony screening to 20 buildings (from 6 pre-stone-import) and imports 38.96/s antimonium-ore to source iron-oxide from sb-grade-01's probability output — technically optimal but +14 wasteful antimony buildings. (Stone-import constraints mitigate this, but the variant combination still fails.)
 - **Full feedback loop** (coal-gas-from-coke → syngas → tar → pitch-refining → coke → coal-gas-from-coke): Creates a cycle that causes `computeItemDepths` to diverge, making Phase 1 infeasible. Manual analysis shows the loop saves ~1.5/s additional raw-coal at +3–4 buildings — a modest improvement the solver can't validate.
 
 ### Steam accounting note
@@ -93,11 +98,11 @@ Available byproduct fuels from the Variant B chain (oil-boiler-mk01, effectivity
 | coal 0.71 (solid, boiler eff 1) | 0.71 | 4.00 | 1.42 |
 | **Total** | | | **22.23** |
 
-Self-power covers **22 MW / 106 MW (21%)**. Remaining 84 MW must be imported.
+Self-power covers **22 MW / 105 MW (21%)**. Remaining 83 MW must be imported.
 
 **Recommendation:** Syngas is more valuable as a bus fuel export (43/s at 0.4 MJ = 17.28 MW worth) than burned locally. Without syngas self-power: ~5 MW from minor fuels.
 
-**Variant A self-power:** Coal-gas (97.76/s × 0.20 MJ × eff 2 = 19.55 MW) + creosote (2.72/s × 0.35 MJ × eff 2 = 0.95 MW) + pitch (18.15/s — no fuel value) + middle-oil (3.89/s × 0.20 MJ × eff 2 = 0.78 MW) + coal (3.73/s × 4.0 MJ × eff 1 = 7.46 MW) = ~29 MW. No syngas export — all value consumed internally.
+**Variant A self-power:** Coal-gas (97.76/s × 0.20 MJ × eff 2 = 19.55 MW) + creosote (2.72/s × 0.35 MJ × eff 2 = 0.95 MW) + pitch (18.15/s — no fuel value) + middle-oil (3.89/s × 0.20 MJ × eff 2 = 0.78 MW) + coal (3.73/s × 4.0 MJ × eff 1 = 7.46 MW) = ~29 MW (28% of 105 MW). No syngas export — all value consumed internally.
 
 ## Flow diagram (Variant B)
 
@@ -186,23 +191,27 @@ Self-power covers **22 MW / 106 MW (21%)**. Remaining 84 MW must be imported.
                                                                          │
         ┌────────────────────────────────────────────────────────────────┘
         ▼
-  ┌────────────────────────────────────────┐
-  │ SMELTING & METALS (30 bldgs)           │
-  │                                        │
-  │ 3x iron    ──▶ iron-stick ──▶ bolts                         │
-  │ 2x lead    ──▶ solder, pbsb-alloy                         │
-  │ 2x tin     ──▶ solder, capacitor, equipment-chassi         │
-  │ 1x titanium──▶ polybutadiene                               │
-  │ 2x copper  ──▶ cable, pcb, vacuum-tube                     │
-  │ 2x zinc    ──▶ battery-mk01                                │
-  │ 4x glass   ──▶ battery, lamp, flask, petri-dish            │
-  │                                        │
-  │ ANTIMONY (8 bldgs):                    │
-  │ antimonium-ore ──▶ sb-grade-01 (6x)    │
-  │ ──▶ 03 ──▶ 04 ──▶ sb-oxide            │
-  │ ──▶ pbsb-alloy ──▶ battery             │
-  │ ──▶ fenxsb-alloy ──▶ equipment-chassi  │
-  └────────────────────────────────────────┘
+  ┌─────────────────────────────────────────────────────────┐
+  │ SMELTING & METALS (27 bldgs) — ORE CRUSHING            │
+  │                                                         │
+  │ iron-ore ──▶ crush (1x jaw) ──▶ smelt (2x furnace)     │
+  │   ──▶ iron-stick ──▶ bolts                              │
+  │ copper-ore ──▶ screen (1x) ──▶ crush (1x jaw) ──▶      │
+  │   smelt (1x furnace) ──▶ cable, pcb, vacuum-tube       │
+  │ ore-tin ──▶ screen (1x) ──▶ smelt (1x furnace)         │
+  │   ──▶ solder, capacitor, equipment-chassi               │
+  │ ore-lead ──▶ screen (1x) ──▶ smelt (1x furnace)        │
+  │   ──▶ solder, pbsb-alloy                                │
+  │ 1x titanium──▶ polybutadiene                            │
+  │ 2x zinc    ──▶ battery-mk01                             │
+  │ 4x glass   ──▶ battery, lamp, flask, petri-dish         │
+  │                                                         │
+  │ ANTIMONY (5 bldgs):                                     │
+  │ antimonium-ore ──▶ sb-grade-01 (1x)                     │
+  │ ──▶ sb-grade-02 ──▶ 03 ──▶ 04                          │
+  │ ──▶ sb-oxide ──▶ pbsb-alloy ──▶ batt                    │
+  │ ──▶ fenxsb-alloy ──▶ equipment-chassi                   │
+  └─────────────────────────────────────────────────────────┘
 
   ┌────────────────────────────────────────┐
   │ ELECTRONICS & ASSEMBLY (17 bldgs)      │
@@ -220,9 +229,9 @@ Self-power covers **22 MW / 106 MW (21%)**. Remaining 84 MW must be imported.
   └────────────────────────────────────────┘
 ```
 
-## Recipe tables (Variant B — 209 buildings)
+## Recipe tables (Variant B — 206 buildings)
 
-Solver-validated (simplex, cage-recycled, oil refining variant with `--max-import "raw-coal:600"`). Self-power potential: 22 MW from all byproduct fuels, or ~5 MW if syngas exported. Variant A differences noted in [§ Variant A recipe changes](#variant-a-recipe-changes).
+Solver-validated (simplex, cage-recycled, stone-import, ore crushing, oil refining variant with `--max-import "raw-coal:600"` and `--max-import "copper-ore:55"`). Self-power potential: 22 MW from all byproduct fuels, or ~5 MW if syngas exported. Variant A differences noted in [§ Variant A recipe changes](#variant-a-recipe-changes).
 
 ### Bio — farms & paddocks (102 buildings)
 
@@ -319,23 +328,29 @@ Cage is recycled natively: full-render-vrauks produces 1 cage → caged-vrauks c
 
 Removed vs baseline: `coke-coal` (pitch-refining provides coke). Added: `coal-gas-from-coke` (excess coke from pitch-refining → coal-gas + tar feedback).
 
-### Smelting & metals (30 buildings)
+### Smelting & metals (27 buildings)
 
-Cage recycling slashes metal demand: iron-plate −57%, lead −71%, tin −66%, titanium −83%.
+Cage recycling slashes metal demand: iron-plate −57%, lead −71%, tin −66%, titanium −83%. Ore crushing replaces direct smelting for iron, copper, tin, lead — 25–67% ore savings (see [§ Ore crushing optimization](#ore-crushing-optimization)). Stone-import optimization reduces antimony screening from 6→1 buildings (see [§ Stone-import optimization](#stone-import-optimization)).
 
 | Recipe | Factory | Count | Modules |
 |---|---|---:|---|
-| iron-plate | stone-furnace | 3 (2.03) | |
-| copper-plate | stone-furnace | 2 (1.57) | |
-| lead-plate-1 | stone-furnace | 2 (1.77) | |
-| tin-plate-1 | stone-furnace | 2 (1.73) | |
+| grade-1-iron-crush | jaw-crusher | 1 (0.41) | |
+| low-grade-smelting-iron | stone-furnace | 2 (1.22) | |
+| grade-2-copper | automated-screener-mk01 | 1 (0.47) | |
+| grade-1-copper-crush | jaw-crusher | 1 (0.23) | |
+| copper-plate-4 | stone-furnace | 1 (0.16) | |
+| grade-1-tin | automated-screener-mk01 | 1 (0.52) | |
+| tin-plate-2 | stone-furnace | 1 (0.58) | |
+| grade-1-lead | automated-screener-mk01 | 1 (0.21) | |
+| lead-plate-2 | stone-furnace | 1 (0.71) | |
 | zinc-plate-1 | stone-furnace | 2 (1.21) | |
 | titanium-plate-1 | stone-furnace | 1 (0.73) | |
 | nexelit-plate-2 | stone-furnace | 1 (0.03) | |
 | clean-nexelit | washer | 1 (0.22) | |
 | glass-1 | glassworks-mk01 | 4 (3.75) | |
 | molten-glass | glassworks-mk01 | 1 (0.06) | |
-| sb-grade-01 | automated-screener-mk01 | 6 (5.25) | |
+| sb-grade-01 | automated-screener-mk01 | 1 (0.22) | |
+| sb-grade-02 | jaw-crusher | 1 (0.22) | |
 | sb-grade-03 | automated-screener-mk01 | 1 (0.56) | |
 | sb-grade-04 | secondary-crusher-mk01 | 1 (0.05) | |
 | sb-oxide-01 | bof-mk01 | 1 (0.32) | |
@@ -380,7 +395,7 @@ Cage recycling slashes metal demand: iron-plate −57%, lead −71%, tin −66%,
 | lens | glassworks-mk01 | 1 (0.03) | |
 | logistic-science-pack | research-center-mk01 | 1 (0.75) | |
 
-## Variant A recipe changes (206 buildings)
+## Variant A recipe changes (202 buildings)
 
 Bio, urea, battery, and electronics sections are identical to Variant B. Only Coal & tar and Smelting differ.
 
@@ -401,13 +416,14 @@ Bio, urea, battery, and electronics sections are identical to Variant B. Only Co
 
 vs Variant B: +2 distilled-raw-coal, +1 coal-gas, −1 syngas, −4 oil recipes (pitch-refining, tar-refining-tops, light-oil-aromatics, coal-gas-from-coke). Net: −2 buildings.
 
-### Smelting & metals (28 buildings)
+### Smelting & metals (25 buildings)
 
-Iron demand eliminated — iron-oxide from sb-grade-01 (probability output) covers all iron needs via iron-oxide-smelting. No iron-ore imports.
+Iron-oxide from distilled-raw-coal + coal-gas covers most iron demand via iron-oxide-smelting. Small 0.25/s iron-ore supplement via iron-plate. Stone-import reduces sb-grade-01 from 6→1 and adds sb-grade-02 crusher. Ore crushing not yet validated for Variant A — copper/tin/lead still use direct smelting.
 
 | Recipe | Factory | Count |
 |---|---|---:|
-| **iron-oxide-smelting** | stone-furnace | 1 (0.07) |
+| **iron-oxide-smelting** | stone-furnace | 1 |
+| **iron-plate** | stone-furnace | 1 (0.40) |
 | copper-plate | stone-furnace | 2 (1.57) |
 | lead-plate-1 | stone-furnace | 2 (1.77) |
 | tin-plate-1 | stone-furnace | 2 (1.73) |
@@ -417,14 +433,15 @@ Iron demand eliminated — iron-oxide from sb-grade-01 (probability output) cove
 | clean-nexelit | washer | 1 (0.22) |
 | glass-1 | glassworks-mk01 | 4 (3.75) |
 | molten-glass | glassworks-mk01 | 1 (0.06) |
-| sb-grade-01 | automated-screener-mk01 | 6 (5.25) |
+| sb-grade-01 | automated-screener-mk01 | 1 (0.22) |
+| sb-grade-02 | jaw-crusher | 1 (0.22) |
 | sb-grade-03 | automated-screener-mk01 | 1 (0.56) |
 | sb-grade-04 | secondary-crusher-mk01 | 1 (0.05) |
 | sb-oxide-01 | bof-mk01 | 1 (0.32) |
 | pbsb-alloy | smelter-mk01 | 1 (0.27) |
 | fenxsb-alloy-2 | smelter-mk01 | 1 (0.10) |
 
-vs Variant B: iron-plate eliminated (0→3), +1 iron-oxide-smelting. Net: −2 buildings.
+vs Variant B: no ore crushing (not yet validated), +iron-oxide-smelting, +iron-plate supplement.
 
 ### Variant A imports
 
@@ -433,8 +450,8 @@ vs Variant B: iron-plate eliminated (0→3), +1 iron-oxide-smelting. Net: −2 b
 | water | 566.68 |
 | steam | 41.71 |
 | raw-coal | 16.41 |
-| antimonium-ore | 10.50 |
 | ore-quartz | 4.50 |
+| stone | 2.00 |
 | native-flora | 1.57 |
 | copper-ore | 1.25 |
 | ore-lead | 1.06 |
@@ -442,16 +459,17 @@ vs Variant B: iron-plate eliminated (0→3), +1 iron-oxide-smelting. Net: −2 b
 | ore-zinc | 0.81 |
 | water-barrel | 0.80 |
 | ore-titanium | 0.49 |
+| antimonium-ore | 0.43 |
+| iron-ore | 0.25 |
 | nexelit-ore | 0.22 |
 | raw-borax | 0.03 |
-| **iron-ore** | **0** |
 
 ### Variant A byproducts
 
 | Byproduct | /s | Notes |
 |---|---:|---|
 | coal-gas | 97.76 | primary fuel source (19.55 MW) |
-| flue-gas | 56.56 | — |
+| flue-gas | 56.56 | no consumer; retrofit after filtration tech |
 | steam | 48.61 | — |
 | pitch | 18.15 | waste |
 | oxygen | 5.06 | — |
@@ -460,12 +478,13 @@ vs Variant B: iron-plate eliminated (0→3), +1 iron-oxide-smelting. Net: −2 b
 | sand | 3.61 | — |
 | carbon-dioxide | 3.22 | — |
 | creosote | 2.72 | — |
-| sb-grade-01/02 | 7.84 | — |
 | ash | 0.80 | — |
 | ammonia | 0.81 | — |
-| iron-oxide | 0.25 | excess (not consumed) |
+| coarse | 0.83 | from soil-separation-2; process with 1 classifier (see [§ Coarse processing](#coarse-processing)) |
+| gravel | 0.17 | phantom from sb-grade-03 (excluded from solver) |
+| iron-oxide | 0.12 | phantom from sb-grade-01 (excluded from solver) |
 
-Variant A trades zero iron-ore for higher raw-coal (16.41 vs 5.37) and higher coal-gas/pitch/middle-oil waste vs Variant B.
+Variant A trades small iron-ore import (0.25/s) for higher raw-coal (16.41 vs 5.37) and higher coal-gas/pitch/middle-oil waste vs Variant B.
 
 ## Intermediate flows (Variant B)
 
@@ -494,21 +513,32 @@ All rates /s. Cage-recycled baseline.
 | polybutadiene | 4.86 | cracker | rubber-01 |
 | naphthalene-oil | 3.96 | pitch-refining (2.33) + tar-refining-tops (1.63) | *none (void)* |
 | light-oil | 3.14 | pitch-refining (2.33) + tar-refining-tops (0.82) | light-oil-aromatics (3.14) |
-| sb-grade-02 | 3.15 | sb-grade-01 | sb-grade-03 |
+| sb-grade-02 | 0.56 | sb-grade-01 (0.13) + sb-grade-02 (0.43) | sb-grade-03 |
 | middle-oil | 2.49 | tar-refining | tar-refining-tops (1.63) |
-| stone | 2.10 | sb-grade-01 | sodium-alginate, Moss-2 |
+| sb-grade-01 | 0.22 | sb-grade-01 | sb-grade-02 |
 | ralesia-seeds | 2.02 | botanical-nursery | bio-sample01, caged-cottongut-1, cottongut-cub-1, ralesia-1 |
 | blood | 2.00 | full-render-cottongut | animal-sample-01 |
 | creosote | 1.99 | tar-refining | treated-wood (0.39) |
 | boric-acid | 1.94 | electrolyzer | boron-trioxide |
-| coal | 1.61 | distilled-raw-coal | smelting fuel (all furnaces) |
-| ash | 1.56 | smelting + syngas + coal-gas-from-coke | *none (void)* |
+| coal | 1.61 | distilled-raw-coal | smelting fuel (furnaces + stopper) |
+| ash | 1.34 | smelting + syngas + coal-gas-from-coke | *none (void)* |
 | pressured-air | 1.47 | pump | zogna-bacteria |
 | subcritical-water | 1.39 | heat-exchanger | depolymerized-organics |
 | ralesia | 1.27 | ralesia-1 | ralesia-seeds |
 | moss | 1.21 | Moss-2 | vrauks-cocoon, auog, vrauks-1, etc. |
 | coke | 1.16 | pitch-refining | graphite, resistor1, boron-trioxide, **coal-gas-from-coke (0.93)** |
 | seaweed | 1.04 | seaweed-1 | sodium-alginate, agar |
+
+### Ore crushing intermediates (Variant B)
+
+| Item | /s | Produced by | Consumed by |
+|---|---:|---|---|
+| processed-iron-ore | 0.61 | grade-1-iron-crush | low-grade-smelting-iron |
+| grade-2-copper | 0.39 | grade-2-copper screener (0.31) + grade-1-copper-crush (0.08) | copper-plate-4 |
+| grade-1-copper | 0.16 | grade-2-copper screener | grade-1-copper-crush |
+| grade-1-tin | 0.17 | grade-1-tin screener | tin-plate-2 |
+| grade-2-tin | 0.09 | grade-1-tin screener | *none (waste)* |
+| grade-1-lead | 0.07 | grade-1-lead screener | lead-plate-2 |
 
 ### Key changes from cage recycling
 
@@ -529,17 +559,18 @@ All raw mined resources — no processed items. See [§ Variant A imports](#vari
 |---|---:|
 | water | 626.64 |
 | steam | 50.32 (gross; net ~1.71 after polybutadiene steam) |
-| antimonium-ore | 10.50 |
 | raw-coal | 5.37 |
 | ore-quartz | 4.50 |
-| iron-ore | 1.63 |
+| stone | 1.64 |
 | native-flora | 1.57 |
-| copper-ore | 1.25 |
-| ore-tin | 1.15 |
-| ore-lead | 1.06 |
+| iron-ore | 1.02 |
+| ore-tin | 0.87 |
 | ore-zinc | 0.81 |
 | water-barrel | 0.80 |
+| copper-ore | 0.78 |
 | ore-titanium | 0.49 |
+| antimonium-ore | 0.43 |
+| ore-lead | 0.35 |
 | nexelit-ore | 0.22 |
 | raw-borax | 0.03 |
 
@@ -557,54 +588,76 @@ Variant A has no syngas export — only logistic-science-pack.
 | Byproduct | /s | Notes |
 |---|---:|---|
 | steam | 48.61 | from polybutadiene (→ cooling-tower) |
-| flue-gas | 40.84 | from smelting |
-| sb-grade-01 | 5.25 | antimony screening waste |
+| flue-gas | 40.84 | from smelting; no consumer; retrofit after filtration tech |
 | oxygen | 4.48 | from electrolysis |
 | naphthalene-oil | 3.96 | from pitch-refining + tar-refining-tops |
 | sand | 3.61 | from soil-separation-2 |
-| sb-grade-02 | 2.59 | antimony screening waste |
 | creosote | 1.61 | from tar-refining |
 | gasoline | 1.57 | from light-oil-aromatics (fuel) |
-| ash | 1.56 | from smelting + syngas |
+| ash | 1.34 | from smelting + syngas (lower than baseline: 4 fewer furnaces) |
 | blood | 1.17 | excess from full-render-cottongut |
+| coal | 0.93 | excess (fuel); higher than baseline: 4 fewer furnaces consuming coal |
 | middle-oil | 0.86 | residual |
+| coarse | 0.83 | from soil-separation-2; process with 1 classifier (see [§ Coarse processing](#coarse-processing)) |
 | carbolic-oil | 0.82 | from tar-refining-tops |
 | ammonia | 0.81 | from urea decomposition |
-| coal | 0.71 | excess (fuel) |
-| iron-oxide | 0.42 | excess from sb-grade-01 |
-| coarse | 0.83 | from soil-separation-2 |
+| gravel | 0.17 | phantom from sb-grade-03 (excluded from solver) |
+| iron-oxide | 0.12 | phantom from sb-grade-01 (excluded from solver) |
+| grade-2-tin | 0.09 | from tin screening; no crusher used (see [§ Ore crushing optimization](#ore-crushing-optimization)) |
+| clean-nexelit | 0.06 | excess from muddy-sludge scaling |
 
-Major waste streams eliminated: coal-gas (100% consumed), pitch (100% consumed). Remaining byproducts are either fuel-capable (gasoline, coal, creosote) or must be voided.
+**Phantom byproducts from ore crushing:** stone ~0.36/s (from grade-1-iron-crush + grade-1-copper-crush, excluded from solver but physically produced in-game). Supplements stone import or buffers.
+
+Major waste streams eliminated: coal-gas (100% consumed), pitch (100% consumed), sb-grade-01/02 (100% consumed via stone-import optimization). Remaining byproducts are either fuel-capable (gasoline, coal, creosote) or must be voided.
 
 ## Key design decisions
 
 - **Urea cycle closes without dedicated muddy-sludge recipe.** LP scales up clean-nexelit production to get enough muddy-sludge as a byproduct. The urea demand is driven by cyanic-acid for batteries (0.81/s), not melamine (0.05/s).
 - **Cage recycling is net-zero.** The vrauks loop (caged-vrauks → vrauks-1 → vrauks-cocoon-1 → full-render-vrauks → cage output → caged-vrauks) recycles cage at 0.058/s with no loss. No cage recipe needed, no `full-render-vrauks:cage:exclude` constraint needed. Saves 18 buildings in smelting (iron −57%, lead −71%, tin −66%, titanium −83%) because cage consumed iron-stick, titanium-plate, and solder.
-- **Bio modules are the dominant factor.** Without modules: 1000+ buildings. With mk01 modules: 209. The 5-21x speed multiplier on farms dwarfs the mk01-mk04 building tier difference.
+- **Bio modules are the dominant factor.** Without modules: 1000+ buildings. With mk01 modules: 206. The 5-21x speed multiplier on farms dwarfs the mk01-mk04 building tier difference.
 - **Growth cycles self-sustaining.** Cottongut, wood, ralesia, moondrop seed loops are all net-positive. No seed imports needed.
-- **One solver constraint required:**
+- **Seven solver constraints required:**
   - `melamine:carbon-dioxide:exclude` — prevents melamine CO2 from feeding back into the urea cycle
-- **Variant A eliminates iron-ore imports entirely.** With cage removed, iron demand is so low (only bolts, iron-gear-wheel, vacuum-tube, fenxsb-alloy, small-lamp) that iron-oxide from sb-grade-01's probability output covers it via iron-oxide-smelting. No iron-plate furnaces needed, no iron-ore mining.
+  - `sb-grade-01:stone:exclude` — prevents LP from using antimony screening as a stone source (see [§ Stone-import optimization](#stone-import-optimization))
+  - `sb-grade-02:stone:exclude` — same, for the crusher recipe
+  - `sb-grade-03:gravel:exclude` — prevents LP from using sb-grade-03 as a gravel source
+  - `grade-1-iron-crush:stone:exclude` — prevents LP from scaling iron crushing as a stone source (see [§ Ore crushing optimization](#ore-crushing-optimization))
+  - `grade-1-copper-crush:stone:exclude` — same, for copper crushing
+  - `grade-2-crush-tin:stone:exclude` — same, for tin crushing
+- **Two max-import caps (Variant B):**
+  - `--max-import "raw-coal:600"` — forces internal coal-gas recycling
+  - `--max-import "copper-ore:55"` — forces copper crushing (screening-only needs 58.71/60s, exceeding cap)
+- **Ore crushing replaces direct smelting for iron, copper, tin, lead.** Screening → crushing → smelting gives 25–67% ore savings over direct smelting at +1 building (26→27). Stone byproduct excluded from solver to prevent LP stone-source exploitation. See [§ Ore crushing optimization](#ore-crushing-optimization).
+- **Stone-import optimization eliminates sb-grade waste.** The LP was running 5.25 screeners for stone demand (Moss-2 + sodium-alginate), not antimony demand. Excluding stone/gravel from antimony recipe products forces stone import (1.64/s with ore crushing) and drops screening to 0.22x — the exact rate needed for sb-grade-04 production. All sb-grade-01/02 consumed internally. See [§ Stone-import optimization](#stone-import-optimization).
+- **Variant A uses iron-oxide-smelting for most iron.** Iron-oxide from distilled-raw-coal + coal-gas covers most iron demand. A small 0.25/s iron-ore supplement is needed because sb-grade-01 screening (now at 0.22x, not 5.25x) provides far less iron-oxide.
 - **Pitch-refining replaces coke-coal (Variant B).** Pitch-refining (design 03/05 pattern) converts pitch waste into coke + hydrogen + light-oil + anthracene-oil. The hydrogen from pitch-refining reduces the electrolyzer from 100% to 61% utilization.
 - **coal-gas-from-coke completes the coke loop (Variant B).** Excess coke from pitch-refining feeds coal-gas-from-coke (distilator), producing additional coal-gas + tar. This recipe was previously unused by the LP but activates with cage recycling because the reduced coke demand creates an excess.
 - **Syngas conversion captures coal-gas value (Variant B).** Coal-gas routed through syngas recipe (50 coal-gas + 100 water → 70 syngas + 30 tar + 1 ash). The syngas (43/s) exports as bus fuel (0.4 MJ/unit). Tar feedback reduces distilled-raw-coal to 2 buildings.
 - **Raw-coal 67% reduction via `--max-import "raw-coal:600"` (Variant B).** Without the cap, the LP wastes coal-gas rather than processing it. The raw-coal cap forces recycling (5.37/s raw-coal).
 - **Self-power at 21% from byproducts.** ~22 MW from byproduct fuels. Remaining ~84 MW imported.
-- **Iron-oxide-smelting is incompatible with oil refining in the LP.** When both are present, the LP scales sb-grade-01 +45% to source iron-oxide. Choose one: oil refining for byproduct elimination (Variant B), or iron recycling for iron-ore elimination (Variant A).
+- **Iron-oxide-smelting is incompatible with oil refining in the LP.** When both are present without stone-import, the LP scales sb-grade-01 +45% to source iron-oxide. Choose one: oil refining for byproduct elimination (Variant B), or iron recycling for iron-ore reduction (Variant A).
 - **Cooling-water (cooling-tower-mk01) for steam recovery.** polybutadiene produces 48.61/s excess steam. Route through cooling-water (400 steam → 400 water@100°C, 1 tower) to recover ~48/s water. Not in solver — the LP abuses it.
-- **coarse-classification causes LP infeasibility.** Adding coarse-classification (classifier, 20 coarse → 5 stone + 2 iron-oxide + 4 gravel) causes simplex Phase 1 infeasibility.
+- **coarse-classification handled manually.** Adding coarse-classification to the solver causes LP infeasibility, but 1 classifier at 4% utilization handles 0.83/s coarse outside the solver (see [§ Coarse processing](#coarse-processing)).
+- **Flue-gas: no consumer at current tech.** fluegas-filtration and fluegas-to-syngas require `filtration` tech, which costs logistic-science-pack — bootstrap problem. Initial build must vent; retrofit after research.
 
 ## Solver commands
 
-### Variant B — max recycling (209 buildings)
+### Variant B — max recycling (206 buildings)
 
-Oil refining variant with pitch-refining + tar-refining-tops + light-oil-aromatics + coal-gas-from-coke and raw-coal cap. Cage-recycled (no cage recipe, no cage exclude constraint).
+Oil refining variant with pitch-refining + tar-refining-tops + light-oil-aromatics + coal-gas-from-coke, raw-coal cap, copper-ore cap, and ore crushing for iron/copper/tin/lead. Cage-recycled (no cage recipe, no cage exclude constraint). Stone-import (sb-grade stone/gravel excluded). Ore crushing (stone excluded from all crushing recipes).
 
 ```bash
 npx tsx src/cli.ts solve \
-  --recipes "logistic-science-pack,battery-mk01,animal-sample-01,alien-sample01,cottongut-science-red-seeds,pbsb-alloy,sb-oxide-01,sb-grade-01,sb-grade-02,sb-grade-03,sb-grade-04,melamine,urea-decomposition,graphite,bolts,iron-stick,glass-1,molten-glass,zinc-plate-1,lead-plate-1,aromatics-to-plastic,syngas,distilled-raw-coal,tar-distilation,hydrogen,ground-sample01,rich-clay,soil,electronic-circuit-2,capacitor1,inductor1,resistor1,pcb1,vacuum-tube,solder-0,tin-plate-1,ceramic,clay,formica,treated-wood,fiber-01,methanal,vacuum,pressured-air,plasmids,flask,stopper,lab-instrument,equipment-chassi,fenxsb-alloy-2,lens,small-parts-01,iron-gear-wheel,copper-cable,small-lamp,petri-dish-bacteria,petri-dish,empty-petri-dish,agar,zogna-bacteria,rubber-01,carbon-black,polybutadiene,latex,latex-slab,sodium-alginate,creamy-latex,boron-trioxide,boric-acid,diborane,borax-washing,iron-plate,copper-plate,titanium-plate-1,steel-plate,nexelit-plate-2,clean-nexelit,seaweed-1,sap-01,tar-refining,bio-sample01,bone-to-bonemeal-2,full-render-cottongut,full-render-vrauks,caged-vrauks,vrauks-1,vrauks-cocoon-1,fawogae-substrate,cellulose-00,depolymerized-organics,fawogae-1,fawogae-spore,pressured-water,extract-limestone-01,soil-separation-2,subcritical-water-01,Moss-2,methane-co2,liquid-manure,auog-pooping-1,urea-from-liquid-manure,caged-cottongut-1,cottongut-cub-1,log-wood-fast,log2,wood-seedling,wood-seeds,ralesia-1,ralesia-seeds,moondrop-1,moondrop-seeds,pitch-refining,tar-refining-tops,light-oil-aromatics,naphthalene-oil-creosote,carbolic-oil-creosote,anthracene-gasoline-cracking,coal-gas-from-coke" \
+  --recipes "logistic-science-pack,battery-mk01,animal-sample-01,alien-sample01,cottongut-science-red-seeds,pbsb-alloy,sb-oxide-01,sb-grade-01,sb-grade-02,sb-grade-03,sb-grade-04,melamine,urea-decomposition,graphite,bolts,iron-stick,glass-1,molten-glass,zinc-plate-1,aromatics-to-plastic,syngas,distilled-raw-coal,tar-distilation,hydrogen,ground-sample01,rich-clay,soil,electronic-circuit-2,capacitor1,inductor1,resistor1,pcb1,vacuum-tube,solder-0,ceramic,clay,formica,treated-wood,fiber-01,methanal,vacuum,pressured-air,plasmids,flask,stopper,lab-instrument,equipment-chassi,fenxsb-alloy-2,lens,small-parts-01,iron-gear-wheel,copper-cable,small-lamp,petri-dish-bacteria,petri-dish,empty-petri-dish,agar,zogna-bacteria,rubber-01,carbon-black,polybutadiene,latex,latex-slab,sodium-alginate,creamy-latex,boron-trioxide,boric-acid,diborane,borax-washing,iron-plate,copper-plate,titanium-plate-1,steel-plate,nexelit-plate-2,clean-nexelit,seaweed-1,sap-01,tar-refining,bio-sample01,bone-to-bonemeal-2,full-render-cottongut,full-render-vrauks,caged-vrauks,vrauks-1,vrauks-cocoon-1,fawogae-substrate,cellulose-00,depolymerized-organics,fawogae-1,fawogae-spore,pressured-water,extract-limestone-01,soil-separation-2,subcritical-water-01,Moss-2,methane-co2,liquid-manure,auog-pooping-1,urea-from-liquid-manure,caged-cottongut-1,cottongut-cub-1,log-wood-fast,log2,wood-seedling,wood-seeds,ralesia-1,ralesia-seeds,moondrop-1,moondrop-seeds,pitch-refining,tar-refining-tops,light-oil-aromatics,naphthalene-oil-creosote,carbolic-oil-creosote,anthracene-gasoline-cracking,coal-gas-from-coke,tin-plate-1,lead-plate-1,grade-1-iron-crush,low-grade-smelting-iron,grade-2-copper,grade-1-copper-crush,copper-plate-4,grade-1-tin,grade-2-crush-tin,tin-plate-2,grade-1-lead,lead-plate-2" \
   --constraint "melamine:carbon-dioxide:exclude" \
+  --constraint "sb-grade-01:stone:exclude" \
+  --constraint "sb-grade-02:stone:exclude" \
+  --constraint "sb-grade-03:gravel:exclude" \
+  --constraint "grade-1-iron-crush:stone:exclude" \
+  --constraint "grade-1-copper-crush:stone:exclude" \
+  --constraint "grade-2-crush-tin:stone:exclude" \
   --max-import "raw-coal:600" \
+  --max-import "copper-ore:55" \
   --target "logistic-science-pack:6" --time 60 \
   --solver simplex --unlocked \
   --factory "logistic-science-pack:research-center-mk01" \
@@ -626,7 +679,6 @@ npx tsx src/cli.ts solve \
   --factory "glass-1:glassworks-mk01" \
   --factory "molten-glass:glassworks-mk01" \
   --factory "zinc-plate-1:stone-furnace" \
-  --factory "lead-plate-1:stone-furnace" \
   --factory "aromatics-to-plastic:biofactory-mk01" \
   --factory "syngas:gasifier" \
   --factory "distilled-raw-coal:distilator" \
@@ -642,7 +694,6 @@ npx tsx src/cli.ts solve \
   --factory "pcb1:pcb-factory-mk01" \
   --factory "vacuum-tube:electronics-factory-mk01" \
   --factory "solder-0:automated-factory-mk01" \
-  --factory "tin-plate-1:stone-furnace" \
   --factory "ceramic:hpf" \
   --factory "clay:clay-pit-mk01" \
   --factory "formica:pulp-mill-mk01" \
@@ -725,6 +776,18 @@ npx tsx src/cli.ts solve \
   --factory "carbolic-oil-creosote:tar-processing-unit" \
   --factory "anthracene-gasoline-cracking:distilator" \
   --factory "coal-gas-from-coke:distilator" \
+  --factory "tin-plate-1:stone-furnace" \
+  --factory "lead-plate-1:stone-furnace" \
+  --factory "grade-1-iron-crush:jaw-crusher" \
+  --factory "low-grade-smelting-iron:stone-furnace" \
+  --factory "grade-2-copper:automated-screener-mk01" \
+  --factory "grade-1-copper-crush:jaw-crusher" \
+  --factory "copper-plate-4:stone-furnace" \
+  --factory "grade-1-tin:automated-screener-mk01" \
+  --factory "grade-2-crush-tin:jaw-crusher" \
+  --factory "tin-plate-2:stone-furnace" \
+  --factory "grade-1-lead:automated-screener-mk01" \
+  --factory "lead-plate-2:stone-furnace" \
   --modules "seaweed-1:seaweed:10" \
   --modules "sap-01:sap-tree:2" \
   --modules "vrauks-1:vrauks:10" \
@@ -744,15 +807,20 @@ Additional recipes available in the solver but not used by the LP (included for 
 - `naphthalene-oil-creosote` — LP prefers exporting naphthalene-oil (could burn for 0.30 MJ/unit)
 - `carbolic-oil-creosote` — LP prefers exporting carbolic-oil (could burn for 0.35 MJ/unit)
 - `anthracene-gasoline-cracking` — LP uses carbon-black for anthracene-oil instead
+- `iron-plate`, `copper-plate`, `tin-plate-1`, `lead-plate-1` — replaced by ore crushing paths (LP sets count to 0)
+- `grade-2-crush-tin` — LP doesn't use tin crusher (0.09/s grade-2-tin waste not worth 1 building)
 
-### Variant A — LP-optimized (206 buildings)
+### Variant A — LP-optimized (202 buildings)
 
-Iron recycling variant: baseline recipes + coal-gas + iron-oxide-smelting, no raw-coal cap, no oil refining. Cage-recycled (no cage recipe, no cage exclude constraint). Do NOT combine with Variant B oil refining recipes — causes +45% antimonium-ore scaling (see [§ Why the variants can't be combined](#why-the-variants-cant-be-combined)).
+Iron recycling variant: baseline recipes + coal-gas + iron-oxide-smelting, no raw-coal cap, no oil refining. Cage-recycled (no cage recipe, no cage exclude constraint). Stone-import (sb-grade stone/gravel excluded). Do NOT combine with Variant B oil refining recipes — causes +45% antimonium-ore scaling (see [§ Why the variants can't be combined](#why-the-variants-cant-be-combined)).
 
 ```bash
 npx tsx src/cli.ts solve \
   --recipes "logistic-science-pack,battery-mk01,animal-sample-01,alien-sample01,cottongut-science-red-seeds,pbsb-alloy,sb-oxide-01,sb-grade-01,sb-grade-02,sb-grade-03,sb-grade-04,melamine,urea-decomposition,graphite,coke-coal,bolts,iron-stick,glass-1,molten-glass,zinc-plate-1,lead-plate-1,aromatics-to-plastic,syngas,distilled-raw-coal,tar-distilation,hydrogen,ground-sample01,rich-clay,soil,electronic-circuit-2,capacitor1,inductor1,resistor1,pcb1,vacuum-tube,solder-0,tin-plate-1,ceramic,clay,formica,treated-wood,fiber-01,methanal,vacuum,pressured-air,plasmids,flask,stopper,lab-instrument,equipment-chassi,fenxsb-alloy-2,lens,small-parts-01,iron-gear-wheel,copper-cable,small-lamp,petri-dish-bacteria,petri-dish,empty-petri-dish,agar,zogna-bacteria,rubber-01,carbon-black,polybutadiene,latex,latex-slab,sodium-alginate,creamy-latex,boron-trioxide,boric-acid,diborane,borax-washing,iron-plate,copper-plate,titanium-plate-1,steel-plate,nexelit-plate-2,clean-nexelit,seaweed-1,sap-01,tar-refining,bio-sample01,bone-to-bonemeal-2,full-render-cottongut,full-render-vrauks,caged-vrauks,vrauks-1,vrauks-cocoon-1,fawogae-substrate,cellulose-00,depolymerized-organics,fawogae-1,fawogae-spore,pressured-water,extract-limestone-01,soil-separation-2,subcritical-water-01,Moss-2,methane-co2,liquid-manure,auog-pooping-1,urea-from-liquid-manure,caged-cottongut-1,cottongut-cub-1,log-wood-fast,log2,wood-seedling,wood-seeds,ralesia-1,ralesia-seeds,moondrop-1,moondrop-seeds,coal-gas,coal-gas-from-coke,iron-oxide-smelting,sand-void-glass" \
   --constraint "melamine:carbon-dioxide:exclude" \
+  --constraint "sb-grade-01:stone:exclude" \
+  --constraint "sb-grade-02:stone:exclude" \
+  --constraint "sb-grade-03:gravel:exclude" \
   --target "logistic-science-pack:6" --time 60 \
   --solver simplex --unlocked \
   --factory "logistic-science-pack:research-center-mk01" \
@@ -885,7 +953,7 @@ npx tsx src/cli.ts solve \
   --modules "moondrop-1:moondrop:16"
 ```
 
-Key differences from Variant B: +coal-gas, +coal-gas-from-coke, +iron-oxide-smelting, +sand-void-glass, +coke-coal; −pitch-refining, −tar-refining-tops, −light-oil-aromatics, −naphthalene-oil-creosote, −carbolic-oil-creosote, −anthracene-gasoline-cracking, −coal-gas-from-coke; no `--max-import`, no `--constraint "full-render-vrauks:cage:exclude"`.
+Key differences from Variant B: +coal-gas, +coal-gas-from-coke, +iron-oxide-smelting, +sand-void-glass, +coke-coal; −pitch-refining, −tar-refining-tops, −light-oil-aromatics, −naphthalene-oil-creosote, −carbolic-oil-creosote, −anthracene-gasoline-cracking, −coal-gas-from-coke; no `--max-import`, no ore crushing recipes. Both share the same 4 base constraints (melamine CO2, sb-grade stone/gravel excludes); Variant B adds 3 ore crushing stone excludes + 2 max-import caps. Ore crushing not yet validated for Variant A.
 
 ## Irreducible waste
 
@@ -893,14 +961,17 @@ These byproducts have no consumers at current tech level — voiding is the only
 
 | Byproduct | /s (A) | /s (B) | Why irreducible |
 |---|---:|---:|---|
-| flue-gas | 56.56 | 40.84 | No consumer exists at any tech |
+| flue-gas | 56.56 | 40.84 | No consumer at current tech; `filtration` tech (needs logistic-science-pack) unlocks fluegas-filtration and fluegas-to-syngas — retrofit after research |
 | oxygen | 5.06 | 4.48 | Excess from electrolysis; only consumer is sb-oxide-01 (1.59/s) |
 | sand | 3.61 | 3.61 | From soil-separation-2; no useful consumer at scale |
 | ammonia | 0.81 | 0.81 | From urea-decomposition; no consumer at current tech |
 | blood | 1.17 | 1.17 | Excess from full-render-cottongut; only consumer is animal-sample-01 |
-| sb-grade-01/02 | 7.84 | 7.84 | Antimony screening waste; partially consumed by sb-grade-03 |
-| coarse | 0.83 | 0.83 | From soil-separation-2; coarse-classification causes LP infeasibility |
-| iron-oxide | 0.25 | 0.42 | Excess from sb-grade-01 probability output |
+| coarse | 0.83 | 0.83 | From soil-separation-2; processed by 1 classifier (see [§ Coarse processing](#coarse-processing)) |
+| gravel | 0.17 | 0.17 | Phantom from sb-grade-03 (excluded from solver); negligible |
+| iron-oxide | 0.12 | 0.12 | Phantom from sb-grade-01 (excluded from solver); negligible |
+| grade-2-tin | — | 0.09 | From tin screening; LP doesn't use grade-2-crush-tin (1 building not worth 0.09/s ore savings) |
+
+**Eliminated by stone-import optimization:** sb-grade-01/02 (was 7.84/s combined). All sb-grade intermediates now fully consumed internally — see [§ Stone-import optimization](#stone-import-optimization).
 
 ## Rejected optimizations
 
@@ -911,25 +982,94 @@ Investigated and rejected during design:
 | **Dedicated cage recipe** | Cage loop is net-zero (1 in → 1 out from vrauks rendering). Removing saves 18 smelting buildings |
 | **stopper-2** (rubber) vs stopper (coal+latex) | stopper-2 is more expensive — rubber costs more to produce than coal+latex at current scale |
 | **sand-void-glass** (5 sand + 4 ore-quartz → 10 molten-glass) | LP includes it in recipe list but doesn't use it — glass-1 (6 ore-quartz → 10 molten-glass) is cheaper because sand is free to void |
-| **coarse-classification** (20 coarse → 5 stone + 2 iron-oxide + 4 gravel) | Causes LP Phase 1 infeasibility when added to recipe set. Factory is `classifier` not `classifier-mk01` |
+| **coarse-classification in solver** | Causes LP Phase 1 infeasibility when added to recipe set. Handled manually with 1 classifier instead (see [§ Coarse processing](#coarse-processing)) |
 | **Combined Variant A + B** | Three test runs all failed — see [§ Why the variants can't be combined](#why-the-variants-cant-be-combined) |
 | **Full self-power from raw-coal** | Would need ~57/s additional raw-coal, worse than baseline total. Byproduct self-power (~22 MW) is sufficient |
 | **wpu-mk01-turd** | Not available — must use wpu-mk01 for wood processing |
+| **Zinc ore crushing** | zinc-plate-1 recipe has 3.33:1 ore ratio via crushing, but needs iron-stick input — adds iron demand complexity |
+| **Titanium ore crushing** | 4-step crushing chain produces gravel (another stone-source exploit risk), and the 1.875:1 ratio savings don't justify 4 extra buildings at this scale (only 1 titanium furnace) |
+| **Tin crusher (grade-2-crush-tin)** | LP doesn't use it — 0.09/s grade-2-tin waste isn't worth 1 building for the ore savings. Included in recipe list but LP sets count to 0 |
 
 ## Design notes for block layout
 
 - **cooling-tower-mk01**: place 1 after polybutadiene's steam output, converts 48.61/s excess steam → water@100°C. Reduces water import by ~8%. ~0.8 kW power draw. Not in solver — LP abuses it to replace all water imports with steam imports.
 - **Byproduct fuels for self-power** (oil-boiler-mk01 eff 2 + steam engine eff 0.5, net MW = rate × fuel_value):
-  - Variant B burn all: syngas 17.28 + gasoline 1.88 + naphthalene-oil 1.19 + carbolic-oil 0.29 + middle-oil 0.17 + coal 1.42 (solid boiler eff 1) = **22 MW** (21% of 106 MW)
-  - Variant B export syngas, burn rest: 22 − 17.28 = **~5 MW** (5% of 106 MW)
-  - Variant A: coal-gas 19.55 + coal 7.46 + creosote 0.95 + middle-oil 0.78 = **~29 MW** (27% of 107 MW), no syngas export
+  - Variant B burn all: syngas 17.28 + gasoline 1.88 + naphthalene-oil 1.19 + carbolic-oil 0.29 + middle-oil 0.17 + coal 1.42 (solid boiler eff 1) = **22 MW** (21% of 105 MW)
+  - Variant B export syngas, burn rest: 22 − 17.28 = **~5 MW** (5% of 105 MW)
+  - Variant A: coal-gas 19.55 + coal 7.46 + creosote 0.95 + middle-oil 0.78 = **~29 MW** (28% of 105 MW), no syngas export
   - Syngas (43/s, Variant B only) is more valuable as bus fuel export than burned locally
-- **Flue-gas**: no consumer exists. Exhaust pipe void only.
+- **Flue-gas**: no consumer at current tech. Exhaust pipe void only. Retrofit with fluegas-filtration after `filtration` tech is researched (requires logistic-science-pack).
 - **Sand**: 3.61/s excess. sand-void-glass available but LP doesn't use it (voiding sand is cheaper than the ore-quartz savings).
+- **Coarse-classification**: 1 classifier outside solver, 4% utilization. See [§ Coarse processing](#coarse-processing).
+
+## Ore crushing optimization
+
+**Root cause:** Direct smelting recipes are extremely ore-inefficient. Iron: 8 ore → 1 plate (8:1). Copper: 8 ore → 1 plate (8:1). Tin: 40 ore → 4 plates (10:1). Lead: 6 ore → 1 plate (6:1). Crushing/screening paths are dramatically more efficient.
+
+**Crushing paths (Variant B):**
+
+| Metal | Path | Ore:Plate ratio | Savings vs direct |
+|---|---|---:|---:|
+| Iron | grade-1-iron-crush (jaw-crusher) → low-grade-smelting-iron (stone-furnace) | 5:1 | −37% |
+| Copper | grade-2-copper (screener) → grade-1-copper-crush (jaw-crusher) → copper-plate-4 (stone-furnace) | 5:1 | −37% |
+| Tin | grade-1-tin (screener) → tin-plate-2 (stone-furnace) | 3.75:1 | −63% |
+| Lead | grade-1-lead (screener) → lead-plate-2 (stone-furnace) | 2:1 | −67% |
+
+**LP stone-source exploitation pattern:** Every crushing recipe produces stone as a byproduct. Without `stone:exclude` constraints, the LP scales ANY stone-producing recipe to source stone for Moss-2 and sodium-alginate, creating massive waste. This pattern was already seen with antimony screening. The fix is identical: exclude stone from all crushing recipe products. The stone is still physically produced in-game (phantom byproduct ~0.36/s from iron-crush + copper-crush) but the LP can't scale up to source it.
+
+**Forcing copper crushing:** With stone excluded, the LP won't voluntarily use grade-1-copper-crush because the building cost outweighs the marginal ore savings at this scale. The screening-only path needs 58.71/60s copper-ore. Cap at `--max-import "copper-ore:55"` forces the LP to use the full crush path (46.97/60s copper-ore, under cap).
+
+**Tin crusher not used:** The LP doesn't use grade-2-crush-tin (0 buildings). Grade-2-tin (0.09/s) is waste. Using the crusher would save ~0.09/s ore-tin at the cost of 1 building — not worth it.
+
+**Impact (Variant B):**
+
+| Resource | Before crushing | After crushing | Change |
+|---|---:|---:|---|
+| iron-ore | 1.63/s | 1.02/s | −37% |
+| copper-ore | 1.25/s | 0.78/s | −37% |
+| ore-lead | 1.06/s | 0.35/s | −67% |
+| ore-tin | 1.15/s | 0.87/s | −25% |
+| stone | 2.00/s | 1.64/s | −18% (phantom stone from crushing supplements import) |
+| Buildings | 205 | 206 | +1 (26→27 in smelting section) |
+
+## Stone-import optimization
+
+**Root cause:** The LP was running 5.25 screeners (sb-grade-01 recipe) to meet stone demand from Moss-2 (1.52/s) and sodium-alginate (0.58/s). Only 0.93 screeners were needed for actual antimony demand — the other 4.32 (82%) ran purely as a stone source. This created 5.25/s sb-grade-01 and 2.59/s sb-grade-02 as waste.
+
+**Fix:** Three exclude constraints (`sb-grade-01:stone:exclude`, `sb-grade-02:stone:exclude`, `sb-grade-03:gravel:exclude`) prevent the LP from counting stone and gravel as products of antimony recipes. Stone becomes a raw import (1.64/s with ore crushing, 2.0/s without). The antimony chain runs at its natural rate (0.22x screener), perfectly balanced:
+
+```
+antimonium-ore (0.43/s) → sb-grade-01 (0.22/s) → sb-grade-02 crusher (all consumed)
+                                                 → sb-grade-02 (0.56/s, all to sb-grade-03)
+                                                 → sb-grade-03 → sb-grade-04 → sb-oxide
+```
+
+All sb-grade intermediates consumed internally. Zero waste.
+
+**Impact:** −4 buildings, −96% antimonium-ore import, +stone import (1.64/s with ore crushing, 2.0/s without — a basic mined resource). Variant A loses zero-iron-ore property (needs 0.25/s) because iron-oxide from reduced screening drops from 1.05/s to 0.013/s.
+
+**Phantom byproducts:** The antimony recipes still physically produce stone (0.10/s), gravel (0.17/s), and iron-oxide (0.12/s) — these are excluded from the solver but exist in-game. All negligible; box or void.
+
+## Coarse processing
+
+Coarse (0.83/s from soil-separation-2) is processed by 1 classifier (not in solver — causes LP infeasibility when included).
+
+**Recipe:** coarse-classification — 20 coarse → 5 stone + 2 iron-oxide + 4 gravel (1s, classifier)
+
+At 0.83/s coarse input: 0.83/20 = 0.0415 classifiers (4% utilization).
+
+**Products:**
+- stone: 0.21/s → supplements stone import or buffers
+- iron-oxide: 0.08/s → supplements iron-oxide-smelting (Variant A) or void
+- gravel: 0.17/s → can feed stone-to-gravel reverse (4 stone → 3 gravel) or gravel-to-sand if needed
+
+All products are negligible at this scale. The classifier exists to prevent coarse backup, not for meaningful production.
 
 ## TODO
 
+- [ ] Validate ore crushing for Variant A (copper/tin/lead — iron uses iron-oxide-smelting)
 - [ ] Split into 3 blocks (battery/chemistry, bio/farming, assembly)
 - [ ] Block boundary declarations (imports/exports between blocks)
 - [ ] Verify self-power buildings don't significantly change total building count
-- [ ] Choose Variant A or B based on game state (iron-ore elimination vs coal-gas/pitch waste concerns)
+- [ ] Choose Variant A or B based on game state
+- [ ] Retrofit flue-gas processing after filtration tech researched

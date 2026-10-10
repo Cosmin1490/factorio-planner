@@ -785,26 +785,6 @@ function solveSimplexLP(m: SolverMatrix, input: SolveInput): number[] {
     }
   }
 
-  // ── Matrix scaling ──────────────────────────────────────────────────────
-  // Row scaling: normalize each recipe row by its max absolute coefficient.
-  // Without scaling, coefficients span 5+ orders of magnitude (e.g., steam at
-  // 30000/60s vs moondrop-seeds at 0.35/60s), causing numerical blow-up during
-  // Gaussian elimination in the simplex pivots.
-  const rowScale = new Array(numRows).fill(1);
-  for (let r = 0; r < numRows; r++) {
-    let maxAbs = 0;
-    for (let c = 0; c < numCols; c++) {
-      const v = Math.abs(workMatrix[r][c]);
-      if (v > maxAbs) maxAbs = v;
-    }
-    if (maxAbs > 1e-12) {
-      rowScale[r] = maxAbs;
-      for (let c = 0; c < numCols; c++) {
-        workMatrix[r][c] /= maxAbs;
-      }
-    }
-  }
-
   // Identify constrained columns and build RHS
   const constrainedCols: number[] = [];
   const rhs: number[] = [];
@@ -868,6 +848,27 @@ function solveSimplexLP(m: SolverMatrix, input: SolveInput): number[] {
   // but lower than big-M artificial cost (1e8) so Phase 2 uses them when needed
   const maxRecipeCost = Math.max(...recipeCosts, 1);
   const importCost = maxRecipeCost * 100; // strongly prefer recipes over imports
+
+  // ── Matrix scaling ──────────────────────────────────────────────────────
+  // Row scaling: normalize each recipe row by its max absolute coefficient.
+  // Without scaling, coefficients span 5+ orders of magnitude (e.g., steam at
+  // 30000/60s vs moondrop-seeds at 0.35/60s), causing numerical blow-up during
+  // Gaussian elimination in the simplex pivots.
+  // Applied AFTER constraint identification so hasProducer checks use unscaled values.
+  const rowScale = new Array(numRows).fill(1);
+  for (let r = 0; r < numRows; r++) {
+    let maxAbs = 0;
+    for (let c = 0; c < numCols; c++) {
+      const v = Math.abs(workMatrix[r][c]);
+      if (v > maxAbs) maxAbs = v;
+    }
+    if (maxAbs > 1e-12) {
+      rowScale[r] = maxAbs;
+      for (let c = 0; c < numCols; c++) {
+        workMatrix[r][c] /= maxAbs;
+      }
+    }
+  }
 
   // ── Build tableau ────────────────────────────────────────────────────────
   // Layout: K constraint rows + nImp cap-constraint rows + 1 Z-row

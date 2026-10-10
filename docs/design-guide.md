@@ -18,6 +18,8 @@ The next expansion's **block delta** (rule 11) works from inventory, not from th
 
 **Knowing the optimal answer before deviating from it is the point.** Every rule below describes the optimal decision. Uninformed shortcuts compound; informed trade-offs don't.
 
+**Solver-first design prevents backup stalls.** The typical approach — divide into blocks, build, debug shortfalls and backups — discovers problems after construction, when fixes require teardowns and redesigns. The solver inverts this: every recipe's byproducts are visible before you build, and the exclude cascade process (rules 5-7, rule 10 step 5) systematically resolves each one. By the time a design is complete, every flow is accounted for — consumed internally (solver-proven balanced), exported (station sized), or voided (sink capacity verified). Nothing is left to discover in gameplay except transient behavior (train delays, startup sequencing), which is a logistics problem handled by buffers — not a design problem requiring teardowns. The build-test-fix cycle happens in the solver (minutes per iteration), not in the game (hours per iteration).
+
 ---
 
 ## Comparing alternatives

@@ -23,7 +23,7 @@ Maximizes waste reduction, syngas export, and ore crushing optimization. Uses `-
 **Recycling loops:**
 7. **water-barrel** (barrel-machine-mk01): 1 barrel + 50 water → 1 water-barrel — closes barrel cycle (animal recipes consume water-barrel, produce barrel back)
 8. **grade-2-crush-tin** (jaw-crusher): 1 grade-2-tin → 1 grade-1-tin + 1 stone — recycles grade-2-tin (screening byproduct) back into the tin chain. Forced via ore-tin import cap.
-9. **clean-nexelit** handled outside solver: nexelit-plate-2 furnace runs at 0.24 utilization (up from solver's 0.03), consuming all 4.31/60s clean-nexelit from washer. 3.73/60s excess nexelit-plate exported to bus. No extra buildings (see [§ Clean-nexelit handling](#clean-nexelit-handling)).
+9. **clean-nexelit** handled outside solver: nexelit-plate-2 furnace runs at 0.24 utilization (up from solver's 0.03), consuming all 4.31/60s clean-nexelit from washer. Produces 3.73/60s excess nexelit-plate — **consumer TBD** (see [§ Clean-nexelit handling](#clean-nexelit-handling)).
 
 | Recipe | Notes |
 |---|---|
@@ -498,7 +498,7 @@ Major waste streams eliminated: coal-gas (100% consumed), pitch (100% consumed),
   - `--max-import "copper-ore:55"` — forces copper crushing (screening-only needs 58.71/60s, exceeding cap)
   - `--max-import "ore-tin:51"` — forces grade-2-crush-tin, consuming all grade-2-tin (41.53/60s under cap vs 51.92/60s screening-only)
 - **Water-barrel produced internally.** Barrel-machine-mk01 runs water-barrel recipe (1 barrel + 50 water → 1 water-barrel). Barrel is net-zero (animal recipes produce barrel, water-barrel recipe consumes it), same loop structure as cage. 1 building at 0.13 utilization.
-- **Clean-nexelit handled outside solver.** The LP overproduces clean-nexelit (4.31/60s) because the washer runs for muddy-sludge demand (100:1 ratio). Only 0.58/60s consumed by nexelit-plate-2. In-game: overfeed the nexelit-plate-2 furnace to consume all 4.31/60s at 0.24 utilization, producing 3.73/60s nexelit-plate exported to bus. See [§ Clean-nexelit handling](#clean-nexelit-handling).
+- **Clean-nexelit handled outside solver.** The LP overproduces clean-nexelit (4.31/60s) because the washer runs for muddy-sludge demand (100:1 ratio). Only 0.58/60s consumed by nexelit-plate-2. In-game: overfeed the nexelit-plate-2 furnace to consume all 4.31/60s at 0.24 utilization. Produces 3.73/60s excess nexelit-plate — **consumer TBD**. See [§ Clean-nexelit handling](#clean-nexelit-handling).
 - **Ore crushing replaces direct smelting for iron, copper, tin, lead.** Screening → crushing → smelting gives 25–67% ore savings over direct smelting at +1 building (26→27). Stone byproduct excluded from solver to prevent LP stone-source exploitation. See [§ Ore crushing optimization](#ore-crushing-optimization).
 - **Stone-import optimization eliminates sb-grade waste.** The LP was running 5.25 screeners for stone demand (Moss-2 + sodium-alginate), not antimony demand. Excluding stone/gravel from antimony recipe products forces stone import (1.64/s with ore crushing) and drops screening to 0.22x — the exact rate needed for sb-grade-04 production. All sb-grade-01/02 consumed internally. See [§ Stone-import optimization](#stone-import-optimization).
 - **Pitch-refining replaces coke-coal.** Pitch-refining (design 03/05 pattern) converts pitch waste into coke + hydrogen + light-oil + anthracene-oil. The hydrogen from pitch-refining reduces the electrolyzer from 100% to 61% utilization.
@@ -795,7 +795,7 @@ The LP overproduces clean-nexelit because the washer runs for muddy-sludge deman
 - `clean-nexelit:muddy-sludge:exclude` — LP replaces the dedicated washer with borax-washing as muddy-sludge source (cheaper in buildings), creating 43.14/60s borax waste instead of 3.73/60s clean-nexelit waste. Much worse.
 - Dedicated muddy-sludge recipe (10 soil + 100 water → 100 muddy-sludge) — LP won't use it because borax-washing is cheaper.
 
-**In-game solution:** Overfeed the nexelit-plate-2 furnace to consume all 4.31/60s clean-nexelit. The furnace runs at 0.24 utilization (same 1 building). This produces 3.73/60s nexelit-plate above what the solver expects — exported to bus as a useful item. No extra buildings needed.
+**In-game solution:** Overfeed the nexelit-plate-2 furnace to consume all 4.31/60s clean-nexelit. The furnace runs at 0.24 utilization (same 1 building). This produces 3.73/60s nexelit-plate above what the solver expects — **consumer TBD** (cannot export to bus; must find an internal sink or rework the muddy-sludge source). No extra buildings needed.
 
 ## TODO
 

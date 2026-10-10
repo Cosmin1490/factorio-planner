@@ -138,7 +138,17 @@ Steel-furnace: 2x2 tiles, speed 4, fluid-burning. Prefer over advanced-foundry (
 
 ### Mining
 
-**Mining fluid consumption formula:** `fluid/s per mine = mining_speed × fluid_amount / (10 × mining_time)`. The `fluid_amount` on the resource prototype is NOT the per-operation or per-second rate — the game engine applies a ÷10 divisor. Verified against in-game Helmod for borax (syngas), titanium (acetylene), and tin (steam).
+**Mining fluid consumption formula:** `fluid/s per mine = mining_speed × fluid_amount / (10 × mining_time)`. **⚠ The `fluid_amount` in prototype data is 10x the actual in-game per-ore cost.** The Factorio engine applies a ÷10 divisor that is NOT visible in the exported prototype JSON or mod source. When reading `mineable_properties.fluid_amount` directly from data, always divide by 10. Verified 2026-10-10 with in-game testing:
+
+| Ore | Fluid | Prototype `fluid_amount` | Actual per ore | In-game test |
+|---|---|---:|---:|---|
+| ore-titanium | acetylene | 40 | 4 | mk01: 60/min fluid, 15/min ore |
+| ore-lead | acetylene | 100 | 10 | mk01: 300/min fluid, 30/min ore |
+| ore-zinc | aromatics | 40 | 4 | (formula-derived) |
+| ore-tin | steam | 100 | 10 | (formula-derived) |
+| borax | syngas | 25 | 2.5 | (Helmod-verified) |
+
+This is a common mistake — the prototype value looks plausible as-is (e.g., "40 acetylene per titanium ore" seems reasonable for Pyanodon), so the 10x error isn't obvious until you compute building counts and find they're absurdly high.
 
 Mining operations can require any combination of: a **specific fluid** (acetylene, steam, aromatics — piped to fluid-drills), a **specific solid item** (drill heads — consumed by dedicated miners), a **type of fuel** (any burner fuel — for burner-type miners like antimony-drill), or just **electricity**. Basic electric/burner miners only work on `basic-solid` resources (iron, copper, coal, stone). Other ores need fluid-drills, dedicated miners, or ground-borers. Check `required_fluid` on the resource entity, and the miner entity's `energy_source` type and `ingredient` requirements.
 

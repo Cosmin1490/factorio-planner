@@ -141,6 +141,23 @@ You don't need to know exports upfront — imports determine all pre-solve const
 
 **When in doubt, ask.** If the block inventory is empty or you're unsure what's on the bus, ask the user before classifying items. Don't guess — a wrong import assumption propagates through every constraint and produces a solution that's technically correct but practically wrong.
 
+**LP source exploitation: the general pattern.** When a recipe produces item X as a low-ratio byproduct and the chain needs X in volume, the LP scales the recipe far beyond its primary product's demand just to source X. This isn't a solver bug — the LP correctly minimizes cost, and the byproduct is genuinely the cheapest X source in building terms. The fix is `--constraint "recipe:X:exclude"`, which hides X from the LP's material balance so it can't scale the recipe for X.
+
+Examples: antimony screening scaled 5x for stone (primary product: sb-grade-01), clean-nexelit scaled 7x for muddy-sludge (primary: clean-nexelit at 100:1 muddy-sludge ratio). In both cases, the LP correctly identified the cheapest stone/muddy-sludge source — the exploit is in the design intent, not the math.
+
+**Exclude constraints cascade — expect it.** When you exclude item X from recipe A, the LP will find the *next* cheapest source of X. If another recipe B also produces X as a byproduct, the LP shifts to scaling B instead — potentially worse than the original problem. You may need to exclude X from ALL recipes that produce it as a byproduct, then provide a dedicated recipe for X.
+
+Pattern:
+1. Identify all recipes producing X as a byproduct: `recipes --produces X --unlocked`
+2. Exclude X from every recipe where it's a low-ratio byproduct, not the primary product
+3. If X has a dedicated production recipe (e.g., muddy-sludge: 10 soil + 100 water → 100 muddy-sludge), include it in the recipe list — the LP will use it for bulk X demand
+4. If no dedicated recipe exists, the item must be imported — add it to the import classification
+5. Run the solver and verify: the exploiting recipes should now run at their natural rate (sized by primary product demand), not inflated by byproduct demand
+
+Example cascade: `clean-nexelit:muddy-sludge:exclude` alone caused the LP to shift to borax-washing as the muddy-sludge source (43/s borax waste — much worse). Adding `borax-washing:muddy-sludge:exclude` plus a dedicated muddy-sludge recipe fixed it: clean-nexelit at exact demand (0.58/60s), borax-washing at exact demand (1.56/60s), muddy-sludge recipe providing bulk (447/60s).
+
+**After adding excludes, always check the solver output for new scaling anomalies.** The cascading LP will find creative sources you didn't anticipate. One verification pass per exclude round is cheap; discovering the anomaly in-game is not.
+
 ## Block design
 
 20. **City block space budget** — in train-based city block architectures, each block has finite space split between factories and train stations (1 station per item, input or output). Three tools to fit a sub-factory into a block:
@@ -182,6 +199,16 @@ You don't need to know exports upfront — imports determine all pre-solve const
     **Mining fluids create hidden block ordering constraints.** If an ore needs acetylene to mine, the fuel chain must be operational first. If it needs aromatics, the tar refinery must export them. These dependencies don't appear in recipe-tree output (which only shows crafting recipes, not mining) and are easy to miss during block planning. Always verify mining fluid requirements before finalizing build order.
     
     **Soot/tailings are supplements, never primary ore sources.** Soot-separation and tailings-classification produce small amounts of ore as byproducts, but mining (even though deposits are finite) is always the primary supply. Design blocks around mining with soot/tailings routed in as a bonus to extend deposit lifetime.
+    
+    **Manual cascade computation for multi-output requirements.** The solver supports a single `--target` item. When a block must export multiple items (e.g., acetylene for titanium mining AND aromatics for zinc mining), the solver can't optimize them jointly. Methodology for the manual portion:
+    
+    1. **Run the solver for the primary target** — get solver-validated rates for all intermediates and imports.
+    2. **Compute additional demands from solver import rates** — e.g., ore-titanium import at 35/60s × 4 acetylene/ore = 140/60s acetylene needed. Use prototype data with the ÷10 mining fluid correction (see [solver-reference.md](solver-reference.md) § Mining).
+    3. **Verify recipe timings from prototype data before computing** — never assume cycle times. Run `recipes --produces <item> --unlocked` to get exact recipe durations. Wrong timings cascade through every downstream calculation.
+    4. **Check existing building headroom first** — compute fractional utilization from the solver run. If the existing buildings can absorb the extra load (e.g., distilled-raw-coal at 1.15/2 buildings has 0.85 spare), no new buildings needed. Only add buildings when fractional utilization exceeds ceiling.
+    5. **Trace the cascade layer by layer** — extra coke demand → extra pitch-refining → extra tar-refining → extra tar → check if existing coal chain absorbs it. Stop when the cascade fits within existing headroom.
+    6. **Account for co-product feedback** — extra pitch-refining also produces extra light-oil → extra aromatics via light-oil-aromatics. This may reduce the direct aromatics shortfall. Ignoring co-products overestimates new building requirements.
+    7. **Sum total resource deltas** — extra raw-coal, extra limestone, extra water, extra steam. Verify totals stay within max-import caps.
 
 23. **Design for upgrade, build with what you have** — when higher-tier modules/buildings are unlocked but impractical to bootstrap (e.g., bio mk02 at 0.5% drop rate), design with the achievable tier but plan for the upgrade. Check **ratio stability**: (1) all buildings have matching tier upgrades -> ratios hold, just need more I/O; (2) only some upgrade -> ratios break, needs redesign; (3) no matching tier downstream -> bottleneck just moves. When ratios will break, consider **building to upgraded ratios now** — accept underproduction today for a drop-in module swap later with zero redesign.
     

@@ -785,6 +785,26 @@ function solveSimplexLP(m: SolverMatrix, input: SolveInput): number[] {
     }
   }
 
+  // ── Matrix scaling ──────────────────────────────────────────────────────
+  // Row scaling: normalize each recipe row by its max absolute coefficient.
+  // Without scaling, coefficients span 5+ orders of magnitude (e.g., steam at
+  // 30000/60s vs moondrop-seeds at 0.35/60s), causing numerical blow-up during
+  // Gaussian elimination in the simplex pivots.
+  const rowScale = new Array(numRows).fill(1);
+  for (let r = 0; r < numRows; r++) {
+    let maxAbs = 0;
+    for (let c = 0; c < numCols; c++) {
+      const v = Math.abs(workMatrix[r][c]);
+      if (v > maxAbs) maxAbs = v;
+    }
+    if (maxAbs > 1e-12) {
+      rowScale[r] = maxAbs;
+      for (let c = 0; c < numCols; c++) {
+        workMatrix[r][c] /= maxAbs;
+      }
+    }
+  }
+
   // Identify constrained columns and build RHS
   const constrainedCols: number[] = [];
   const rhs: number[] = [];
@@ -915,7 +935,7 @@ function solveSimplexLP(m: SolverMatrix, input: SolveInput): number[] {
   tab.push(zRow);
 
   const TC = totalConstraints; // Z-row index in tableau
-  const maxIter = (nVars + TC) * 10;
+  const maxIter = (nVars + TC) * 200;
 
   for (let iter = 0; iter < maxIter; iter++) {
     // Find entering column: most negative reduced cost
@@ -959,6 +979,16 @@ function solveSimplexLP(m: SolverMatrix, input: SolveInput): number[] {
     }
   }
   if (tab[TC][rhsIdx] > 1e-6 || artificialsInBasis) {
+    const stuckArtificials: string[] = [];
+    for (let k = 0; k < TC; k++) {
+      if (basis[k] >= nVars + TC && tab[k][rhsIdx] > 1e-6) {
+        const artIdx = basis[k] - (nVars + TC);
+        const colIdx = artIdx < K ? constrainedCols[artIdx] : -1;
+        const itemName = colIdx >= 0 ? columns[colIdx].name : `import-cap-${artIdx - K}`;
+        stuckArtificials.push(`${itemName}(val=${tab[k][rhsIdx].toFixed(6)})`);
+      }
+    }
+    console.error(`Phase 1 infeasible: Z=${tab[TC][rhsIdx].toFixed(6)}, stuck artificials: ${stuckArtificials.join(', ')}`);
     return new Array(n).fill(0); // infeasible
   }
 
@@ -966,9 +996,10 @@ function solveSimplexLP(m: SolverMatrix, input: SolveInput): number[] {
   // Rebuild Z-row with real costs
   for (let j = 0; j <= totalVars; j++) tab[TC][j] = 0;
 
-  // Set costs: recipe vars get recipeCosts, import vars get importCost, artificials get big-M
+  // Set costs: recipe vars get recipeCosts / rowScale (column scaling: y_r = rowScale[r]*x_r,
+  // so c_r*x_r = c_r/rowScale[r] * y_r), import vars get importCost, artificials get big-M
   const objCosts = new Array(totalVars).fill(0);
-  for (let r = 0; r < n; r++) objCosts[r] = recipeCosts[r];
+  for (let r = 0; r < n; r++) objCosts[r] = recipeCosts[r] / rowScale[r];
   for (let iv = 0; iv < nImp; iv++) objCosts[n + iv] = importCost;
   for (let k = 0; k < TC; k++) objCosts[nVars + TC + k] = 1e8; // big-M for artificials
 
@@ -1014,11 +1045,12 @@ function solveSimplexLP(m: SolverMatrix, input: SolveInput): number[] {
   }
 
   // Extract recipe counts from basis (only real recipe vars, not import vars)
+  // Column scaling: y_r = rowScale[r] * x_r, so x_r = y_r / rowScale[r]
   const recipeCounts = new Array(n).fill(0);
   for (let k = 0; k < TC; k++) {
     const bVar = basis[k];
     if (bVar < n) {
-      recipeCounts[bVar] = Math.max(0, tab[k][rhsIdx]);
+      recipeCounts[bVar] = Math.max(0, tab[k][rhsIdx]) / rowScale[bVar];
     }
   }
 

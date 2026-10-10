@@ -20,6 +20,8 @@ The next expansion's **block delta** (rule 11) works from inventory, not from th
 
 **Solver-first design prevents backup stalls.** The typical approach — divide into blocks, build, debug shortfalls and backups — discovers problems after construction, when fixes require teardowns and redesigns. The solver inverts this: every recipe's byproducts are visible before you build, and the exclude cascade process (rules 5-7, rule 10 step 5) systematically resolves each one. By the time a design is complete, every flow is accounted for — consumed internally (solver-proven balanced), exported (station sized), or voided (sink capacity verified). Nothing is left to discover in gameplay except transient behavior (train delays, startup sequencing), which is a logistics problem handled by buffers — not a design problem requiring teardowns. The build-test-fix cycle happens in the solver (minutes per iteration), not in the game (hours per iteration).
 
+**Solver for correctness, design docs for scale.** The solver's cost is justified by questions where being wrong means teardowns — byproduct cascades, recipe selection, feedback loops. Once a design is solver-validated and documented (modes, rates, outputs), scaling it is arithmetic. "Three stamps at 22.5/s raw-coal" is grounded in the design doc's rate tables — the solver already did the hard work when it validated the original. Headroom (rule 13: idle buildings cost nothing) covers the gap between estimate and exact computation. When the player understands a design's behavior — its modes, ratios, and coupling points — scaling it is a confident decision, not a guess. That confidence is what the original solver work and design doc built.
+
 ---
 
 ## Comparing alternatives

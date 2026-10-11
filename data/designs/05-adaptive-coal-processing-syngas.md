@@ -251,24 +251,14 @@ Coke recycling + syngas creates a double feedback loop (coke → coal-gas-from-c
 - Syngas consumers: canister for train export, or aromatics-to-plastic (50 aromatics + 100 syngas → 1 plastic-bar in biofactory).
 - Water demand significant in syngas modes: 108-170/s on top of steam.
 
-## Build materials
+## Build materials you may not have
 
-Distinct items needed to **construct** this block's buildings — separate from the flow imports,
-and several appear nowhere in the solve. Quantities are omitted deliberately: the binding question is
-whether you have *any*, since a small amount can be hand-fed or trickled while a zero is a hard stop.
-Regenerate with `node scripts/build-materials.mjs data/designs/05-adaptive-coal-processing-syngas.md`.
+Construction materials for this block's buildings, filtered against what the built base
+demonstrably already has — designs 01/03/06: their buildings, what those cost to place, and what
+they produce. Quantities omitted: the binding question is whether you have *any*, since a small
+amount can be hand-fed while a zero is a hard stop.
+Regenerate with `node scripts/build-materials.mjs data/designs/05-adaptive-coal-processing-syngas.md` (edit `BUILT` in the script as the base grows).
 
-| Material | Needed by |
-|---|---|
-| `iron-plate` | distilator, gasifier, hpf +2 |
-| `inductor1` | distilator, gasifier, hpf +1 |
-| `small-parts-01` | distilator, gasifier, hpf +1 |
-| `steam-engine` | distilator, gasifier, hpf +1 |
-| `pipe` | distilator, gasifier, tar-processing-unit |
-| `copper-plate` | distilator, hpf |
-| `steel-plate` | gasifier, tar-processing-unit |
-| `electric-mining-drill` | oil-boiler-mk01 |
-| `intermetallics` | oil-boiler-mk01 |
-| `lab` | oil-boiler-mk01 |
-| `stone-brick` | hpf |
-| `stone-furnace` | tar-processing-unit |
+| Possibly missing | Status | Needed by |
+|---|---|---|
+| `intermetallics` | needs its own chain | oil-boiler-mk01 |

@@ -639,31 +639,20 @@ Backpressure regulates throughput correctly either way — but without a throttl
 every buffer in the block pinned at full, which is precisely the state with no margin for anything.
 Throttling moves the front outside the chain and leaves the buffers empty and useful.
 
-## Build materials
+## Build materials you may not have
 
-Distinct items needed to **construct** this block's buildings — separate from the flow imports,
-and several appear nowhere in the solve. Quantities are omitted deliberately: the binding question is
-whether you have *any*, since a small amount can be hand-fed or trickled while a zero is a hard stop.
-Regenerate with `node scripts/build-materials.mjs data/designs/10-coal-power-maximum.md`.
+Construction materials for this block's buildings, filtered against what the built base
+demonstrably already has — designs 01/03/06: their buildings, what those cost to place, and what
+they produce. Quantities omitted: the binding question is whether you have *any*, since a small
+amount can be hand-fed while a zero is a hard stop.
+Regenerate with `node scripts/build-materials.mjs data/designs/10-coal-power-maximum.md` (edit `BUILT` in the script as the base grows).
 
-| Material | Needed by |
-|---|---|
-| `pipe` | boiler, distilator, gasifier +5 |
-| `small-parts-01` | distilator, evaporator, gasifier +5 |
-| `iron-plate` | distilator, gasifier, hpf +4 |
-| `steel-plate` | evaporator, gasifier, py-underflow-valve +2 |
-| `inductor1` | distilator, gasifier, hpf +1 |
-| `copper-plate` | distilator, hpf |
-| `electronic-circuit` | py-underflow-valve, steam-turbine-mk01 |
-| `intermetallics` | oil-boiler-mk01, steam-turbine-mk01 |
-| `stone-brick` | hpf, py-gas-vent |
-| `stone-furnace` | boiler, tar-processing-unit |
-| `brake-mk01` | steam-turbine-mk01 |
-| `duralumin` | steam-turbine-mk01 |
-| `electric-mining-drill` | oil-boiler-mk01 |
-| `gearbox-mk01` | steam-turbine-mk01 |
-| `lab` | oil-boiler-mk01 |
-| `quenching-tower` | evaporator |
-| `shaft-mk01` | steam-turbine-mk01 |
-| `tin-plate` | evaporator |
-| `utility-box-mk01` | steam-turbine-mk01 |
+| Possibly missing | Status | Needed by |
+|---|---|---|
+| `intermetallics` | needs its own chain | oil-boiler-mk01, steam-turbine-mk01 |
+| `brake-mk01` | needs its own chain | steam-turbine-mk01 |
+| `duralumin` | makeable now | steam-turbine-mk01 |
+| `gearbox-mk01` | needs its own chain | steam-turbine-mk01 |
+| `quenching-tower` | needs its own chain | evaporator |
+| `shaft-mk01` | needs its own chain | steam-turbine-mk01 |
+| `utility-box-mk01` | needs its own chain | steam-turbine-mk01 |

@@ -69,20 +69,12 @@ and all intermediate oils refined to final products. No waste oils.
 - Gasoline and aromatics are the main valuable byproducts.
 - Steam demand is high (127.55/s) — needs dedicated boiler infrastructure.
 
-## Build materials
+## Build materials you may not have
 
-Distinct items needed to **construct** this block's buildings — separate from the flow imports,
-and several appear nowhere in the solve. Quantities are omitted deliberately: the binding question is
-whether you have *any*, since a small amount can be hand-fed or trickled while a zero is a hard stop.
-Regenerate with `node scripts/build-materials.mjs data/designs/03-coal-processing.md`.
+Construction materials for this block's buildings, filtered against what the built base
+demonstrably already has — designs 01/03/06: their buildings, what those cost to place, and what
+they produce. Quantities omitted: the binding question is whether you have *any*, since a small
+amount can be hand-fed while a zero is a hard stop.
+Regenerate with `node scripts/build-materials.mjs data/designs/03-coal-processing.md` (edit `BUILT` in the script as the base grows).
 
-| Material | Needed by |
-|---|---|
-| `inductor1` | distilator, tar-processing-unit |
-| `iron-plate` | distilator, tar-processing-unit |
-| `pipe` | distilator, tar-processing-unit |
-| `steam-engine` | distilator, tar-processing-unit |
-| `copper-plate` | distilator |
-| `small-parts-01` | distilator |
-| `steel-plate` | tar-processing-unit |
-| `stone-furnace` | tar-processing-unit |
+_Nothing — every construction material is already available._

@@ -253,28 +253,12 @@ npx tsx src/cli.ts solve \
 - Moss-2 uses stone (vs Moss-1 which doesn't, but yields half the moss in 25% more time) — routes crusher stone byproduct into moss production.
 - Solver warns tree-mk01/moss modules "not unlocked" — data limitation, modules are available in-game.
 
-## Build materials
+## Build materials you may not have
 
-Distinct items needed to **construct** this block's buildings — separate from the flow imports,
-and several appear nowhere in the solve. Quantities are omitted deliberately: the binding question is
-whether you have *any*, since a small amount can be hand-fed or trickled while a zero is a hard stop.
-Regenerate with `node scripts/build-materials.mjs data/designs/06-automation-science-pack.md`.
+Construction materials for this block's buildings, filtered against what the built base
+demonstrably already has — designs 01/03/06: their buildings, what those cost to place, and what
+they produce. Quantities omitted: the binding question is whether you have *any*, since a small
+amount can be hand-fed while a zero is a hard stop.
+Regenerate with `node scripts/build-materials.mjs data/designs/06-automation-science-pack.md` (edit `BUILT` in the script as the base grows).
 
-| Material | Needed by |
-|---|---|
-| `small-parts-01` | assembling-machine-1, automated-screener-mk01, botanical-nursery +8 |
-| `iron-plate` | assembling-machine-1, automated-screener-mk01, botanical-nursery +7 |
-| `inductor1` | assembling-machine-1, botanical-nursery, fwf-mk01 +3 |
-| `pipe` | boiler, moondrop-greenhouse-mk01, steam-engine +1 |
-| `steel-plate` | automated-screener-mk01, fwf-mk01, jaw-crusher |
-| `stone-brick` | fwf-mk01, moss-farm-mk01, washer |
-| `burner-mining-drill` | soil-extractor-mk01, wpu-mk01 |
-| `fluid-drill-mk01` | automated-screener-mk01, botanical-nursery |
-| `glass` | botanical-nursery, moondrop-greenhouse-mk01 |
-| `aluminium-plate` | moss-farm-mk01 |
-| `copper-cable` | wpu-mk01 |
-| `electronic-circuit` | automated-screener-mk01 |
-| `log` | wpu-mk01 |
-| `planter-box` | botanical-nursery |
-| `soil` | moss-farm-mk01 |
-| `stone` | stone-furnace |
+_Nothing — every construction material is already available._

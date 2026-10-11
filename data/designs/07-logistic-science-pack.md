@@ -900,58 +900,32 @@ Absorbed by scaling the existing oil chain — extra pitch-refining produces ext
 - [ ] Verify self-power buildings don't significantly change total building count
 - [ ] Retrofit flue-gas processing after filtration tech researched
 
-## Build materials
+## Build materials you may not have
 
-Distinct items needed to **construct** this block's buildings — separate from the flow imports,
-and several appear nowhere in the solve. Quantities are omitted deliberately: the binding question is
-whether you have *any*, since a small amount can be hand-fed or trickled while a zero is a hard stop.
-Regenerate with `node scripts/build-materials.mjs data/designs/07-logistic-science-pack.md`.
+Construction materials for this block's buildings, filtered against what the built base
+demonstrably already has — designs 01/03/06: their buildings, what those cost to place, and what
+they produce. Quantities omitted: the binding question is whether you have *any*, since a small
+amount can be hand-fed while a zero is a hard stop.
+Regenerate with `node scripts/build-materials.mjs data/designs/07-logistic-science-pack.md` (edit `BUILT` in the script as the base grows).
 
-| Material | Needed by |
-|---|---|
-| `small-parts-01` | automated-factory-mk01, automated-screener-mk01, barrel-machine-mk01 +37 |
-| `iron-plate` | auog-paddock-mk01, automated-screener-mk01, barrel-machine-mk01 +33 |
-| `steam-engine` | barrel-machine-mk01, biofactory-mk01, chipshooter-mk01 +30 |
-| `steel-plate` | automated-factory-mk01, automated-screener-mk01, barrel-machine-mk01 +17 |
-| `electronic-circuit` | automated-factory-mk01, automated-screener-mk01, barrel-machine-mk01 +16 |
-| `pipe` | barrel-machine-mk01, chemical-plant-mk01, clay-pit-mk01 +15 |
-| `glass` | bio-reactor-mk01, biofactory-mk01, botanical-nursery +12 |
-| `stone-brick` | clay-pit-mk01, fwf-mk01, glassworks-mk01 +12 |
-| `inductor1` | botanical-nursery, distilator, fwf-mk01 +11 |
-| `titanium-plate` | biofactory-mk01, cracker-mk01, genlab-mk01 +5 |
-| `copper-plate` | chemical-plant-mk01, distilator, glassworks-mk01 +4 |
-| `intermetallics` | auog-paddock-mk01, automated-factory-mk01, bio-reactor-mk01 +4 |
-| `aluminium-plate` | electrolyzer-mk01, heat-exchanger, moss-farm-mk01 +2 |
-| `duralumin` | biofactory-mk01, genlab-mk01, incubator-mk01 +2 |
-| `fluid-drill-mk01` | automated-screener-mk01, botanical-nursery, electronics-factory-mk01 +1 |
-| `soil` | auog-paddock-mk01, moss-farm-mk01, ralesia-plantation-mk01 +1 |
-| `burner-inserter` | chipshooter-mk01, micro-mine-mk01, sap-extractor-mk01 |
-| `burner-mining-drill` | clay-pit-mk01, soil-extractor-mk01, wpu-mk01 |
-| `copper-cable` | research-center-mk01, small-lamp, wpu-mk01 |
-| `boiler` | bof-mk01, fbreactor-mk01 |
-| `lab` | cracker-mk01, electrolyzer-mk01 |
-| `lead-plate` | cracker-mk01, heavy-oil-refinery-mk01 |
-| `stone` | auog-paddock-mk01, stone-furnace |
-| `tin-plate` | evaporator, seaweed-crop-mk01 |
-| `bolts` | auog-paddock-mk01 |
-| `ceramic` | smelter-mk01 |
-| `concrete` | rc-mk01 |
-| `engine-unit` | pump |
-| `gearbox-mk01` | automated-factory-mk01 |
-| `inserter` | automated-factory-mk01 |
-| `limestone` | seaweed-crop-mk01 |
-| `log` | wpu-mk01 |
-| `mechanical-parts-01` | py-heat-exchanger |
-| `mixer-mk01` | bio-reactor-mk01 |
-| `niobium-pipe` | heat-exchanger |
-| `pcb1` | chipshooter-mk01 |
-| `planter-box` | botanical-nursery |
-| `plastic-bar` | genlab-mk01 |
-| `py-tank-3000` | genlab-mk01 |
-| `py-tank-7000` | py-heat-exchanger |
-| `quenching-tower` | evaporator |
-| `shaft-mk01` | automated-factory-mk01 |
-| `steel-furnace` | bof-mk01 |
-| `tailings-pond` | bio-reactor-mk01 |
-| `treated-wood` | ralesia-plantation-mk01 |
-| `wood` | pulp-mill-mk01 |
+| Possibly missing | Status | Needed by |
+|---|---|---|
+| `intermetallics` | needs its own chain | auog-paddock-mk01, automated-factory-mk01, bio-reactor-mk01 +4 |
+| `duralumin` | makeable now | biofactory-mk01, genlab-mk01, incubator-mk01 +2 |
+| `lead-plate` | needs its own chain | cracker-mk01, heavy-oil-refinery-mk01 |
+| `ceramic` | makeable now | smelter-mk01 |
+| `engine-unit` | makeable now | pump |
+| `gearbox-mk01` | needs its own chain | automated-factory-mk01 |
+| `inserter` | makeable now | automated-factory-mk01 |
+| `mechanical-parts-01` | needs its own chain | py-heat-exchanger |
+| `mixer-mk01` | needs its own chain | bio-reactor-mk01 |
+| `niobium-pipe` | needs its own chain | heat-exchanger |
+| `pcb1` | makeable now | chipshooter-mk01 |
+| `plastic-bar` | needs its own chain | genlab-mk01 |
+| `py-tank-3000` | needs its own chain | genlab-mk01 |
+| `py-tank-7000` | needs its own chain | py-heat-exchanger |
+| `quenching-tower` | needs its own chain | evaporator |
+| `shaft-mk01` | needs its own chain | automated-factory-mk01 |
+| `steel-furnace` | needs its own chain | bof-mk01 |
+| `tailings-pond` | makeable now | bio-reactor-mk01 |
+| `treated-wood` | makeable now | ralesia-plantation-mk01 |

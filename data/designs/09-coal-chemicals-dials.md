@@ -639,35 +639,23 @@ would otherwise have been available — worth revisiting together.
   together, which is exactly why the `naphthalene-oil-creosote` envelope is 6 rather than 5.
 - Idle buildings cost nothing (design guide rule 13). The envelope is deliberately the max.
 
-## Build materials
+## Build materials you may not have
 
-Distinct items needed to **construct** this block's buildings — separate from the flow imports,
-and several appear nowhere in the solve. Quantities are omitted deliberately: the binding question is
-whether you have *any*, since a small amount can be hand-fed or trickled while a zero is a hard stop.
-Regenerate with `node scripts/build-materials.mjs data/designs/09-coal-chemicals-dials.md`.
+Construction materials for this block's buildings, filtered against what the built base
+demonstrably already has — designs 01/03/06: their buildings, what those cost to place, and what
+they produce. Quantities omitted: the binding question is whether you have *any*, since a small
+amount can be hand-fed while a zero is a hard stop.
+Regenerate with `node scripts/build-materials.mjs data/designs/09-coal-chemicals-dials.md` (edit `BUILT` in the script as the base grows).
 
-| Material | Needed by |
-|---|---|
-| `small-parts-01` | biofactory-mk01, cracker-mk01, distilator +6 |
-| `iron-plate` | cracker-mk01, distilator, gasifier +4 |
-| `pipe` | distilator, gasifier, py-heat-exchanger +3 |
-| `steam-engine` | biofactory-mk01, cracker-mk01, distilator +3 |
-| `steel-plate` | biofactory-mk01, gasifier, reformer-mk01 +3 |
-| `electronic-circuit` | biofactory-mk01, cracker-mk01, py-heat-exchanger +2 |
-| `inductor1` | distilator, gasifier, tar-processing-unit |
-| `intermetallics` | oil-boiler-mk01, py-heat-exchanger, steam-turbine-mk01 |
-| `duralumin` | biofactory-mk01, steam-turbine-mk01 |
-| `lab` | cracker-mk01, oil-boiler-mk01 |
-| `titanium-plate` | biofactory-mk01, cracker-mk01 |
-| `automated-factory-mk01` | py-heat-exchanger |
-| `brake-mk01` | steam-turbine-mk01 |
-| `copper-plate` | distilator |
-| `electric-mining-drill` | oil-boiler-mk01 |
-| `gearbox-mk01` | steam-turbine-mk01 |
-| `glass` | biofactory-mk01 |
-| `lead-plate` | cracker-mk01 |
-| `mechanical-parts-01` | py-heat-exchanger |
-| `py-tank-7000` | py-heat-exchanger |
-| `shaft-mk01` | steam-turbine-mk01 |
-| `stone-furnace` | tar-processing-unit |
-| `utility-box-mk01` | steam-turbine-mk01 |
+| Possibly missing | Status | Needed by |
+|---|---|---|
+| `intermetallics` | needs its own chain | oil-boiler-mk01, py-heat-exchanger, steam-turbine-mk01 |
+| `duralumin` | makeable now | biofactory-mk01, steam-turbine-mk01 |
+| `automated-factory-mk01` | needs its own chain | py-heat-exchanger |
+| `brake-mk01` | needs its own chain | steam-turbine-mk01 |
+| `gearbox-mk01` | needs its own chain | steam-turbine-mk01 |
+| `lead-plate` | needs its own chain | cracker-mk01 |
+| `mechanical-parts-01` | needs its own chain | py-heat-exchanger |
+| `py-tank-7000` | needs its own chain | py-heat-exchanger |
+| `shaft-mk01` | needs its own chain | steam-turbine-mk01 |
+| `utility-box-mk01` | needs its own chain | steam-turbine-mk01 |

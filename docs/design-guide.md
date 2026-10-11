@@ -218,15 +218,20 @@ flow-correct (every import sourced, every byproduct sunk, solver-validated) and 
 because placing its machines needs items the base cannot yet produce. In Py the gap is wide, because
 building recipes reach deep into gated intermediates.
 
-**Effect: this annexes a note to a finished design; it never gates one.** Always produce the full
-solver-validated design first. The target is worth knowing whether or not it is currently buildable —
-it is the thing being worked toward, and the construction gap is cheap to compute afterwards. Then
-append a short feasibility note: which buildings need items the base may not have, how confident that
-inference is, and roughly what a bootstrap would cost. The reader decides whether to bootstrap, stage,
-or ignore it. **Never withhold or defer a design pending this check, and never turn it into a round of
-questions** — inventory is normally *reconstructed* (see below) rather than known, so the note is an
-informed guess and should be labelled as one. Getting the guess wrong costs a sentence; withholding the
-design costs the work.
+**Effect — the deliverable is two or three sentences appended to a finished design.** Always produce
+the full solver-validated design first; the target is worth having whether or not it can be built
+today. Then add a short note saying: (a) which of its buildings need items the base may not produce
+yet, (b) what to build first instead, and (c) that this is an inference from reconstructed inventory,
+not a known fact. That is the entire default output — a flag and a suggested starting point, not an
+analysis.
+
+**Never withhold or defer a design pending this check, and never open a question round for it.**
+Getting the guess wrong costs a sentence; withholding the design costs the work. The reader decides
+whether to bootstrap, stage, or ignore the flag — that call is theirs, and the note exists to inform
+it rather than pre-empt it.
+
+**Designing the prerequisite block is separate work, done only on request.** The remainder of this
+section is the method for that, not part of the default note.
 
 **Check it explicitly.** For the target design, run `recipes --produces <entity>` on each distinct
 building, collect the ingredients, and flag anything you cannot currently make. That set is the real

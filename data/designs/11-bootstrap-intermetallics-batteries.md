@@ -155,9 +155,9 @@ Note `auog-pooping-1` needs only **water-barrel + native-flora + moss** — you 
 
 ## Notes
 
-- **Batteries are not blocking the coal blocks.** They gate accumulators, roboports, combinators and
-  logistic science itself — not `oil-boiler-mk01`. If the goal is to build designs 09/10, phase 1 alone
-  unblocks you and phase 3 can wait.
+- **Batteries don't block the coal blocks.** Nothing needs a battery to place an `oil-boiler-mk01`, so
+  phase 1 alone unblocks designs 09/10. Batteries gate combinators (1 each), roboports (2),
+  accumulators (30) and `logistic-science-pack` itself (3) — build phase 3 whenever those matter.
 - **`steam-turbine-mk01` costs 10 intermetallics each.** Design 10's engine-based power island avoids
   this, but if turbines ever become worth it (2× the power), budget 10 intermetallics per turbine on
   top.

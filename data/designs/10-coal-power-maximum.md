@@ -505,7 +505,7 @@ be applied to the steam, exactly as described:
 
 - **primary boilers** (naphthalene, carbolic, gasoline, aromatics, hydrogen, syngas) — output directly
   into the steam bus
-- **acetylene boilers** — output through a pump gated on `steam bus < ~60%`
+- **acetylene boilers** — output through a `py-underflow-valve` (passes only when the downstream bus is low) or a pump gated on `steam bus < ~60%`. Check valve throughput against the 2,123 steam/s in play before choosing valves
 
 The gated boilers only contribute when the primaries cannot meet demand. When the bus is satisfied the
 pump closes, the acetylene boilers' own steam output blocks, they stop, and acetylene begins

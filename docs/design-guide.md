@@ -272,14 +272,19 @@ costs glass to build, so glass is available; likewise titanium and aluminium, wh
 science recipe but in several machines. This recovers most of the practical inventory from design docs
 alone, and is usually faster than asking item by item.
 
-**The request is itself evidence of what is built.** Science tiers gate each other, so a request to
-design the tier above one you have a completed design for implies that design is running — and
-therefore that everything it needed, both to feed it *and to construct it*, is on hand. Asking for the
-science after logistic science means intermetallics exist, because `auog-paddock-mk01` and
-`bio-reactor-mk01` cannot be placed without them. Fold that into the baseline before computing any gap,
-and do not re-flag what the request already implies. (`scripts/build-materials.mjs` holds a hardcoded
-`BUILT` list that will not notice this on its own — update it, or override its output when the request
-contradicts it.)
+**The request is itself evidence.** Asking to design something implies its recipes are researched —
+and transitively, that every prerequisite tech is done and the science that paid for them is running,
+along with everything needed to feed *and construct* those tiers. A request for an antimony mine
+implies the antimony tech and everything beneath it. Science tiers gate each other most explicitly:
+asking for the science above logistic science means intermetallics exist, because `auog-paddock-mk01`
+and `bio-reactor-mk01` cannot be placed without them. Fold this into the baseline before computing any
+gap, and **do not re-flag what the request already implies.**
+
+Treat it as a strong default rather than a certainty. The user may be planning ahead rather than
+building — designs 09 and 10 in this repo were both solved long before either was placeable — or
+running the solver with no save at all. An explicit statement always overrides the inference.
+(`scripts/build-materials.mjs` holds a hardcoded `BUILT` list that notices none of this; update it, or
+override its output when the request contradicts it.)
 
 13. **Validate existing capacity against total demand** — after computing the block delta, sum ALL imports from each existing block across every new consumer and verify it can handle the total. This check is easy to skip because each new block's design looks fine in isolation — the failure only appears when you aggregate.
     

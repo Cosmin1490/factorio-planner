@@ -77,13 +77,29 @@ Max count per recipe across all dial corners. 12 core recipes, **107 buildings**
 64 distilator + 32 tar-processing-unit + 11 gasifier = 107, plus 4 value-route buildings = **111**.
 Boilers and turbines sized separately (§ Energy).
 
-**Every maximum lands at a corner, and `f=1` drives all but two.** The envelope assumes each recipe's
-count is monotonic in each dial. That holds structurally — more recycling raises throughput with no
-negative term, and more of a branch raises that branch's buildings — but interior dial positions were
-not solved. The one non-obvious case confirms the prediction: `naphthalene-oil-creosote` peaks at
-`x=1`, not `x=0`, because cracking produces coke → stronger recycle loop → more pitch → more
-naphthalene. If any recipe did peak in the interior, the corner envelope would under-size it; worth one
-interior run before committing the blueprint.
+**Every maximum lands at a corner, and `f=1` drives all but two.**
+
+Taking the max across corners is only valid if each recipe's count is **monotonic** in each dial — if
+any recipe peaked at an interior setting, the envelope would under-size it and the shortfall would only
+appear in-game at intermediate dial positions. Verified analytically:
+
+- **Eleven of twelve are trivially monotonic.** They scale with tar throughput, which rises with both
+  `f` and `x` with no negative term, so they peak at `f=1, x=1`. `naphthalene-oil-creosote` confirms the
+  direction — it peaks at `x=1`, not `x=0`, because cracking makes coke → stronger recycle loop → more
+  pitch → more naphthalene.
+- **`anthracene-oil-creosote` is the only one at risk**, because it has opposing factors: it takes
+  `(1−x)` of the anthracene, but total anthracene *rises* with `x` (205.99/s at `x=0` → 271.48/s at
+  `x=1`). A shrinking fraction of a growing pool can peak in the middle. It does not:
+
+  ```
+  anthracene_to_creosote(x) ≈ (1−x)(205.99 + 65.49x) = 205.99 − 140.50x − 65.49x²
+  d/dx = −140.50 − 130.98x  <  0   for all x ∈ [0,1]
+  ```
+
+  Strictly decreasing, so its max is at `x=0` — a solved corner (9 buildings). Anthracene would have to
+  grow faster than `1/(1−x)` to create an interior peak, and it grows only 32% across the full range.
+
+**The 107-building envelope is sound; no interior solver run is needed.**
 
 ## Coupling structure
 
@@ -236,19 +252,24 @@ second):
 | gasoline | 90.36 | 49.37 | −45% |
 | creosote | 31.75 | 17.35 | −45% |
 
-**Conclusion: do not serve aluminium from this block's coal-gas.** 1/s aluminium-plate consumes roughly
-half the block's entire chemical output. Options, in order of preference:
+**The `aluminium-plate-3` escape route is not available at current tech** — the ore route and its
+coal-gas mining fluid are the only option, so dial `g` is real and must be planned for.
 
-1. **Check whether aluminium needs ore-aluminium at all.** `aluminium-plate-3` casts from
-   molten-aluminium + sand-casting at 1:50 versus the ore route's 10:1. If molten-aluminium comes from
-   a bauxite/alumina chain, the coal-gas mining draw disappears entirely. Resolve this before sizing
-   anything — it is the decision that determines whether dial `g` matters.
-2. **Dedicated coal-gas at the aluminium outpost.** 1 distilator = 5/s raw-coal → 30/s coal-gas. But it
-   also yields 15/s tar needing the full refining chain, so this exports the byproduct problem rather
-   than solving it.
-3. **A second stamp of this block** if aluminium is wanted at scale alongside the chemicals.
+**Do not serve it from this block's coal-gas at any meaningful rate.** 1/s aluminium-plate consumes
+roughly half the block's entire chemical output. The two viable options:
 
-Size the coal-gas station and pipe for a tap, but leave `g = 0` until option 1 is resolved.
+1. **Dedicated coal-gas at the aluminium outpost.** 1 distilator = 5/s raw-coal → 30/s coal-gas, so
+   ~3.3 distilators and 16.7/s raw-coal covers 100/s. The catch is 50/s of tar as a byproduct needing
+   the full refining chain — this relocates the byproduct problem rather than solving it, unless the
+   tar is shipped back here.
+2. **A second stamp of this block**, which handles its own tar by construction. At 15/s raw-coal a
+   stamp yields 108/s coal-gas — almost exactly 1/s aluminium-plate's requirement, with the rest of the
+   chemical output as the dividend.
+
+Option 2 is the cleaner answer precisely *because* coal-gas is so expensive here: anything that
+produces 100/s of it is, by construction, nearly a whole coal block. Treat aluminium demand as sizing
+input for stamp count, not as a dial position on an existing stamp. Size the coal-gas station and pipe
+for a tap regardless, so a partial draw is available without a rebuild.
 
 ## Feasibility envelope
 
@@ -433,9 +454,32 @@ It is not worthless. Reheating 150°C steam to 250°C costs `(250−150) × 2100
 full flow. Needs an exchanger that accepts steam rather than water; unverified whether
 `py-heat-exchanger` does. This is the concrete instance of the open pipe-temperature-mixing question.
 
-**`sand-casting` deferred.** It is the best creosote sink (perpetual smelting demand, 2–11 TPU), but
-needs 7.94–53/s sand against design 07's 3.61/s surplus. Gated on a sand supply decision, not on
-capacity here.
+### `sand-casting` — sand supply resolved, covers ~56% of minimum creosote
+
+Sand comes from the acetylene block's slacked-lime waste, via gravel:
+
+```
+260/s acetylene → 65/s slacked-lime
+  slacked-lime-void   60 slacked-lime → 1 lime + 1 gravel   →  1.083/s gravel + 1.083/s lime
+  gravel-to-sand      4 gravel → 3 sand                     →  0.8125/s sand
+  sand-casting        5 sand + 20 creosote → 2 sand-casting →  3.25/s creosote sunk, 0.325/s castings
+```
+
+| sand source | sand /s | creosote sunk /s | % of 31.75/s minimum |
+|---|--:|--:|--:|
+| slacked-lime → gravel → sand | 0.81 | 3.25 | 10% |
+| design 07 soil-separation surplus | 3.61 | 14.44 | 45% |
+| **combined** | **4.42** | **17.69** | **56%** |
+
+So sand-casting handles a bit over half the creosote floor; the remainder still needs treated-wood or
+export. It does not scale with creosote either — the slacked-lime term is pinned to acetylene
+production, so pushing creosote higher does not bring more sand with it.
+
+**Route all gravel to sand, none to concrete.** With sand-casting as the priority there is no gravel
+left for concrete, which is the simpler configuration anyway: all 1.083/s lime then recycles to
+calcium-carbide, cutting coke demand ~3.6%, and the awkward 1:2 lime:gravel mismatch with the concrete
+recipe never arises. Concrete becomes an overflow destination for lime only if the acetylene chain
+backs up.
 
 **Imports for value routes:** titanium-plate ~0.07/s (design 07 produces it), water.
 
@@ -556,13 +600,14 @@ Three further dials exist in the recipe space. All are currently unusable, but t
 as tech unlocks.
 
 **`tar-distilation` — the zero-creosote route. Blocked on flue-gas disposal.**
-`350 tar → 1 rich-clay + 500 flue-gas + 100 carbon-dioxide + 100 aromatics` (2.5s, distilator). Unlocked
-and usable *today* as a tar route, and it produces **no creosote at all** — which would take the 31.75/s
-floor to actual zero, plus aromatics directly with no steam input. The blocker is flue-gas: 500 per 350
-tar, and its only unlocked consumer is barreling. `fluegas-filtration` (100 → 2 ash) and
-`fluegas-to-syngas` (3000 + active-carbon → 300 syngas) both need **filtration** tech, which costs
-logistic-science-pack — the very thing this block is being built to supply. So it is a
-post-logistic-science upgrade, and a strong one: it converts the creosote disposal problem into syngas.
+`350 tar → 1 rich-clay + 500 flue-gas + 100 carbon-dioxide + 100 aromatics` (2.5s, distilator). It
+produces **no creosote at all** — which would take the 31.75/s floor to actual zero, plus aromatics
+directly with no steam input. The blocker is flue-gas: 500 per 350 tar, and its only unlocked consumer
+is barreling. `fluegas-filtration` (100 → 2 ash) and `fluegas-to-syngas` (3000 + active-carbon → 300
+syngas) are both confirmed locked in `force.recipes`. So it is a post-filtration upgrade, and a strong
+one: it converts the creosote disposal problem into syngas.
+
+Available, but out of scope — deferred on the flue-gas sink, not the recipe.
 
 **`tar-to-carbolic` — zero creosote, no flue-gas, but anti-aligned with the gasoline preference.**
 `1 raw-coal + 100 tar + 100 steam → 1 rich-clay + 1 ash + 35 coal-gas + 10 carbolic-oil` (5s, distilator).

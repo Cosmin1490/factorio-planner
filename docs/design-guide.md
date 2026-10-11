@@ -53,6 +53,60 @@ This is why a self-contained design and a shared-infrastructure block for the sa
 6. **Match the limiting reagent** — don't force the abundant byproduct to zero; that over-scales the consumer and imports the scarce one. Let the scarce one set the pace.
 7. **Recycle intermediates through every producing step** — when multiple recipes produce the target as byproduct (coal chain: raw-coal -> coal -> coke -> coal-gas all produce tar), force intermediates back. Coal chain: 3x raw-material reduction (33 -> 11/s for 100 tar/s).
 
+### Backpressure analysis — the default way to check a design
+
+Byproduct *classification* (rules 5–7) asks "does every output have somewhere to go?". Backpressure
+analysis asks the harder question: "at every operating level, does it still?" Run this on any block
+whose output rate varies with demand, and on any block with internal feedback loops.
+
+**1. Trace every cascade to the top, not one step.** Stopping at "X backs up, so Y backs up" hides the
+constraint. Follow it until it reaches a raw input. Example: acetylene backing up stalls coke, which
+stalls the coke producers, which kills gasoline, which backs up anthracene, which blocks tar-refining,
+which backs up tar, which stops the gasifier *and* the distiller — the whole block, not a branch.
+
+**2. A connected graph of multi-output recipes has exactly one throughput variable.** A multi-output
+recipe stalls when *any* single output is blocked, so no branch can run while another is stopped — any
+divergence creates backpressure that corrects it. The block reduces to one scalar `t`. This is what
+makes the rest of the analysis tractable, and it is worth confirming before assuming a design can be
+"partially" run.
+
+**3. Every terminal output caps `t` independently — including the ones you don't care about.**
+This is the finding most often missed, because minor byproducts get waved through:
+
+```
+t = min( demand_cap,  sink_1/rate_1,  sink_2/rate_2,  ... )   over every terminal output
+```
+
+**An undersized sink on a trivial byproduct throttles the primary product.** Example: a coal-to-power
+block rated 446 MW emits 61.98/s CO2 as a side effect of its acetylene chain. With only a 7.59/s
+consumer available, `t = 0.122` and the block delivers **54.6 MW — 12% of nameplate** — despite the
+grid wanting all of it and every fuel stream being healthy. Tabulate *all* terminal outputs with their
+rate at `t=1` and the sink each needs; the binding one is frequently not the one you were thinking
+about.
+
+**4. Backpressure self-regulates, but it does so by pinning buffers full.** A chain whose output is
+consumed at less than full rate will find the correct throughput on its own — recipes duty-cycle and
+the average matches demand, no circuit logic required. The catch is *where the backpressure front sits*:
+with no input throttle the front is deep inside the block and essentially every buffer sits at ~100%,
+leaving zero ride-through, no spike absorption, and maximum exposure to any deadlock state. Throttling
+the raw input moves the front outside the chain and leaves buffers empty and useful. **Throttle for
+buffer headroom, not for regulation.**
+
+**5. Choose which cascade absorbs the variance, by buffer depth.** When several outputs could back up,
+the choice is yours (via consumer priority — e.g. gating one boiler group's steam on bus level). Rank
+candidates by how many buffer stages sit between them and the first core recipe, and prefer the deepest.
+Solid intermediates buffer far better than fluids: one chain measured 4 stages and ~37 minutes of
+ride-through because three of its stages were items in chests, while every alternative was a single
+fluid stage.
+
+**6. Check every cycle for deadlock, not just for solver warnings.** The solver flags cycles so it can
+constrain them; in game a cycle deadlocks if *all* its buffers fill at once, since each recipe is then
+blocked on the next one's output and nothing can move. Find the ratio that protects it. Example:
+`lime → calcium-carbide → acetylene → slacked-lime → lime` is safe only because the recycling step
+consumes 60 slacked-lime per lime, draining one buffer far faster than it fills the other — giving the
+condition `slacked_lime_capacity < 60 × lime_capacity`. Satisfied by any sane layout, but worth knowing
+which inequality you are relying on.
+
 ### In-game byproduct handling
 
 Multi-product recipes stall completely when ANY output buffer is full. Every product must have somewhere to go.
@@ -62,7 +116,7 @@ Multi-product recipes stall completely when ANY output buffer is full. Every pro
 - **Convert before voiding when the intermediate has value** — conversion captures value but has a cost: the conversion recipe must keep pace with production. Always compute the building ratio before committing — when conversion is too expensive, pyvoid directly instead. Viable example: `coal-gas-from-coke` (4 coke/s per distilator). Value-capture example: stone -> saline-water (10 stone + 100 water -> 50 water-saline) creates a useful intermediate; apply overflow-to-void on the saline-water, export what consumers need, sinkhole the rest.
 - **Overflow-to-void pattern**: don't void blindly — prioritize real consumption, only void surplus. Wire a pump or overflow valve with circuit condition: fill the load station buffer first, overflow excess to a sinkhole/exhaust. When a consumer eventually connects, trains pull from the station and less goes to void automatically. No block redesign needed. Example: tar refinery produces 280/s pitch with no current consumer — overflow valve after the pitch tank routes excess to sinkhole, block keeps running for creosote/gasoline/coke/middle-oil. **Prefer voiding at source.** Void inside the producing block when possible — it's simpler and avoids train scheduling complexity. When voiding doesn't fit in-block (e.g., solid fuel needing fluid conversion), a single dedicated void destination at the lowest train priority is acceptable. Never use more than one void destination per item — multiple void blocks compete with real consumers for train deliveries and priorities can't distinguish them.
 - **Primary products can back up too** — not just byproducts. If the main export has no consumer and isn't voided, the entire block stalls, including internal chains that feed other exports. Example: aluminium block stalls entirely when plates back up — coal chain stops, no coal-gas for mining fluid, drilling halts. Apply overflow-to-void on primary products with intermittent demand, or ensure a consumer exists before building.
-- **Pyanodon hard mode (`pyhardmode` mod) restricts voiding.** Sinkholes are fixed to the `water-pyvoid-fluid` recipe (base water only — not water-saline or other variants) and must be placed on lakes/rivers. Gas vents require filtration media — venting has an ongoing material cost. Py-burners don't destroy items; they generate heat, which must be consumed (incubators, heat exchangers, etc.). Category (d) "pure waste → void" from rule 5 effectively disappears: every byproduct must be (a) recycled, (b) exported, or (c) converted. Fluid byproducts that would normally be vented (e.g., hydrogen from electrolysis) must be burned for power with guaranteed consumption — which requires electrical isolation of the burn loop (dedicated mini-network for the boiler + engine section with its own consumers) since grid-wide steam engines throttle proportionally to oversupply. Plan for hard mode constraints at block design time, not as a retrofit.
+- **Pyanodon hard mode (`pyhardmode` mod) restricts voiding.** *(Reference only — this repo's ruleset is a self-imposed approximation, not the mod. See CLAUDE.md § Rules for the actual tiered venting policy in force, which permits atmospheric gases and so avoids several of the complications below.)* Sinkholes are fixed to the `water-pyvoid-fluid` recipe (base water only — not water-saline or other variants) and must be placed on lakes/rivers. Gas vents require filtration media — venting has an ongoing material cost. Py-burners don't destroy items; they generate heat, which must be consumed (incubators, heat exchangers, etc.). Category (d) "pure waste → void" from rule 5 effectively disappears: every byproduct must be (a) recycled, (b) exported, or (c) converted. Fluid byproducts that would normally be vented (e.g., hydrogen from electrolysis) must be burned for power with guaranteed consumption — which requires electrical isolation of the burn loop (dedicated mini-network for the boiler + engine section with its own consumers) since grid-wide steam engines throttle proportionally to oversupply. Plan for hard mode constraints at block design time, not as a retrofit.
 
 ## Power & energy
 

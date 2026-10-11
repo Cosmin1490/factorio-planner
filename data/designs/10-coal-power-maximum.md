@@ -10,8 +10,9 @@ Generators are **`steam-engine`** (effectivity 0.5), which is the binding constr
 `steam-turbine-mk01` the same chain yields ~970 MW off 36 turbines instead of 142 engines — see
 § Generator choice.
 
-Sinking the CO2 internally via `methane-co2` instead raises this to ~461 MW but costs 24 buildings and
-368 bio modules — see § The CO2 problem. Exporting is preferred; the headline figure assumes it.
+CO2 (61.98/s) is **vented** via one `py-gas-vent` — an approved exception in this ruleset, see
+CLAUDE.md § Rules. Converting it instead (`chromium-01`, or `methane-co2` for +15 MW) is documented but
+not required; the headline figure assumes venting.
 
 Derived from design 09's drawable-energy budget framing, but inverted: instead of maximising material
 draws against the budget, this maximises the budget itself and draws nothing.
@@ -595,16 +596,30 @@ net MW = 446.07 × t
 | creosote sink = 10/s | 0.315 | 140.5 |
 | **all sinks sized to full rate** | **1.000** | **446.1** |
 
-### Consequence 3: `methane-co2` is mandatory, not a bonus
+### Consequence 3: CO2 is vented — the cap disappears for one tile
 
-This reverses the earlier recommendation in § The CO2 problem. "Export the CO2" assumed a sink exists —
-but at **61.98/s** there is no plausible external consumer. Moss-2 takes 7.59/s, and every other site
-can make CO2 for free from `moondrop-co2`, so nobody wants an import. With Moss-2 as the only outlet
-the block is capped at **54.6 MW — 12% of its capability.**
+At **61.98/s** there is no plausible external consumer: Moss-2 takes 7.59/s, and every other site makes
+CO2 for free from `moondrop-co2`, so nobody wants an import. With Moss-2 as the only outlet the block
+would be capped at **54.6 MW — 12% of its capability.** Every unlocked conversion sink is gated on an
+input this block lacks (olefin needs 124/s hydrogen against 18.52/s; log6 needs 5.31/s ash against
+2.16/s; formamide needs 61.98/s ammonia against 0.81/s).
 
-`methane-co2` consumes exactly 61.98/s, matching production precisely, and removes the cap entirely.
-So its 24 buildings are not buying +15 MW of methane fuel; they are buying **the other ~390 MW**. Build
-it unless a genuine 62/s CO2 consumer exists.
+**Per the project ruleset, CO2 is vented.** `carbon-dioxide-pyvoid-gas` (20,000 CO2 → nothing) in a
+`py-gas-vent`: **1×1 tile, 25 kW, no fuel, 40,000/s capacity** — one vent at 0.15% utilisation. The cap
+disappears for a rounding error, and the block holds 446 MW with no bio dependency and no chromium line.
+
+Venting is a deliberate, approved exception rather than a default — see CLAUDE.md § Rules. Both
+conversion routes stay documented in case CO2 becomes worth capturing later:
+
+| route | buildings | gives | needs |
+|---|--:|---|---|
+| **vent** | **1** (1×1, 25 kW) | — | nothing |
+| `chromium-01` | 3 | 2.07/s chromium, sinks 4.13/s creosote too | chromite-sand 6.20/s, a chromium ore line |
+| `methane-co2` | 24 | +15 MW | 368 moondrop modules, self-grown seeds |
+
+`chromium-01` is the one worth revisiting — 150 CO2 per craft is the densest sink available, it is
+already unlocked, and it absorbs creosote as a side effect. Build it if a chromium line is wanted
+anyway; otherwise vent.
 
 Creosote at 31.75/s has the same structure — the brief assumes an external sink, and that assumption is
 load-bearing for 446 MW, not a tidying detail.

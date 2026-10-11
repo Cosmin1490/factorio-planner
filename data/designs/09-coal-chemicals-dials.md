@@ -3,8 +3,16 @@
 Supply-driven block: one yellow belt of raw-coal in, continuously-variable product mix out.
 Supersedes the mode framing of designs 04/05/08 — see § Relation to design 08.
 
-**Primary role: mining fluid hub.** This block produces the mining fluid for 6 of the 14 fluid-mined
-ores directly, and feeds the acetylene chain that covers 3 more. Chemicals are the co-product.
+**Foundational block — it sits upstream of ore extraction, power, and chemistry at once.**
+
+- **Mining fluid** for 6 of the 14 fluid-mined ores directly (syngas → borax, phosphate-rock, chromium,
+  nickel; coal-gas → aluminium; aromatics → zinc), plus 3 more through the coke → acetylene chain.
+- **Power** — up to 221.70 MJ/s of drawable energy, a ~330 MW ceiling, off a chain that multiplies
+  raw-coal's fuel value 4.5× versus burning it directly.
+- **Materials** — coke, aromatics, creosote, plastic, polybutadiene, carbon-black, rubber feedstock.
+
+No single one of these is "the" output. The dials decide which of the three the block is currently
+serving, and the drawable-energy budget is what they are all trading against.
 
 All solver runs fresh (input mode, `--input raw-coal:900 --time 60`). Nothing carried over from design 08.
 

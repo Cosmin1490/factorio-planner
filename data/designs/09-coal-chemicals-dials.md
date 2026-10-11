@@ -497,7 +497,7 @@ backs up.
 | ash | `log3` in forestry (5 ash/log, 1.5× logs/seedling vs log2); planter-box export; `rich-clay` | 2.16–6.52/s |
 | iron-oxide | `iron-oxide-smelting` (20 → 10 iron-plate) | 0.435/s → 0.22/s free plate |
 
-No sinkholes. `py-limestone` (3 ash + 10 limestone + 35 creosote) looks like an ideal dual ash+creosote
+No sinkholes (project ruleset; tier-1 gases may be vented, liquids and solids may not — CLAUDE.md § Rules). `py-limestone` (3 ash + 10 limestone + 35 creosote) looks like an ideal dual ash+creosote
 sink but has **zero consumers** at current tech — dead end.
 
 Full forestry and slacked-lime/concrete sink details carry over unchanged from design 08 § Byproduct

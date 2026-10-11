@@ -497,7 +497,7 @@ All raw mined resources — no processed items. Mining fluid chain adds ~85/60s 
 | Byproduct | /s | Notes |
 |---|---:|---|
 | steam | 58.33 | from polybutadiene (→ cooling-tower) |
-| flue-gas | 40.84 | from smelting; no consumer; retrofit after filtration tech |
+| flue-gas | 40.84 | from smelting; **vented** (`py-gas-vent`, tier 1 — combustion exhaust). No filtration retrofit needed. |
 | naphthalene-oil | 6.86 | from pitch-refining + tar-refining-tops |
 | oxygen | 4.23 | from electrolysis |
 | sand | 3.61 | from soil-separation-2 |
@@ -552,7 +552,7 @@ Major waste streams eliminated: coal-gas (100% consumed), pitch (100% consumed),
 - **Iron-oxide-smelting is incompatible with oil refining in the LP.** When both are present without stone-import, the LP scales sb-grade-01 +45% to source iron-oxide.
 - **Cooling-water (cooling-tower-mk01) for steam recovery.** polybutadiene produces 58.33/s excess steam. Route through cooling-water (400 steam → 400 water@100°C, 1 tower) to recover ~58/s water. Not in solver — the LP abuses it.
 - **coarse-classification handled manually.** Adding coarse-classification to the solver causes LP infeasibility, but 1 classifier at 4% utilization handles 0.83/s coarse outside the solver (see [§ Coarse processing](#coarse-processing)).
-- **Flue-gas: no consumer at current tech.** fluegas-filtration and fluegas-to-syngas require `filtration` tech, which costs logistic-science-pack — bootstrap problem. Initial build must vent; retrofit after research.
+- **Flue-gas is vented.** `fluegas-filtration` and `fluegas-to-syngas` both require `filtration` tech, which costs logistic-science-pack — a bootstrap problem. Not an issue: flue-gas is tier 1 under the project ruleset (combustion exhaust), so one `py-gas-vent` handles all 40.84/s permanently. Convert later only if `fluegas-to-syngas` is wanted for the syngas, not out of necessity.
 
 ## Solver command (213 buildings)
 

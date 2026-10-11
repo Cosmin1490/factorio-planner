@@ -234,16 +234,33 @@ Polybutadiene produces 1000 steam/craft as a byproduct — at typical utilizatio
 
 Oil-boiler-mk01: effectivity=2, max 29.61 MW heat = 60 steam/s. 12 boilers = 720 steam/s capacity.
 
+**Water accounting.** The per-mode tables list `steam` and `water` as separate inputs because that is how the solver reports them, but steam is produced on-site by the boilers from water at 1:1. Real water import is `steam + water`:
+
+| Mode | Steam (boiler feed) | Process water (syngas) | **Total water import** |
+|------|--------:|--------:|--------:|
+| A1 | 626.48/s | 340.66/s | **967.14/s** |
+| A2 | 357.21/s | 216.00/s | **573.21/s** |
+| B1 | 475.35/s | 270.70/s | **746.05/s** |
+| B2 | 357.21/s | 216.00/s | **573.21/s** |
+
+One offshore-pump (1200/s) covers every mode. Size the trunk pipe for A1.
+
 Fuel values (MJ/unit): gasoline 1.20, syngas 0.40, aromatics 0.35, carbolic-oil 0.35, naphthalene-oil 0.30, anthracene-oil 0.25, coal-gas 0.20, hydrogen 0.10.
 
 Steam per unit burned (×2 effectivity): gasoline 4.86, syngas 1.62, naphthalene 1.22, aromatics 1.42, carbolic 1.42, coal-gas 0.81, hydrogen 0.41.
 
-### A modes (cracking) — gasoline covers steam
+### A modes (cracking) — burn naphthalene + carbolic first, gasoline for the balance
 
-| Mode | Steam need | Gasoline burned | Gasoline exported | Fuel surplus |
-|------|--------:|--------:|--------:|---|
-| A1 | 626.48/s | 128.90/s | 29.58/s | all other products free |
-| A2 | 357.21/s | 73.50/s | 16.86/s | all other products free |
+Naphthalene-oil and carbolic-oil have **no material consumer** in A modes (only creosote conversion or barreling) but both are fuels. Burning them is the primary sink — zero extra buildings — and it frees gasoline, the highest-value fuel per unit, for export.
+
+**Boiler fuel priority: naphthalene-oil → carbolic-oil → gasoline.** Without this circuit priority the boilers burn gasoline preferentially and the two oils back up, stalling tar-refining-tops and pitch-refining.
+
+| Mode | Steam need | Naphthalene | Carbolic | Gasoline burned | Gasoline exported |
+|------|--------:|--------:|--------:|--------:|--------:|
+| A1 | 626.48/s | 134.58/s (all) | 34.80/s (all) | 84.95/s | **73.53/s** |
+| A2 | 357.21/s | 76.73/s (all) | 19.85/s (all) | 48.44/s | **41.92/s** |
+
+The two oils cover 34% of steam demand in A2, 34% in A1. Both scale with tar throughput, as does steam demand, so the ratio is fixed — they are always fully consumed while the block runs. Gasoline export is 2.5× what gasoline-only burning yields.
 
 ### B modes (creosote) — gasoline + syngas cover steam
 
@@ -274,27 +291,42 @@ A1 achieves higher amplification than B1 because anthracene-gasoline-cracking pr
 | Gasoline | Yes | 158.48/s (A1) | Overflow to boiler fuel — always consumed |
 | Coke | Yes (A2/B2 only) | 36.70/s (A2) | Export station needed; switch to coke-recycled if no consumer |
 | Syngas | In B modes | ~10-16/s (after fuel) | Minimal export; overflow to boiler |
-| Naphthalene-oil | Yes (A modes) | 134.58/s (A1) | Export or convert to creosote (switch to B mode) |
-| Carbolic-oil | Yes (A modes) | 34.80/s (A1) | Export or convert to creosote (switch to B mode) |
+| Naphthalene-oil | No (A modes) | 134.58/s (A1) | Boiler fuel, top priority — no non-fuel consumer exists besides creosote conversion |
+| Carbolic-oil | No (A modes) | 34.80/s (A1) | Boiler fuel, top priority — same |
 | Creosote | Yes (all modes) | 212.32/s (B1) | Sand-casting (with sand) or treated-wood (with wood); see byproduct sinks |
 | Plastic-bar | If no consumer | <1/s | Overflow to chest with circuit control |
 | Polybutadiene | If no consumer | <5/s | Overflow to chest |
 | Carbon-black | If no consumer | <1/s | Overflow to chest |
-| Ash | Yes | 6.52/s (A1) | Pyvoid (py-burner) — negligible rate |
-| Iron-oxide | Yes | 0.44/s (all) | Pyvoid or export — negligible rate |
+| Ash | Yes | 6.52/s (A1) | `log3` in the forestry sink (5 ash/log, also 1.5× logs per seedling vs log2); export remainder to planter-box consumers; `rich-clay` as third option |
+| Iron-oxide | Yes | 0.44/s (all) | `iron-oxide-smelting` (20 → 10 iron-plate) = 0.22/s free iron plate |
 
-Primary stall risk: in A modes, naphthalene-oil and carbolic-oil have no internal consumer. They must be exported or the mode switch to creosote engaged. Creosote always has internal sinks (sand-casting and/or treated-wood) so it never stalls the block.
+No product can stall the block. Every fluid is either a fuel with boiler priority (naphthalene, carbolic, gasoline, syngas) or has a material sink (creosote → sand-casting/treated-wood, coke → recycle switch, ash → log3/planter-box, iron-oxide → smelting). The one thing that *must* be wired correctly is boiler fuel priority: naphthalene and carbolic before gasoline. Get that backwards and the two oils back up, stalling tar-refining-tops and pitch-refining — which halts the whole chain.
 
 ## Mode selection guide
 
 | Need | Recommended mode |
 |---|---|
-| Coke for acetylene (28+/s) | **A2** — 36.70/s coke export |
+| Coke for acetylene (24.4/s at 260/s acetylene) | **A2** — 36.70/s coke export |
 | Max syngas export | **A1** — 238.46/s syngas |
 | Max aromatics for downstream | **A1** — 99.77/s aromatics |
 | Creosote for e-circuit | **B1** — 212.32/s creosote |
 | Coke + creosote | **B2** — 21.22/s coke + 159.55/s creosote (coke may be insufficient for 28/s acetylene demand) |
 | No acetylene demand, max output | **A1** — all coke recycled, max throughput |
+
+## Optional third switch — naphthalene/carbolic → creosote in A modes
+
+A modes default to burning naphthalene-oil and carbolic-oil (see Energy). Enabling `naphthalene-oil-creosote` + `carbolic-oil-creosote` instead converts them to creosote. Solver-validated at 900 raw-coal/60s: 52 active buildings, 23.41 MW.
+
+| | A2 default (burn) | A2 + conversion |
+|---|--:|--:|
+| Creosote | 31.75/s | **97.64/s** |
+| Gasoline exported | 41.92/s | 16.86/s |
+| Naphthalene / carbolic out | 0 (burned) | 0 (converted) |
+| Extra buildings | — | 4 naph + 1 carbolic |
+
+**Costs zero additional master-table buildings** — the B-mode creosote units (5 naphthalene, 2 carbolic) already cover the 4+1 needed, and they are idle in A modes anyway.
+
+The trade is 65.89/s more creosote for 25.06/s less gasoline export (30.07 MW of fuel value). Worth it when routed to sand-casting (6.59/s sand-castings, needs 16.47/s sand). **Not** worth it for treated-wood — 65.89/s creosote yields only ~10.5 MW as treated-wood, a third of the gasoline given up. Convert for material value, never for fuel value.
 
 ## Byproduct sinks
 
@@ -363,7 +395,31 @@ Imports: soil 0.05/s, CO2 0.51/s, water. Output: 0.635/s treated-wood = 2.54 MW.
 
 Imports: soil 0.34/s, CO2 3.43/s, water. Output: 4.25/s treated-wood = 16.97 MW.
 
-CO2 available from lime→calcium-carbide chain (100 CO2 per lime craft). In practice, build for min case — scale up forestry later if creosote remainder after sand-casting justifies it.
+CO2 from `coke-co2` locally (see § Relation to logistic science) — not from the acetylene block's lime recipe. Use `log3` rather than `log2`: it consumes 5 ash/log (sinking this block's own ash) and yields 1.5× logs per seedling, shrinking the nursery and moss-farm counts above by ~33%. In practice, build for the min case — scale up forestry later if the creosote remainder after sand-casting justifies it.
+
+## Relation to logistic science (design 07)
+
+Design 07 is solved self-contained (218 buildings, its own 7.14/s raw-coal chain) to prove the chain closes — see design guide § "Solve whole, build in parts." This block **is** that design's coal slice, built oversized. Standing it up closes out design 07's "Coal & tar chemistry (17 buildings)" and "Mining fluid chain (5 buildings)" rows — 22 of its 218 buildings — and serves py-science and e-circuits at the same time.
+
+Coverage check against design 07's actual draws (A2 mode):
+
+| Item | Design 07 needs /s | A2 supplies /s | Margin |
+|---|--:|--:|--:|
+| syngas | 3.18 | 151.20 | 48× |
+| aromatics | 13.25 | 56.89 | 4.3× |
+| hydrogen | 13.31 | 18.52 | 1.4× |
+| coke | ~1.9 + acetylene chain | 36.70 | covers both |
+| creosote | 0.39 | 31.75 | 81× |
+| coal (smelting fuel) | 1.72 | 4.50 (intermediate) | divert before coal-gas |
+| carbon-black | ~0.20 | 1 reformer (2/s cap) | 10× |
+| polybutadiene | 5.83 | 1 cracker (50/s cap) | 8.6× |
+| **carbon-dioxide** | **8.17** | **0** | **gap — see below** |
+
+**Hydrogen deletes design 07's electrolyzer.** Design 07 runs 1 electrolyzer at 0.61 utilization for 11.65/s hydrogen (plus 1.66/s from its own pitch-refining). A2's 18.52/s covers the full 13.31/s draw (ralesia 12.66 + diborane 0.65), removing both the electrolyzer and its 4.23/s surplus oxygen.
+
+**CO2 gap.** Design 07 sources 8.17/s carbon-dioxide from `tar-distilation`, feeding Moss-2 (7.59/s) and methane-co2 (0.58/s). This block runs `tar-refining`, not `tar-distilation`, so it produces **no CO2**. Fix: `coke-co2` (2 coke → 80 CO2, hpf) — 8.17/s CO2 costs 0.20/s coke in 1 building at ~0.51 utilization. Add it here rather than importing CO2, since the coke is already local. This also supplies the forestry sink's moss chain (0.51–3.43/s CO2), which the byproduct-sinks section assumed came from the acetylene block's lime recipe — an unverified cross-block claim that `coke-co2` resolves locally.
+
+Not covered by this block (other slices of design 07): bio/farming, urea cycle, smelting, electronics, battery chemistry.
 
 ## Notes
 
@@ -372,5 +428,9 @@ CO2 available from lime→calcium-carbide chain (100 CO2 per lime craft). In pra
 - Cracking buildings (22 distilator) and creosote buildings (16 tpu) are mutually exclusive — one set always idle.
 - Coal-gas-from-coke buildings (16) are idle in exported modes (A2/B2).
 - Mode A1 drives 10 of 16 max building counts due to double feedback loop.
-- B2 mode only exports 21.22/s coke — insufficient for 28/s acetylene demand. Use A2 when acetylene is needed.
+- B2 mode only exports 21.22/s coke — short of the 24.4/s that 260/s acetylene needs (10 coke per 100 acetylene, 9.375 with slacked-lime recycling). Use A2 when acetylene is active.
+- Coke export and chemical output trade off continuously, not discretely. Each unit of coke recycled yields 0.411 additional coke through the tar→pitch→coke cascade (`a = 1 − 36.70/62.33`), so `export(f) = (1−f)×36.70 / (1 − 0.411f)` at recycling fraction f. Since a < 1 the loop never self-sustains — recycling more can only trade chemicals for coke, never grow total coke. 36.70/s (A2, f=0) is the hard ceiling; f≈0.35 gives 27.9/s coke with ~178/s syngas (18% above A2). Implement by circuit-gating how many of the 16 coal-gas-from-coke buildings are enabled on coke buffer level.
 - Downstream consumers (plastic, polybutadiene, carbon-black) are negligible load on coal chain outputs at current demand. They're built for availability, not throughput.
+- Creosote is **not** a fuel (fuel_value 0) — unlike every other block fluid. It needs a material sink (e-circuit demand, sand-casting, treated-wood); it cannot be burned off. This is why the forestry/sand-casting sinks are mandatory rather than optional.
+- `py-limestone` (3 ash + 10 limestone + 35 creosote → 2 py-limestone) looks like an attractive dual ash+creosote sink but has **zero consumers** at current tech. Dead end — don't build it.
+- Naphthalene-oil and carbolic-oil have no non-barrel consumer besides creosote conversion. Both are fuels; burning them is the default sink and requires boiler fuel priority (see Energy).

@@ -272,6 +272,15 @@ costs glass to build, so glass is available; likewise titanium and aluminium, wh
 science recipe but in several machines. This recovers most of the practical inventory from design docs
 alone, and is usually faster than asking item by item.
 
+**The request is itself evidence of what is built.** Science tiers gate each other, so a request to
+design the tier above one you have a completed design for implies that design is running — and
+therefore that everything it needed, both to feed it *and to construct it*, is on hand. Asking for the
+science after logistic science means intermetallics exist, because `auog-paddock-mk01` and
+`bio-reactor-mk01` cannot be placed without them. Fold that into the baseline before computing any gap,
+and do not re-flag what the request already implies. (`scripts/build-materials.mjs` holds a hardcoded
+`BUILT` list that will not notice this on its own — update it, or override its output when the request
+contradicts it.)
+
 13. **Validate existing capacity against total demand** — after computing the block delta, sum ALL imports from each existing block across every new consumer and verify it can handle the total. This check is easy to skip because each new block's design looks fine in isolation — the failure only appears when you aggregate.
     
     Example: seaweed farm produces 6.4/s. Rubber needs 2/s (sodium-alginate), py-science needs 2.4/s (agar), logistic needs 0.5/s -> total 4.9/s, fits. But a fourth consumer pushing to 7/s means you need a second stamp. Also validate bus fluids: if acetylene serves iron smelting + lead mining + titanium mining, the fuel block must be sized for the total, not just its own iron consumption.

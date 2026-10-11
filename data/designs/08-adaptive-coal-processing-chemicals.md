@@ -276,14 +276,14 @@ A1 achieves higher amplification than B1 because anthracene-gasoline-cracking pr
 | Syngas | In B modes | ~10-16/s (after fuel) | Minimal export; overflow to boiler |
 | Naphthalene-oil | Yes (A modes) | 134.58/s (A1) | Export or convert to creosote (switch to B mode) |
 | Carbolic-oil | Yes (A modes) | 34.80/s (A1) | Export or convert to creosote (switch to B mode) |
-| Creosote | Yes (B modes) | 212.32/s (B1) | Export station needed |
+| Creosote | Yes (all modes) | 212.32/s (B1) | Sand-casting (with sand) or treated-wood (with wood); see byproduct sinks |
 | Plastic-bar | If no consumer | <1/s | Overflow to chest with circuit control |
 | Polybutadiene | If no consumer | <5/s | Overflow to chest |
 | Carbon-black | If no consumer | <1/s | Overflow to chest |
 | Ash | Yes | 6.52/s (A1) | Pyvoid (py-burner) — negligible rate |
 | Iron-oxide | Yes | 0.44/s (all) | Pyvoid or export — negligible rate |
 
-Primary stall risk: in A modes, naphthalene-oil and carbolic-oil have no internal consumer. They must be exported or the mode switch to creosote engaged. In B modes, creosote must be exported.
+Primary stall risk: in A modes, naphthalene-oil and carbolic-oil have no internal consumer. They must be exported or the mode switch to creosote engaged. Creosote always has internal sinks (sand-casting and/or treated-wood) so it never stalls the block.
 
 ## Mode selection guide
 
@@ -295,6 +295,75 @@ Primary stall risk: in A modes, naphthalene-oil and carbolic-oil have no interna
 | Creosote for e-circuit | **B1** — 212.32/s creosote |
 | Coke + creosote | **B2** — 21.22/s coke + 159.55/s creosote (coke may be insufficient for 28/s acetylene demand) |
 | No acetylene demand, max output | **A1** — all coke recycled, max throughput |
+
+## Byproduct sinks
+
+### Slacked lime → concrete + acetylene recycling
+
+The acetylene block (separate) produces 25 slacked-lime per 100 acetylene via `slacked-lime-void` (60 slacked-lime → 1 lime + 1 gravel). The void recipe produces lime:gravel at 1:1, but concrete needs lime:gravel:sand:water at 1:2:2:20. Gravel is the bottleneck — which guarantees leftover lime.
+
+Routing: all gravel splits between concrete (as-is) and sand (via `gravel-to-sand`: 4 gravel → 3 sand). Concrete needs gravel:sand at 1:1, so X gravel + (total-X)×0.75 sand where X = (total-X)×0.75 → X = 0.43 × total. Remaining lime (57% of production) feeds back into calcium-carbide → more acetylene, reducing coke demand by ~3.6%.
+
+If concrete backs up, all lime routes to calcium-carbide. If acetylene demand drops, all lime routes to concrete. Neither path stalls.
+
+### Creosote → sand-casting (smelting consumable)
+
+Sand-casting (`5 sand + 20 creosote → 2 sand-casting`, 1s, tar-processing-unit) consumes both creosote and sand — two waste streams into a high-demand smelting item (iron-plate-1, aluminium-plate-3, chromium-01).
+
+Slacked lime synergy: the acetylene block's slacked-lime-void produces gravel → sand (via `gravel-to-sand`: 4 gravel → 3 sand). At 260/s acetylene: 65/s slacked-lime → 1.08/s gravel → 0.81/s sand → absorbs 3.25/s creosote → 0.325/s sand-casting. Leftover lime recycles to calcium-carbide as before.
+
+With imported sand, the full creosote stream can feed sand-casting:
+
+| Creosote | Sand needed | Sand-casting out | TPU buildings |
+|---|---|---|---|
+| 31.75/s (A2 min) | 7.94/s | 3.18/s | 2 |
+| 212.32/s (B1 max) | 53.08/s | 21.23/s | 11 |
+
+Sand-casting has guaranteed perpetual demand (iron/aluminium smelting never stops). Priority: sand-casting first (value capture), treated-wood for remainder.
+
+### Creosote → treated-wood (power sink)
+
+Creosote not consumed by sand-casting or e-circuits converts to treated-wood for self-power fuel.
+
+Chain: creosote + wood → treated-wood (4 MJ biomass, no burnt_result). Wood from log2 via fwf-mk01 (10 tree-mk01 modules, speed 1.0). Moss from Moss-1 via moss-farm-mk01 (15 moss modules, speed 1.0). Wood-seeds loop (wood → seeds → seedlings → logs → wood) consumes 3.1% of wood produced.
+
+**Min (A2: 31.75/s creosote) — 7 buildings:**
+
+```
+┌───────────────┬─────────────────────┬──────────────────┬───────┐
+│ Recipe        │ Factory             │ Rate             │ Count │
+├───────────────┼─────────────────────┼──────────────────┼───────┤
+│ treated-wood  │ tar-processing-unit │ 31.75/s creosote │     1 │
+│ log-wood-fast │ wpu-mk01            │ 0.033/s log      │     1 │
+│ log2          │ fwf-mk01 (10 tree)  │ 0.033/s log      │     1 │
+│ wood-seedling │ botanical-nursery   │ 0.025/s seedling │     1 │
+│ wood-seeds    │ assembler           │ 0.008/s seeds    │     1 │
+│ Moss-1        │ moss-farm (15 moss) │ 0.041/s moss     │     1 │
+│ muddy-sludge  │ washer              │ 0.51/s sludge    │     1 │
+└───────────────┴─────────────────────┴──────────────────┴───────┘
+```
+
+Imports: soil 0.05/s, CO2 0.51/s, water. Output: 0.635/s treated-wood = 2.54 MW.
+
+**Max (B1: 212.32/s creosote) — 18 buildings:**
+
+```
+┌───────────────┬─────────────────────┬──────────────────┬───────┐
+│ Recipe        │ Factory             │ Rate             │ Count │
+├───────────────┼─────────────────────┼──────────────────┼───────┤
+│ treated-wood  │ tar-processing-unit │ 212.32/s creos.  │     5 │
+│ log-wood-fast │ wpu-mk01            │ 0.219/s log      │     1 │
+│ log2          │ fwf-mk01 (10 tree)  │ 0.219/s log      │     4 │
+│ wood-seedling │ botanical-nursery   │ 0.164/s seedling │     2 │
+│ wood-seeds    │ assembler           │ 0.055/s seeds    │     1 │
+│ Moss-1        │ moss-farm (15 moss) │ 0.274/s moss     │     4 │
+│ muddy-sludge  │ washer              │ 3.43/s sludge    │     1 │
+└───────────────┴─────────────────────┴──────────────────┴───────┘
+```
+
+Imports: soil 0.34/s, CO2 3.43/s, water. Output: 4.25/s treated-wood = 16.97 MW.
+
+CO2 available from lime→calcium-carbide chain (100 CO2 per lime craft). In practice, build for min case — scale up forestry later if creosote remainder after sand-casting justifies it.
 
 ## Notes
 

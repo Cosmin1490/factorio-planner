@@ -32,7 +32,8 @@ No build step needed for dev. The 16MB prototype JSON loads in ~0.6 seconds.
   - Byproduct recycling checked before voiding (rule 5a — run `recipes --consumes <byproduct>` to find recipes that convert it back to a chain input)
   - Conversion recipes checked for items with processing steps (log→wood, ore→plate)
   - Block boundary declared before solver run — every item classified as readily-available-import, byproduct-exclude, or must-consume-internally (design guide § Block boundary declaration). If block inventory is empty or you're unsure what's on the bus, ask the user before classifying — don't guess
-- When asked to solve a pipeline or compute production rates, use the `/pipeline` skill. When asked to design a block, use the `/block-design` skill.
+- Solver mode selection: use `--target` only for demand-driven blocks with a single end product. Use `--input` for supply-driven or multi-output blocks (e.g. "I have 15/s raw-coal, what comes out"). Target mode minimizes buildings for the named target and will silently skip recipes that don't feed it — on a multi-output chain it produces a plausible-looking answer that drops whole processing branches. Note that `--max-import` is a hard LP constraint in target mode but only post-processing in input mode (`src/commands/solve.ts:207`).
+- Solver defaults: always `--unlocked` and `--solver simplex`. Base-tier entities use bare names (`distilator`, `tar-processing-unit`), not `-mk01`; higher tiers use `-mk02`/`-mk03`/`-mk04`.
 
 ## Key files
 

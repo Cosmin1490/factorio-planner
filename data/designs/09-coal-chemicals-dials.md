@@ -468,6 +468,80 @@ made the justification explicit and recorded *why* they stop at 1 each. The real
 fewer buildings but the couplings the mode table hid: the power swing, the syngas-export collapse at
 `x = 0`, and dial `g`'s cost.
 
+## The drawable-energy budget
+
+The four production dials (`f`, `x`, `n`, `g`) are only half the control surface. The other half is the
+**draw dials** — how much of each product leaves as material rather than going to the boilers. These are
+not independent of each other: every fuel-capable product drawn as material removes its fuel value from
+the steam supply, so they all compete in **one shared budget**.
+
+```
+Σ (draw_i × fuel_value_i)  ≤  Σ (production_i × fuel_value_i)  −  process_steam × 0.24675
+```
+
+The 0.24675 is MJ of fuel per unit of steam (0.4935 ÷ 2 for oil-boiler effectivity). Each draw is
+priced at its own fuel value, so a unit of gasoline drawn costs 3× a unit of syngas drawn.
+
+### Budget by dial position
+
+| f | x | n | creosote /s | **drawable budget MJ/s** |
+|---|---|---|--:|--:|
+| 1 | 1 | 0 | 55.69 | **221.70** |
+| 1 | 1 | 1 | 171.24 | **169.15** |
+| 0 | 1 | 0 | 31.75 | **132.49** |
+| 0 | 1 | 1 | 97.64 | **102.53** |
+| 0 | 0 | 0 | 93.66 | **58.19** |
+| 1 | 0 | 1 | 212.32 | **32.89** |
+| 0 | 0 | 1 | 159.55 | **28.22** |
+
+**Max creosote cuts the drawable budget to 13% of maximum.** Creosote is the only non-fuel product in
+the block, so every unit is energy permanently removed from the budget — and then it costs buildings to
+dispose of on top of that.
+
+Note the `f=1, x=0, n=1` row: coke recycling nearly doubles tar throughput and adds ~20 active
+buildings, yet raises the drawable budget only from 28.22 to 32.89 MJ/s, because the entire
+amplification lands in creosote. **At `x=0`, recycling coke is close to energetically pointless** — it
+buys creosote volume, not capability.
+
+### Worked example
+
+`f=0, x=0, n=1`, drawing all aromatics and all hydrogen:
+
+| | MJ/s |
+|---|--:|
+| gasoline 28.44 × 1.20 | 34.13 |
+| syngas 151.20 × 0.40 | 60.48 |
+| aromatics 56.89 × 0.35 | 19.91 |
+| hydrogen 18.52 × 0.10 | 1.85 |
+| **total fuel produced** | **116.37** |
+| process steam (357.21 steam/s) | −88.15 |
+| **drawable budget** | **28.22** |
+| draw all aromatics | −19.91 |
+| draw all hydrogen | −1.85 |
+| **remaining for syngas** | **6.46** → **16.17/s** |
+
+Aromatics alone consumes 71% of the budget at this dial position. Hydrogen is a rounding error at
+1.85 MJ/s — at 0.10 MJ/unit it is the worst fuel in the block and should be treated as material-only.
+
+## Creosote route ordering
+
+The three creosote recipes destroy very different amounts of fuel value per unit produced. This was not
+obvious from volume ratios alone:
+
+| Route | ratio | **MJ destroyed per creosote** |
+|---|---|--:|
+| `carbolic-oil-creosote` | 50 → 50 | **0.35** |
+| `naphthalene-oil-creosote` | 50 → 30 | **0.50** |
+| `anthracene-oil-creosote` | 50 → 20 | **0.625** |
+
+**Take creosote from carbolic first, then naphthalene, then anthracene.** Carbolic is 1:1 by volume and
+cheapest energetically. Anthracene is worst on both counts *and* it is the stream that would otherwise
+have become gasoline and coke, so it carries an opportunity cost the other two do not.
+
+This is the underlying reason `x=1, n=1` outperforms `x=0` across every policy tested in this document:
+`n=1` buys creosote from the two streams that have no alternative use, while `x=0` buys it from the one
+that was producing your fuel and your coke.
+
 ## Dials considered and rejected
 
 Three further dials exist in the recipe space. All are currently unusable, but two are worth revisiting

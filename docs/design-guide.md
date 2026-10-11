@@ -208,7 +208,56 @@ When planning a major expansion (new science tier, new end product), the macro-l
 
 12. **Derive build order from dependencies** — topologically sort blocks by their input dependencies to get a phased build order.
     
-    Steps: (1) for each new block, list what it imports and which block provides it. (2) A block can't run until all its suppliers exist (or the import is from an existing block). (3) Group into phases: phase 0 = blocks whose imports all come from existing blocks, phase N+1 = blocks whose imports come from phase <= N. (4) Identify the **critical path** — the longest chain of sequential dependencies; this determines minimum calendar time to the end goal. (5) Identify **parallel opportunities** — blocks in the same phase with no mutual dependencies. (6) **Start bio blocks early** regardless of phase — breeding bootstrap takes days of real time to reach full module slots. Even if a bio block's output isn't needed until phase 3, the organisms need time to multiply.
+    Steps: (1) for each new block, list what it imports and which block provides it. (2) A block can't run until all its suppliers exist (or the import is from an existing block). (3) Group into phases: phase 0 = blocks whose imports all come from existing blocks, phase N+1 = blocks whose imports come from phase <= N. (4) Identify the **critical path** — the longest chain of sequential dependencies; this determines minimum calendar time to the end goal. (5) Identify **parallel opportunities** — blocks in the same phase with no mutual dependencies. (6) **Start bio blocks early** regardless of phase — breeding bootstrap takes days of real time to reach full module slots. Even if a bio block's output isn't needed until phase 3, the organisms need time to multiply. **But check construction feasibility first** (next section): if the paddock or farm itself costs a gated item, the head-start is gated too, and that gate — not the breeding — is the real critical path.
+
+### Construction-cost feasibility — the second dependency graph
+
+Rule 12 orders blocks by **flow**: who supplies whose inputs. There is a second, independent ordering
+constraint it does not capture — **what it costs to erect the buildings**. A design can be entirely
+flow-correct (every import sourced, every byproduct sunk, solver-validated) and still be unbuildable,
+because placing its machines needs items the base cannot yet produce. In Py the gap is wide, because
+building recipes reach deep into gated intermediates.
+
+**Effect: this annexes a note to a finished design; it never gates one.** Always produce the full
+solver-validated design first. The target is worth knowing whether or not it is currently buildable —
+it is the thing being worked toward, and the construction gap is cheap to compute afterwards. Then
+append a short feasibility note: which buildings need items the base may not have, how confident that
+inference is, and roughly what a bootstrap would cost. The reader decides whether to bootstrap, stage,
+or ignore it. **Never withhold or defer a design pending this check, and never turn it into a round of
+questions** — inventory is normally *reconstructed* (see below) rather than known, so the note is an
+informed guess and should be labelled as one. Getting the guess wrong costs a sentence; withholding the
+design costs the work.
+
+**Check it explicitly.** For the target design, run `recipes --produces <entity>` on each distinct
+building, collect the ingredients, and flag anything you cannot currently make. That set is the real
+prerequisite, and it lives in a different graph from the flow analysis.
+
+**Rank the gap by how many recipes each item gates, not by how much you need** — `recipes --consumes
+<item>` gives the count. An item gating 48 recipes is a structural blocker; one gating 6 is a
+shopping-list entry. Example: reaching logistic science needed both intermetallics and batteries.
+Intermetallics gate **48** unlocked recipes (oil-boiler-mk01 at 10 each, steam-turbine-mk01 10,
+chemical-plant 5, locomotive 5, …); batteries gate **6**.
+
+**The gap set gates itself — topologically sort it too.** Do not assume the item you noticed first
+comes first. In that same example the intuitive order was "batteries first, because the auog chain
+needs wall-clock time to breed." It was wrong: `auog-paddock-mk01`, `bio-reactor-mk01`, its
+`mixer-mk01` component, and `chemical-plant-mk01` each cost 5 intermetallics — about 30 before the
+first battery exists. The whole battery chain sat behind the other gap item, and the bio head-start
+could not be taken early at all.
+
+**Size prerequisite blocks as trickles, not production.** A bootstrap block fills chests while you
+build; it feeds no consumer. Target the floor — one building per recipe — and accept whatever rate
+falls out. 17 buildings at 1.5 intermetallics/min cleared a 30-item bill in 20 minutes. Solving for a
+"proper" rate here just produces a block you will tear down.
+
+**Reconstructing inventory when none is recorded.** If the block inventory is empty or stale, completed
+designs are a sound lower bound: take the **inputs** of everything the base currently produces, plus
+the **construction materials of the buildings in those designs**, and close transitively. A material
+need not appear in any recipe flow to be available — if a building you demonstrably placed requires it,
+you have it. Example: neither automation science nor py-science-1 consumes glass, but `glassworks-mk01`
+costs glass to build, so glass is available; likewise titanium and aluminium, which appear in no
+science recipe but in several machines. This recovers most of the practical inventory from design docs
+alone, and is usually faster than asking item by item.
 
 13. **Validate existing capacity against total demand** — after computing the block delta, sum ALL imports from each existing block across every new consumer and verify it can handle the total. This check is easy to skip because each new block's design looks fine in isolation — the failure only appears when you aggregate.
     

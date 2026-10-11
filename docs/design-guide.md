@@ -230,6 +230,14 @@ Getting the guess wrong costs a sentence; withholding the design costs the work.
 whether to bootstrap, stage, or ignore the flag — that call is theirs, and the note exists to inform
 it rather than pre-empt it.
 
+**Every design doc lists the distinct materials needed to construct its buildings**, separately from
+the flow imports. Many never appear in the solve at all: py-science-1 consumes no aluminium or
+titanium, yet `vrauks-paddock-mk01` and `moss-farm-mk01` need aluminium-plate to place and
+`slaughterhouse-mk01` needs titanium-plate. Without the list a design reads as buildable when it is
+not. List **distinct items, not quantities** — the binding question is whether you have *any*, since a
+small amount can be hand-fed or trickled while a zero is a hard stop. Compute by union-ing each
+distinct building's own recipe ingredients, recursing into any ingredient that is itself a building.
+
 **Designing the prerequisite block is separate work, done only on request.** The remainder of this
 section is the method for that, not part of the default note.
 

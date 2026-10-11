@@ -149,3 +149,39 @@ sand 3.15/s, meat 0.20/s, guts 0.20/s, chitin 0.10/s, brain 0.10/s, ash 0.04/s
 ## Module cost
 
 480 moss + 160 vrauks + 110 seaweed + 90 tree-mk01 + 28 sap-tree + 8 vrauks (rc) = 876 bio modules
+
+## Build materials
+
+Distinct items needed to **construct** this block's buildings — separate from the flow imports,
+and several appear nowhere in the solve. Quantities are omitted deliberately: the binding question is
+whether you have *any*, since a small amount can be hand-fed or trickled while a zero is a hard stop.
+Regenerate with `node scripts/build-materials.mjs data/designs/01-py-science-pack-1.md`.
+
+| Material | Needed by |
+|---|---|
+| `iron-plate` | assembling-machine-1, barrel-machine-mk01, botanical-nursery +11 |
+| `small-parts-01` | assembling-machine-1, barrel-machine-mk01, botanical-nursery +11 |
+| `steam-engine` | barrel-machine-mk01, distilator, fwf-mk01 +9 |
+| `inductor1` | assembling-machine-1, botanical-nursery, distilator +8 |
+| `stone-brick` | fwf-mk01, glassworks-mk01, hpf +8 |
+| `glass` | botanical-nursery, micro-mine-mk01, rc-mk01 +3 |
+| `pipe` | barrel-machine-mk01, distilator, sap-extractor-mk01 +3 |
+| `copper-plate` | distilator, glassworks-mk01, hpf +1 |
+| `electronic-circuit` | barrel-machine-mk01, rc-mk01, research-center-mk01 +1 |
+| `steel-plate` | barrel-machine-mk01, fwf-mk01, rc-mk01 |
+| `aluminium-plate` | moss-farm-mk01, vrauks-paddock-mk01 |
+| `burner-inserter` | micro-mine-mk01, sap-extractor-mk01 |
+| `copper-cable` | research-center-mk01, wpu-mk01 |
+| `fluid-drill-mk01` | botanical-nursery, micro-mine-mk01 |
+| `soil` | moss-farm-mk01, sap-extractor-mk01 |
+| `titanium-plate` | rc-mk01, slaughterhouse-mk01 |
+| `burner-mining-drill` | wpu-mk01 |
+| `concrete` | rc-mk01 |
+| `electric-mining-drill` | py-electric-boiler |
+| `gasifier` | py-electric-boiler |
+| `lab` | py-electric-boiler |
+| `limestone` | seaweed-crop-mk01 |
+| `log` | wpu-mk01 |
+| `planter-box` | botanical-nursery |
+| `soil-extractor-mk01` | botanical-nursery |
+| `tin-plate` | seaweed-crop-mk01 |

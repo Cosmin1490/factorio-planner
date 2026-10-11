@@ -210,3 +210,26 @@ Worst-case gasoline backup: 32.27/s (mode A1) when export is blocked. 25k tank f
 - Anthracene cracking (5 distilators) and creosote buildings (4 tpu) are mutually exclusive — one set always idle.
 - Coal-gas-from-coke buildings scale with mode: 4 in A1, 2 in B1, 0 in exported modes.
 - Creosote output: 11-49/s depending on mode (e-circuit needs 6.67/s).
+
+## Build materials
+
+Distinct items needed to **construct** this block's buildings — separate from the flow imports,
+and several appear nowhere in the solve. Quantities are omitted deliberately: the binding question is
+whether you have *any*, since a small amount can be hand-fed or trickled while a zero is a hard stop.
+Regenerate with `node scripts/build-materials.mjs data/designs/04-adaptive-coal-processing.md`.
+
+| Material | Needed by |
+|---|---|
+| `iron-plate` | distilator, hpf, oil-boiler-mk01 +1 |
+| `inductor1` | distilator, hpf, tar-processing-unit |
+| `small-parts-01` | distilator, hpf, oil-boiler-mk01 |
+| `steam-engine` | distilator, hpf, tar-processing-unit |
+| `copper-plate` | distilator, hpf |
+| `pipe` | distilator, tar-processing-unit |
+| `electric-mining-drill` | oil-boiler-mk01 |
+| `gasifier` | oil-boiler-mk01 |
+| `intermetallics` | oil-boiler-mk01 |
+| `lab` | oil-boiler-mk01 |
+| `steel-plate` | tar-processing-unit |
+| `stone-brick` | hpf |
+| `stone-furnace` | tar-processing-unit |

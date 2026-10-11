@@ -252,3 +252,29 @@ npx tsx src/cli.ts solve \
 - v1 imported ash (0.66/s), CO2 (2.58/s), and electricity (~7.5 MW). v2 eliminates all three by self-powering with boilers (ash source) and using log3 (ash consumer) + moondrop (free CO2). Trade: +4 buildings, +4.69/s raw-coal.
 - Moss-2 uses stone (vs Moss-1 which doesn't, but yields half the moss in 25% more time) — routes crusher stone byproduct into moss production.
 - Solver warns tree-mk01/moss modules "not unlocked" — data limitation, modules are available in-game.
+
+## Build materials
+
+Distinct items needed to **construct** this block's buildings — separate from the flow imports,
+and several appear nowhere in the solve. Quantities are omitted deliberately: the binding question is
+whether you have *any*, since a small amount can be hand-fed or trickled while a zero is a hard stop.
+Regenerate with `node scripts/build-materials.mjs data/designs/06-automation-science-pack.md`.
+
+| Material | Needed by |
+|---|---|
+| `small-parts-01` | assembling-machine-1, automated-screener-mk01, botanical-nursery +8 |
+| `iron-plate` | assembling-machine-1, automated-screener-mk01, botanical-nursery +7 |
+| `inductor1` | assembling-machine-1, botanical-nursery, fwf-mk01 +3 |
+| `pipe` | boiler, moondrop-greenhouse-mk01, steam-engine +1 |
+| `steel-plate` | automated-screener-mk01, fwf-mk01, jaw-crusher |
+| `stone-brick` | fwf-mk01, moss-farm-mk01, washer |
+| `burner-mining-drill` | soil-extractor-mk01, wpu-mk01 |
+| `fluid-drill-mk01` | automated-screener-mk01, botanical-nursery |
+| `glass` | botanical-nursery, moondrop-greenhouse-mk01 |
+| `aluminium-plate` | moss-farm-mk01 |
+| `copper-cable` | wpu-mk01 |
+| `electronic-circuit` | automated-screener-mk01 |
+| `log` | wpu-mk01 |
+| `planter-box` | botanical-nursery |
+| `soil` | moss-farm-mk01 |
+| `stone` | stone-furnace |

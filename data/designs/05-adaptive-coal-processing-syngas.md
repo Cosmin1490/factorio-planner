@@ -250,3 +250,25 @@ Coke recycling + syngas creates a double feedback loop (coke → coal-gas-from-c
 - Cracking buildings (11 distilator) and creosote buildings (9 tpu) are mutually exclusive — one set always idle.
 - Syngas consumers: canister for train export, or aromatics-to-plastic (50 aromatics + 100 syngas → 1 plastic-bar in biofactory).
 - Water demand significant in syngas modes: 108-170/s on top of steam.
+
+## Build materials
+
+Distinct items needed to **construct** this block's buildings — separate from the flow imports,
+and several appear nowhere in the solve. Quantities are omitted deliberately: the binding question is
+whether you have *any*, since a small amount can be hand-fed or trickled while a zero is a hard stop.
+Regenerate with `node scripts/build-materials.mjs data/designs/05-adaptive-coal-processing-syngas.md`.
+
+| Material | Needed by |
+|---|---|
+| `iron-plate` | distilator, gasifier, hpf +2 |
+| `inductor1` | distilator, gasifier, hpf +1 |
+| `small-parts-01` | distilator, gasifier, hpf +1 |
+| `steam-engine` | distilator, gasifier, hpf +1 |
+| `pipe` | distilator, gasifier, tar-processing-unit |
+| `copper-plate` | distilator, hpf |
+| `steel-plate` | gasifier, tar-processing-unit |
+| `electric-mining-drill` | oil-boiler-mk01 |
+| `intermetallics` | oil-boiler-mk01 |
+| `lab` | oil-boiler-mk01 |
+| `stone-brick` | hpf |
+| `stone-furnace` | tar-processing-unit |

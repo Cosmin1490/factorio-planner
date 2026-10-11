@@ -134,3 +134,36 @@ ash 0.02/s
 - Electric boiler is 83% of total power — importing clay would save 25 MW and 2 buildings
 - Creosote at 6.67/s is the most exotic import (from tar processing)
 - moondrop-1-cu variant (adds copper-ore) would cut 3 growing greenhouses to ~1-2
+
+## Build materials
+
+Distinct items needed to **construct** this block's buildings — separate from the flow imports,
+and several appear nowhere in the solve. Quantities are omitted deliberately: the binding question is
+whether you have *any*, since a small amount can be hand-fed or trickled while a zero is a hard stop.
+Regenerate with `node scripts/build-materials.mjs data/designs/02-electronic-circuit.md`.
+
+| Material | Needed by |
+|---|---|
+| `iron-plate` | assembling-machine-1, botanical-nursery, chipshooter-mk01 +9 |
+| `small-parts-01` | assembling-machine-1, botanical-nursery, chipshooter-mk01 +8 |
+| `steam-engine` | chipshooter-mk01, clay-pit-mk01, electronics-factory-mk01 +6 |
+| `pipe` | clay-pit-mk01, electronics-factory-mk01, moondrop-greenhouse-mk01 +3 |
+| `distilator` | chipshooter-mk01, electronics-factory-mk01, pcb-factory-mk01 +1 |
+| `inductor1` | assembling-machine-1, botanical-nursery, hpf +1 |
+| `stone-brick` | clay-pit-mk01, hpf, pulp-mill-mk01 |
+| `burner-mining-drill` | clay-pit-mk01, wpu-mk01 |
+| `copper-plate` | hpf, pcb-factory-mk01 |
+| `fluid-drill-mk01` | botanical-nursery, electronics-factory-mk01 |
+| `glass` | botanical-nursery, moondrop-greenhouse-mk01 |
+| `steel-plate` | tar-processing-unit, vacuum-pump-mk01 |
+| `burner-inserter` | chipshooter-mk01 |
+| `copper-cable` | wpu-mk01 |
+| `electric-mining-drill` | py-electric-boiler |
+| `gasifier` | py-electric-boiler |
+| `lab` | py-electric-boiler |
+| `log` | wpu-mk01 |
+| `pcb1` | chipshooter-mk01 |
+| `planter-box` | botanical-nursery |
+| `soil-extractor-mk01` | botanical-nursery |
+| `stone-furnace` | tar-processing-unit |
+| `wood` | pulp-mill-mk01 |

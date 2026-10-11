@@ -68,3 +68,21 @@ and all intermediate oils refined to final products. No waste oils.
 - Creosote at 34.86/s is ~5x what the circuit chain needs (6.67/s). Excess can supply other consumers or be converted to more creosote products.
 - Gasoline and aromatics are the main valuable byproducts.
 - Steam demand is high (127.55/s) — needs dedicated boiler infrastructure.
+
+## Build materials
+
+Distinct items needed to **construct** this block's buildings — separate from the flow imports,
+and several appear nowhere in the solve. Quantities are omitted deliberately: the binding question is
+whether you have *any*, since a small amount can be hand-fed or trickled while a zero is a hard stop.
+Regenerate with `node scripts/build-materials.mjs data/designs/03-coal-processing.md`.
+
+| Material | Needed by |
+|---|---|
+| `inductor1` | distilator, tar-processing-unit |
+| `iron-plate` | distilator, tar-processing-unit |
+| `pipe` | distilator, tar-processing-unit |
+| `steam-engine` | distilator, tar-processing-unit |
+| `copper-plate` | distilator |
+| `small-parts-01` | distilator |
+| `steel-plate` | tar-processing-unit |
+| `stone-furnace` | tar-processing-unit |

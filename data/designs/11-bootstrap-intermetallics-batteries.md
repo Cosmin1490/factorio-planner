@@ -167,3 +167,58 @@ Note `auog-pooping-1` needs only **water-barrel + native-flora + moss** — you 
 - **Teardown:** phase 1's `smelter-mk01`, `advanced-foundry-mk01`, `bof-mk01` and the antimony chain are
   all wanted permanently — only the trickle sizing is temporary. The auog paddock is likewise permanent
   infrastructure. Realistically you are re-siting rather than scrapping.
+
+## Build materials
+
+Distinct items needed to **construct** this block's buildings — separate from the flow imports,
+and several appear nowhere in the solve. Quantities are omitted deliberately: the binding question is
+whether you have *any*, since a small amount can be hand-fed or trickled while a zero is a hard stop.
+Regenerate with `node scripts/build-materials.mjs data/designs/11-bootstrap-intermetallics-batteries.md`.
+
+| Material | Needed by |
+|---|---|
+| `small-parts-01` | advanced-foundry-mk01, assembling-machine-1, automated-factory-mk01 +26 |
+| `steel-plate` | automated-factory-mk01, automated-screener-mk01, bio-reactor-mk01 +14 |
+| `electronic-circuit` | accumulator, automated-factory-mk01, automated-screener-mk01 +13 |
+| `iron-plate` | accumulator, advanced-foundry-mk01, assembling-machine-1 +13 |
+| `intermetallics` | auog-paddock-mk01, automated-factory-mk01, bio-reactor-mk01 +11 |
+| `steam-engine` | biofactory-mk01, distilator, electrolyzer-mk01 +11 |
+| `duralumin` | biofactory-mk01, cargo-wagon, dino-dig-site +5 |
+| `pipe` | chemical-plant-mk01, distilator, fbreactor-mk01 +5 |
+| `titanium-plate` | biofactory-mk01, cargo-wagon, digosaurus +5 |
+| `inductor1` | assembling-machine-1, distilator, gasifier +2 |
+| `shaft-mk01` | automated-factory-mk01, cargo-wagon, fluid-wagon +2 |
+| `aluminium-plate` | electrolyzer-mk01, mixer-mk01, py-construction-robot-mk01 +1 |
+| `brake-mk01` | cargo-wagon, fluid-wagon, locomotive +1 |
+| `copper-plate` | casting-unit-mk01, chemical-plant-mk01, distilator +1 |
+| `gearbox-mk01` | automated-factory-mk01, locomotive, py-construction-robot-mk01 +1 |
+| `glass` | bio-reactor-mk01, biofactory-mk01, chemical-plant-mk01 +1 |
+| `stone-brick` | advanced-foundry-mk01, hpf, smelter-mk01 +1 |
+| `battery-mk01` | accumulator, py-construction-robot-mk01, py-roboport-mk01 |
+| `lab` | casting-unit-mk01, electrolyzer-mk01, oil-boiler-mk01 |
+| `boiler` | bof-mk01, fbreactor-mk01 |
+| `electric-mining-drill` | oil-boiler-mk01, py-coal-powerplant-mk01 |
+| `steel-furnace` | bof-mk01, casting-unit-mk01 |
+| `stone` | auog-paddock-mk01, stone-furnace |
+| `belt` | py-construction-robot-mk01 |
+| `bolts` | auog-paddock-mk01 |
+| `ceramic` | smelter-mk01 |
+| `copper-cable` | advanced-foundry-mk01 |
+| `earth-generic-sample` | digosaurus |
+| `fish-oil` | py-construction-robot-mk01 |
+| `fluid-drill-mk01` | automated-screener-mk01 |
+| `inserter` | automated-factory-mk01 |
+| `lead-plate` | dino-dig-site |
+| `mechanical-parts-01` | py-coal-powerplant-mk01 |
+| `moss-gen` | digosaurus |
+| `petri-dish` | digosaurus |
+| `py-local-radar` | casting-unit-mk01 |
+| `py-tank-8000` | mixer-mk01 |
+| `small-lamp` | secondary-crusher-mk01 |
+| `soil` | auog-paddock-mk01 |
+| `solder` | py-construction-robot-mk01 |
+| `storage-tank` | fluid-wagon |
+| `tailings-pond` | bio-reactor-mk01 |
+| `tar-processing-unit` | electrolyzer-mk01 |
+| `utility-box-mk01` | steam-turbine-mk01 |
+| `water-saline` | digosaurus |

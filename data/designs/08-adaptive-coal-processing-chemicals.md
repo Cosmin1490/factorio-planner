@@ -436,3 +436,36 @@ Not covered by this block (other slices of design 07): bio/farming, urea cycle, 
 - Creosote is **not** a fuel (fuel_value 0) — unlike every other block fluid. It needs a material sink (e-circuit demand, sand-casting, treated-wood); it cannot be burned off. This is why the forestry/sand-casting sinks are mandatory rather than optional.
 - `py-limestone` (3 ash + 10 limestone + 35 creosote → 2 py-limestone) looks like an attractive dual ash+creosote sink but has **zero consumers** at current tech. Dead end — don't build it.
 - Naphthalene-oil and carbolic-oil have no non-barrel consumer besides creosote conversion. Both are fuels; burning them is the default sink and requires boiler fuel priority (see Energy).
+
+## Build materials
+
+Distinct items needed to **construct** this block's buildings — separate from the flow imports,
+and several appear nowhere in the solve. Quantities are omitted deliberately: the binding question is
+whether you have *any*, since a small amount can be hand-fed or trickled while a zero is a hard stop.
+Regenerate with `node scripts/build-materials.mjs data/designs/08-adaptive-coal-processing-chemicals.md`.
+
+| Material | Needed by |
+|---|---|
+| `iron-plate` | botanical-nursery, cracker-mk01, distilator +5 |
+| `small-parts-01` | biofactory-mk01, botanical-nursery, cracker-mk01 +5 |
+| `steam-engine` | biofactory-mk01, cracker-mk01, distilator +4 |
+| `inductor1` | botanical-nursery, distilator, gasifier +2 |
+| `pipe` | distilator, gasifier, tar-processing-unit +1 |
+| `steel-plate` | biofactory-mk01, gasifier, tar-processing-unit |
+| `electronic-circuit` | biofactory-mk01, cracker-mk01 |
+| `glass` | biofactory-mk01, botanical-nursery |
+| `lab` | cracker-mk01, oil-boiler-mk01 |
+| `titanium-plate` | biofactory-mk01, cracker-mk01 |
+| `burner-mining-drill` | wpu-mk01 |
+| `copper-cable` | wpu-mk01 |
+| `copper-plate` | distilator |
+| `duralumin` | biofactory-mk01 |
+| `electric-mining-drill` | oil-boiler-mk01 |
+| `fluid-drill-mk01` | botanical-nursery |
+| `intermetallics` | oil-boiler-mk01 |
+| `lead-plate` | cracker-mk01 |
+| `log` | wpu-mk01 |
+| `planter-box` | botanical-nursery |
+| `soil-extractor-mk01` | botanical-nursery |
+| `stone-brick` | washer |
+| `stone-furnace` | tar-processing-unit |

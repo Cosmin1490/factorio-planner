@@ -132,7 +132,8 @@ naphthalene 1.216, hydrogen 0.405. **Creosote is not a fuel and cannot be burned
 | process steam (steam/s) | 357.21 | 626.48 | 626.48 | 475.35 | 357.21 |
 | non-syngas fuel (steam/s) | 568.4 | 996.9 | 783.9 | 194.1 | 145.8 |
 | **syngas burned** /s | **0** | **0** | **0** | **173.52** | **130.40** |
-| **syngas left to export** /s | **151.20** | **238.46** | **238.46** | **15.97** | **20.80** |
+| syngas left to export /s (aromatics reserved) | 151.20 | 238.46 | 238.46 | 15.97 | 20.80 |
+| **syngas export, surplus aromatics burned** /s | **151.20** | **238.46** | **238.46** | **64.7** | **53.1** |
 | **net power MW** | **+203.7** | **+330.3** | **+221.8** | **−16.7** | **−3.7** |
 
 **`x = 0` cannibalises the mining fluid supply — and this matters more than the power swing.** At
@@ -141,7 +142,8 @@ to export. At `x = 0` there is no cracking gasoline, so syngas must be burned to
 of it at R4, collapsing exportable syngas from 238.46/s to **15.97/s — a 93% cut.** Since syngas is the
 mining fluid for borax, phosphate-rock, chromium and nickel, turning the anthracene dial toward
 creosote quietly throttles four ore supply lines. Nothing stalls and no alarm fires; the ore outposts
-simply run dry.
+simply run dry. Burning surplus aromatics ahead of syngas recovers most of it (15.97 → 64.7/s at R4) —
+see the fuel priority below. The collapse is a consequence of burn *order*, not of the dial alone.
 
 **The anthracene dial swings the block from a 330 MW exporter to a 17 MW importer.** Cracking upgrades
 anthracene (0.25 MJ) into gasoline (1.20 MJ) — 154.79/s anthracene becomes 61.92/s gasoline, turning
@@ -152,14 +154,45 @@ merely a product-mix choice; it is the block's energy budget.
 the block's own electric draw and grid import is required. Plan the power connection for this even if
 you intend to run `x=1`.
 
-**Boiler fuel priority: naphthalene → carbolic → gasoline → syngas.** Naphthalene and carbolic have no
-non-fuel consumer besides creosote conversion, so they must burn first. Get this backwards and they
-back up, stalling `tar-refining-tops` and `pitch-refining` — which halts the chain. The two cover 34%
-of process steam at `n=0`.
+### Boiler fuel priority — order by opportunity cost, not fuel value
+
+**naphthalene-oil → carbolic-oil → surplus hydrogen → gasoline → surplus aromatics → syngas.**
+
+Rank by what burning *destroys*, not by MJ/unit. Gasoline is the densest fuel here (1.20 MJ) but it has
+no material use at all, so it should burn before aromatics (0.35 MJ) and syngas (0.40 MJ) even though
+they are "cheaper" per unit — those two are mining fluids, and burning them competes directly with ore
+extraction. Coke (5.00 MJ) is never burned; it is acetylene feedstock.
+
+Naphthalene and carbolic go first because they have no non-fuel consumer whatsoever besides creosote
+conversion. This is a **correctness** requirement, not an optimization: get it backwards and they back
+up, stalling `tar-refining-tops` and `pitch-refining`, which halts the chain. The two cover 34% of
+process steam at `n=0`.
+
+**Burning surplus aromatics is how you protect syngas export in creosote mode.** Aromatics is the
+largest stream with no consumer — at R2, 99.77/s produced against ~16.5/s drawn (polybutadiene 11.67,
+plastic 1.59, zinc mining fluid 3.23). Reserving ~20/s for those and burning the rest:
+
+| Corner | syngas export, aromatics reserved | syngas export, **surplus aromatics burned** |
+|---|--:|--:|
+| R1, R2, R3 | 151.20 / 238.46 / 238.46 | unchanged — gasoline already covers process steam |
+| **R4** | 15.97 | **64.7** |
+| **R5** | 20.80 | **53.1** |
+
+A 4× recovery at the creosote corners. The trade is one ore's fluid (zinc, 4/ore) against four
+(borax, phosphate-rock, chromium, nickel), so burning aromatics ahead of syngas is clearly right. At
+R1–R3 it never triggers: cracking gasoline covers process steam outright and both mining fluids stay
+fully exportable.
 
 **Process boilers: 11** (sized for R2/R3's 626.48 steam/s). Power island: boiler+turbine pairs to taste,
 each pair 60 steam/s → 29.61 MW. Two pairs make the block self-sufficient at every dial position; 13
-pairs would capture all of R2's surplus.
+pairs would be required to burn all of R2's surplus.
+
+**Surplus fuel is only surplus *power* if something draws it.** Generators consume steam in proportion
+to electrical load — build 13 pairs into a grid that wants 40 MW and the other 330 MW of capacity sits
+idle, steam backs up, boilers stop, and the fuel backing up behind them throttles the chain. The net
+power figures above are therefore a *ceiling* on what the block could supply, not a quantity it
+produces unconditionally. Any surplus the grid does not absorb must leave as a fluid export instead.
+Size the turbine bank to real load and treat the remainder as fluid to export.
 
 ## Mining fluid role
 
@@ -240,6 +273,71 @@ Worked dial positions for common intents.
 | **Max power export** | f=1, x=1, n=0 | +330 MW, R2 |
 | **Net-zero gasoline** | f=0, **x≈0.32**, n=0 | 0 gasoline export, 73.85/s creosote, 26.23/s coke |
 
+### Single-export policy — gasoline as the only exported fluid
+
+A stated preference: if exactly one fluid must leave as surplus, make it gasoline. **This is feasible —
+but it is conditional on grid electricity demand, not free.** The non-gasoline surplus has to go
+somewhere, and the only non-fluid destination is a turbine. Generators draw steam in proportion to
+actual electrical load, so electricity is a sink **only up to what the grid consumes**:
+
+```
+E  ≤  S  +  D / 0.4935
+```
+
+`E` = non-gasoline burnable (steam/s), `S` = process steam, `D` = total grid demand (MW), including the
+block's own draw.
+
+| | non-gasoline `E` | process `S` | excess | **grid demand required** | beyond block draw |
+|---|--:|--:|--:|--:|--:|
+| R1 | 425.97 | 357.21 | 68.76 | **33.9 MW** | 12.4 MW |
+| R2 | 725.48 | 626.48 | 99.00 | **48.9 MW** | 5.6 MW |
+
+Satisfied comfortably in practice — design 07 alone imports 79 MW — but verify it rather than assume it.
+
+**If the condition fails, the block throttles rather than simply exporting more.** Syngas is last in
+burn priority, so it backs up first. A full syngas buffer stalls the gasifiers; that backs up coal-gas
+*and* drops tar by 49%, since the gasifier supplies half of it. The whole chain slows. The relief valve
+is exporting syngas — precisely the second export this policy exists to avoid. Size the turbine bank
+and confirm the load before committing to gasoline-only.
+
+At R1 (`f=0, x=1, n=0` — creosote already at its floor), with named taps at design-07 scale
+(aromatics ~16.5/s, hydrogen 13.31/s) and everything else burned:
+
+| non-gasoline fuel burned | steam/s |
+|---|--:|
+| syngas (untapped) | 245.11 |
+| naphthalene (no choice) | 93.29 |
+| carbolic (no choice) | 28.16 |
+| surplus aromatics | 57.30 |
+| surplus hydrogen | 2.11 |
+| **total** | **425.97** |
+| process steam needed | −357.21 |
+| **excess → turbines** | **68.76** (33.9 MW) |
+
+Result: **export 90.36/s gasoline — 100% of production — with every other fluid consumed internally
+and +12.4 MW net power** after the block's own 21.48 MW draw.
+
+**Exchange rate: 3 syngas = 1 gasoline, exactly.** Both burn in the same boiler at the same
+effectivity, so fuel exports trade at their fuel-value ratio (1.20 / 0.40 = 3). The first 42.4/s of
+syngas tap is free — it comes out of the 68.76 steam/s excess. Past that, each 3/s syngas exported
+costs 1/s of gasoline export:
+
+| syngas tapped /s | gasoline export /s | net power MW |
+|---|--:|--:|
+| 0 | **90.36** | +12.4 |
+| 42.4 | **90.36** | −21.5 |
+| 151.20 (all) | **54.09** | −21.5 |
+
+Generally `1 gasoline = 3 syngas = 3.43 aromatics = 4 naphthalene = 12 hydrogen`. Since energy is
+conserved across the choice, **which** fluid to export is decided purely by non-fuel value and
+throughput density — and gasoline wins the latter outright at 1.20 MJ/unit, 3× syngas per unit of pipe
+or train capacity. One station instead of three.
+
+**This is a weaker constraint than the infeasible one.** Net-zero on gasoline *and* syngas
+simultaneously is impossible (§ Feasibility envelope). Net-zero on everything *except* gasoline is
+straightforward, because gasoline absorbs all the slack. Burning the other streams is what makes the
+single-export policy work, not what obstructs it.
+
 **Net-zero gasoline** is interpolated, not solved. Gasoline is linear in `x`: `28.44 + 61.92x` (the
 28.44 floor comes from `light-oil-aromatics`, independent of the split). Burning naphthalene + carbolic
 covers 121.5 steam/s of the 357.21 needed, leaving 48.48/s of gasoline to burn — set production equal
@@ -256,13 +354,76 @@ Sized to plausible demand, not upstream capacity. Counts constant across dials.
 │ Recipe               │ Factory         │ Count │ Headroom vs design 07 draw       │
 ├──────────────────────┼─────────────────┼───────┼──────────────────────────────────┤
 │ aromatics-to-plastic │ biofactory-mk01 │     1 │ ~20×                             │
-│ polybutadiene        │ cracker-mk01    │     1 │ 8.6× (50/s cap vs 5.83/s)        │
-│ carbon-black         │ reformer-mk01   │     1 │ 10× (2/s cap vs ~0.2/s)          │
-│ vacuum               │ vacuum-pump-mk01│     1 │ feeds carbon-black               │
+│ polybutadiene        │ cracker-mk01    │     1 │ feedstock-capped — see below     │
+│ carbon-black         │ reformer-mk01   │     1 │ 2.7× what rubber can consume     │
+│ vacuum               │ vacuum-pump-mk01│     1 │ feeds carbon-black (100/s cap)   │
 └──────────────────────┴─────────────────┴───────┴──────────────────────────────────┘
 ```
 
 75.1 kW combined — negligible against the core chain's 21–47 MW.
+
+### Draw ceilings
+
+What the block *could* supply if these routes were pushed to the feedstock limit. The two are not
+symmetric, because of which node each taps.
+
+**Polybutadiene — cheap, bounded by aromatics.** `1 titanium-plate + 200 aromatics + 1000 water →
+100 polybutadiene + 1000 steam` (2s, cracker-mk01). One cracker at full draws 100/s aromatics → 50/s
+polybutadiene.
+
+| Corner | Aromatics /s | Max polybutadiene /s | Crackers | Titanium-plate /s |
+|---|--:|--:|--:|--:|
+| R1 / R5 | 56.89 | 28.45 | 0.57 | 0.28 |
+| **R2 / R3** | **99.77** | **49.89** | **1.00** | 0.50 |
+| R4 | 75.70 | 37.85 | 0.76 | 0.38 |
+
+**One cracker is the entire ceiling at every corner** — feedstock binds, never the building. Hidden
+cost is titanium: `titanium-plate-1` is 40 ore → 4 plate and ore-titanium needs 4 acetylene/ore, so
+0.50/s titanium-plate works back to roughly **2/s coke** through the acetylene chain. Structurally
+cheap otherwise: aromatics never enters the fuel budget at R1–R3.
+
+**Carbon-black — expensive, bounded by anthracene-oil.** `200 anthracene-oil + 100 vacuum →
+4 carbon-black` (2s, reformer-mk01). One reformer draws 100/s anthracene → 2/s carbon-black. The ratio
+is brutal — 50 anthracene per carbon-black.
+
+| Corner | Anthracene /s | Max carbon-black /s | Reformers | Vacuum /s |
+|---|--:|--:|--:|--:|
+| R1 / R5 | 154.79 | 3.10 | 1.55 | 77 |
+| R2 | 271.48 | 5.43 | 2.71 | 136 |
+| R4 | 205.99 | 4.12 | 2.06 | 103 |
+
+**Carbon-black is effectively a fifth dial on the `x` node** and inherits all of `x`'s coupling. One
+reformer takes 65% of R1's anthracene, starving cracking — which produces the gasoline that covers
+process steam, which is what keeps syngas exportable. At R1 with one reformer running, non-syngas fuel
+falls to 373.8 steam/s against 357.21 needed: survivable, but the margin is nearly gone. Treat any
+second reformer as a deliberate trade against syngas export.
+
+### Rubber ceiling — the number that matters
+
+`rubber-01` is `1 latex + 2 carbon-black + 50 polybutadiene → 1 rubber` (heavy-oil-refinery-mk01,
+electric 16.7 kW, 13×13). That ratio is 25 polybutadiene per carbon-black, so **polybutadiene binds**:
+
+- from polybutadiene: 49.89 / 50 = **1.00/s rubber**
+- from carbon-black: 5.43 / 2 = 2.72/s rubber
+
+**1 cracker + 1 reformer + 1 vacuum-pump → ~1.0/s rubber ceiling**, which is 8.5× design 07's 0.117/s
+draw. Carbon-black at one reformer already supplies 2.7× what rubber can absorb — there is no reason
+to build a second.
+
+**Keep polybutadiene, carbon-black and vacuum here; put `rubber-01` and `stopper-2` where latex is.**
+That places the boundary at the bio dependency rather than mid-tar-chain, and ships two finished items
+instead of two awkward intermediates (anthracene-oil especially).
+
+### Polybutadiene steam is 150°C — not usable as process steam
+
+Polybutadiene emits 1000 steam/craft, 500/s at full tilt, which looks like it would cover 80% of
+process steam for free. It will not: that steam carries `temperature: 150`, and `tar-refining` requires
+`minimum_temperature: 250`. This is why design 07 routes it to a cooling tower.
+
+It is not worthless. Reheating 150°C steam to 250°C costs `(250−150) × 2100 = 210 kJ/unit` against
+`(250−15) × 2100 = 493.5 kJ/unit` from cold water — a 57%-preheated feedstock, worth ~140 MW of heat at
+full flow. Needs an exchanger that accepts steam rather than water; unverified whether
+`py-heat-exchanger` does. This is the concrete instance of the open pipe-temperature-mixing question.
 
 **`sand-casting` deferred.** It is the best creosote sink (perpetual smelting demand, 2–11 TPU), but
 needs 7.94–53/s sand against design 07's 3.61/s surplus. Gated on a sand supply decision, not on
@@ -275,7 +436,10 @@ capacity here.
 | Product | Sink | Notes |
 |---|---|---|
 | naphthalene-oil, carbolic-oil | boiler fuel, top priority | no non-fuel consumer except creosote conversion |
-| gasoline, syngas, hydrogen | boiler → turbine, or export | syngas also a mining fluid — prefer export |
+| gasoline | boiler → turbine, or export as fuel | no material use, so burn it before either mining fluid |
+| **aromatics** | polybutadiene + plastic + zinc mining (~20/s), **burn the surplus** | largest unconsumed stream — 83/s spare at R2. Burning it ahead of syngas is what lifts R4/R5 syngas export 4× |
+| syngas | export as mining fluid; burn only as last resort | serves 4 ores — the most expensive fluid to burn |
+| hydrogen | ralesia + diborane (13.31/s), burn surplus | ~5/s spare |
 | creosote | e-circuit → sand-casting → treated-wood | **not a fuel**; material sink mandatory |
 | coke | acetylene chain, or recycle via `f` | 36.70/s ceiling |
 | ash | `log3` in forestry (5 ash/log, 1.5× logs/seedling vs log2); planter-box export; `rich-clay` | 2.16–6.52/s |
@@ -303,6 +467,35 @@ The value routes are the same 4 buildings in both docs; demand-bounding did not 
 made the justification explicit and recorded *why* they stop at 1 each. The real gains here are not
 fewer buildings but the couplings the mode table hid: the power swing, the syngas-export collapse at
 `x = 0`, and dial `g`'s cost.
+
+## Dials considered and rejected
+
+Three further dials exist in the recipe space. All are currently unusable, but two are worth revisiting
+as tech unlocks.
+
+**`tar-distilation` — the zero-creosote route. Blocked on flue-gas disposal.**
+`350 tar → 1 rich-clay + 500 flue-gas + 100 carbon-dioxide + 100 aromatics` (2.5s, distilator). Unlocked
+and usable *today* as a tar route, and it produces **no creosote at all** — which would take the 31.75/s
+floor to actual zero, plus aromatics directly with no steam input. The blocker is flue-gas: 500 per 350
+tar, and its only unlocked consumer is barreling. `fluegas-filtration` (100 → 2 ash) and
+`fluegas-to-syngas` (3000 + active-carbon → 300 syngas) both need **filtration** tech, which costs
+logistic-science-pack — the very thing this block is being built to supply. So it is a
+post-logistic-science upgrade, and a strong one: it converts the creosote disposal problem into syngas.
+
+**`tar-to-carbolic` — zero creosote, no flue-gas, but anti-aligned with the gasoline preference.**
+`1 raw-coal + 100 tar + 100 steam → 1 rich-clay + 1 ash + 35 coal-gas + 10 carbolic-oil` (5s, distilator).
+Unlocked, no flue-gas, and it recycles tar back into coal-gas (which re-enters the gasifier, making more
+tar — a second feedback path). But it yields no anthracene, pitch, or light-oil, so it produces **no
+gasoline and no coke**. It crushes creosote to zero at the cost of everything the single-export policy
+depends on. Only relevant if creosote disposal ever becomes the binding constraint.
+
+**`syngas2` — strictly better than `syngas`, but locked.**
+`50 coal-gas + 60 oxygen + 100 water → 1 ash + 100 syngas + 30 tar`. Same coal-gas, same 30 tar, but
+**100 syngas instead of 70** — a 43% boost for 60 oxygen per craft. Confirmed locked. Worth switching to
+the moment it unlocks *and* an oxygen supply exists; at 11 gasifiers that is a large oxygen draw
+(~120–180/s), so it needs a dedicated source rather than electrolyser surplus. Note the block's
+hydrogen output already displaces design 07's electrolyser, which removes the incidental oxygen that
+would otherwise have been available — worth revisiting together.
 
 ## Notes
 

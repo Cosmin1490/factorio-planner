@@ -293,7 +293,7 @@ A1 achieves higher amplification than B1 because anthracene-gasoline-cracking pr
 | Syngas | In B modes | ~10-16/s (after fuel) | Minimal export; overflow to boiler |
 | Naphthalene-oil | No (A modes) | 134.58/s (A1) | Boiler fuel, top priority — no non-fuel consumer exists besides creosote conversion |
 | Carbolic-oil | No (A modes) | 34.80/s (A1) | Boiler fuel, top priority — same |
-| Creosote | Yes (all modes) | 212.32/s (B1) | Sand-casting (with sand) or treated-wood (with wood); see byproduct sinks |
+| Creosote | Yes (all modes) | 212.32/s (B1) | Priority: e-circuit export → sand-casting → treated-wood. Not a fuel (`fuel_value` 0), so it cannot be burned off like the other oils — a material sink is mandatory. Sand-casting ranks above treated-wood because it yields a perpetually-demanded smelting consumable for 2–11 buildings, where treated-wood needs 7–18 and only returns fuel |
 | Plastic-bar | If no consumer | <1/s | Overflow to chest with circuit control |
 | Polybutadiene | If no consumer | <5/s | Overflow to chest |
 | Carbon-black | If no consumer | <1/s | Overflow to chest |
@@ -395,7 +395,7 @@ Imports: soil 0.05/s, CO2 0.51/s, water. Output: 0.635/s treated-wood = 2.54 MW.
 
 Imports: soil 0.34/s, CO2 3.43/s, water. Output: 4.25/s treated-wood = 16.97 MW.
 
-CO2 from `coke-co2` locally (see § Relation to logistic science) — not from the acetylene block's lime recipe. Use `log3` rather than `log2`: it consumes 5 ash/log (sinking this block's own ash) and yields 1.5× logs per seedling, shrinking the nursery and moss-farm counts above by ~33%. In practice, build for the min case — scale up forestry later if the creosote remainder after sand-casting justifies it.
+CO2 from one `moondrop-co2` greenhouse — free, no inputs (see § Relation to logistic science). Use `log3` rather than `log2`: it consumes 5 ash/log (sinking this block's own ash) and yields 1.5× logs per seedling, shrinking the nursery and moss-farm counts above by ~33%. In practice, build for the min case — scale up forestry later if the creosote remainder after sand-casting justifies it.
 
 ## Relation to logistic science (design 07)
 
@@ -417,7 +417,9 @@ Coverage check against design 07's actual draws (A2 mode):
 
 **Hydrogen deletes design 07's electrolyzer.** Design 07 runs 1 electrolyzer at 0.61 utilization for 11.65/s hydrogen (plus 1.66/s from its own pitch-refining). A2's 18.52/s covers the full 13.31/s draw (ralesia 12.66 + diborane 0.65), removing both the electrolyzer and its 4.23/s surplus oxygen.
 
-**CO2 gap.** Design 07 sources 8.17/s carbon-dioxide from `tar-distilation`, feeding Moss-2 (7.59/s) and methane-co2 (0.58/s). This block runs `tar-refining`, not `tar-distilation`, so it produces **no CO2**. Fix: `coke-co2` (2 coke → 80 CO2, hpf) — 8.17/s CO2 costs 0.20/s coke in 1 building at ~0.51 utilization. Add it here rather than importing CO2, since the coke is already local. This also supplies the forestry sink's moss chain (0.51–3.43/s CO2), which the byproduct-sinks section assumed came from the acetylene block's lime recipe — an unverified cross-block claim that `coke-co2` resolves locally.
+**CO2 is free, not a gap.** Design 07 sources 8.17/s carbon-dioxide from `tar-distilation` (feeding Moss-2 at 7.59/s), and this block runs `tar-refining` instead — so it produces no CO2. That is not a problem: `moondrop-co2` (moondrop-greenhouse, 5s) takes **no inputs at all** and yields 200 CO2 per craft. Design 07 already has 22 moondrop greenhouses and runs the recipe. CO2 is a free building wherever it's needed, never an import and never a constraint on this block.
+
+For the forestry sink's moss chain here (0.51–3.43/s CO2), one greenhouse covers it. `coke-co2` (2 coke → 80 CO2, hpf — 0.20/s coke for 8.17/s CO2) is the alternative if you'd rather not put a bio building in a petrochemical block. Either way this supersedes the earlier byproduct-sinks claim that the CO2 came from the acetylene block's lime recipe.
 
 Not covered by this block (other slices of design 07): bio/farming, urea cycle, smelting, electronics, battery chemistry.
 

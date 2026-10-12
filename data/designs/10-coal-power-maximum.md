@@ -1,13 +1,13 @@
-# Maximum power from one belt of raw-coal — 15/s → ~446 MW, 287 buildings
+# Maximum power from one belt of raw-coal — 15/s → ~440 MW, 303 buildings
 
 Single fixed configuration, **not adaptive**. Every output that can burn, burns. Material exports are
 creosote at its structural floor (31.75/s) and carbon-dioxide (61.98/s), both assumed to have external
 sinks.
 
-**Result: ~446 MW net electric from 15/s raw-coal** — a 9.9× gain over burning the coal directly (45 MW).
+**Result: ~440 MW net electric from 15/s raw-coal** — a 9.77× gain over burning the coal directly (45 MW).
 
 Generators are **`steam-engine`** (effectivity 0.5). This is not a choice — **every plain-steam
-generator in the tree is effectivity 0.5**, so ~446 MW is the ceiling for this chain rather than a tier
+generator in the tree is effectivity 0.5**, so ~440 MW is the ceiling for this chain rather than a tier
 that could be bought out of. `steam-turbine-mk01` requires `pressured-steam @>=500°C` and cannot accept
 the oil-boiler's 250°C `steam` at all — see § Generator choice.
 
@@ -85,6 +85,7 @@ Solver-validated, input mode, `--input raw-coal:900 --time 60`.
 │ light-oil-aromatics          │ distilator          │     3 │          │
 │ anthracene-gasoline-cracking │ distilator          │    13 │          │
 ├──────────────────────────────┼─────────────────────┼───────┼──────────┤
+│ extract-limestone-01         │ soil-extractor-mk01 │    16 │     6.20 │
 │ lime                         │ hpf                 │     4 │     8.00 │
 │ calcium-carbide              │ hpf                 │    16 │    32.00 │
 │ acetylene                    │ gasifier            │    32 │    16.00 │
@@ -93,11 +94,11 @@ Solver-validated, input mode, `--input raw-coal:900 --time 60`.
 │ (oil-boiler-mk01)            │ 5×5                 │    42 │        0 │
 │ (steam-engine)               │ 3×5                 │   142 │        0 │
 └──────────────────────────────┴─────────────────────┴───────┴──────────┘
-103 process + 184 power island = 287 buildings · 77.91 MW draw
+119 process (incl. 16 limestone) + 184 power island = 303 buildings · 84.11 MW draw
 ```
 
 Optional CO2-sink add-on (§ The CO2 problem): +10 `methane-co2` greenhouses, +13 cultivation
-greenhouses, +1 botanical-nursery, +1 boiler, +5 engines → 317 buildings, 82.41 MW draw, ~461 MW.
+greenhouses, +1 botanical-nursery, +1 boiler, +5 engines → 333 buildings, 88.61 MW draw, ~455 MW.
 All moondrop-greenhouses need **16 moondrop modules each** (speed 0.0588 × 17 = 1.0 effective);
 unmoduled they are unbuildable at this rate.
 
@@ -127,9 +128,9 @@ steam          = 1224.24 / 0.4935                  = 2480.7 steam/s
 process steam (tar-refining, pitch-refining, tops) =  357.21 steam/s
 steam to engines                                   = 2123.5 steam/s
 gross electric = 2123.5 × 0.4935 × 0.5 (engine eff)=  523.98 MW
-block draw                                         =   77.91 MW
+block draw                                         =   84.11 MW
                                                      ─────────
-net                                                = ~446 MW
+net                                                = ~440 MW
 ```
 
 Equivalently: **`electric = F − 0.24675 × S − draw`**. (The `2F − 0.4935 × S − draw` form would apply
@@ -176,8 +177,8 @@ recoverable here.
 
 | generator | per building | buildings | tiles | net MW | MJ electric / MJ fuel |
 |---|--:|--:|--:|--:|--:|
-| **`steam-engine`** (eff 0.5, 15 steam/s, 3×5) | 3.70 MW | **142** | **2,130** | **446.07** | **1.00** |
-| `steam-turbine` (eff 0.5, 60 steam/s, 3×5) | 14.81 MW | 36 | 540 | 446.07 | 1.00 |
+| **`steam-engine`** (eff 0.5, 15 steam/s, 3×5) | 3.70 MW | **142** | **2,130** | **439.87** | **1.00** |
+| `steam-turbine` (eff 0.5, 60 steam/s, 3×5) | 14.81 MW | 36 | 540 | 439.87 | 1.00 |
 
 **1.00 MJ/MJ is the ceiling, not a choice.** The only generator upgrade reachable from this chain is
 `steam-turbine` — the unnumbered one, behind `advanced-material-processing-2`
@@ -185,15 +186,15 @@ recoverable here.
 **identical net power**; it simply swallows 60 steam/s instead of 15. That makes it a pure density win —
 36 buildings and 540 tiles in place of 142 and 2,130, saving 1,590 tiles with no change to output.
 
-### Sanity-decomposing the 9.9×
+### Sanity-decomposing the 9.77×
 
 | stage | multiplier |
 |---|--:|
 | 45 MJ/s raw-coal → 612.12 MJ/s fuel (chemistry) | **13.60×** |
 | boiler effectivity 2 × engine effectivity 0.5 | **1.00×** |
 | less process steam (88.14 MJ/s of fuel) | −1.96× |
-| less block draw (77.91 MW) | −1.73× |
-| **net** | **9.91×** |
+| less block draw (84.11 MW) | −1.87× |
+| **net** | **9.77×** |
 
 The boiler's 2× and the generator's 0.5× cancel exactly, so conversion is energy-neutral and **the
 entire gain is chemical.** This is not an artifact of choosing steam-engines — it holds for every
@@ -216,15 +217,19 @@ than the entire process chain. This is the dominant cost of the engine constrain
 | Import | /s | Note |
 |---|--:|---|
 | raw-coal | 15.00 | one yellow belt |
-| **water** | **3871.1** | process 1390.4 (acetylene 1174.4 + syngas 216) + boiler feed 2480.7 → **4 offshore pumps** |
-| limestone | 6.20 | for lime |
+| **water** | **4181.1** | process 1390.4 (acetylene 1174.4 + syngas 216) + boiler feed 2480.7 + limestone extraction 310.0 → **4 offshore pumps** |
+
+Limestone is **not** imported — `extract-limestone-01` (`400 water → 8 limestone`, 20s) makes the 6.20/s
+on site from 16 `soil-extractor-mk01`, single-output and byproduct-free. That is the only reason water
+is 4181.1 rather than 3871.1, and it is why the water figure is now the block's true draw on the map
+rather than a number with a material import hiding behind it.
 
 No bio dependency in the baseline. The optional methane sink adds 0.62/s moondrop-seeds — self-grown,
 so a closed loop rather than an import — plus ~71/s more water.
 
 | Export | /s |
 |---|--:|
-| **electricity** | **~446 MW** |
+| **electricity** | **~440 MW** |
 | creosote | 31.75 (external sink assumed) |
 | carbon-dioxide | 61.98 (external sink assumed — or convert, § The CO2 problem) |
 
@@ -234,8 +239,8 @@ so a closed loop rather than an import — plus ~71/s more water.
 | gravel | 1.63 | `gravel-to-sand` → sand-casting, or concrete |
 | iron-oxide | 0.435 | `iron-oxide-smelting` → 0.22/s iron-plate |
 
-Water is the hidden headline. 4013/s is 3.3 offshore pumps' worth and the boiler feed is 64% of it —
-size the trunk main for this before anything else.
+Water is the hidden headline. 4181.1/s is 3.5 offshore pumps' worth — boiler feed is 59% of it,
+limestone extraction another 7% — size the trunk main for this before anything else.
 
 ## The CO2 problem — mandatory, not optional
 
@@ -249,8 +254,8 @@ and the design collapses to ~178 MW.** CO2 handling is load-bearing, not a tidy-
 
 | Option | Verdict |
 |---|---|
-| **Export the CO2** | **Preferred.** 446 MW at 103 process buildings, no bio dependency. Needs a consumer — design 07's Moss-2 takes 8.17/s, and anywhere running `moondrop-co2` (free, no inputs) can take yours instead. |
-| `methane-co2` — 100 CO2 + 100 water + 1 moondrop-seeds → 40 methane | Self-contained, ~461 MW, but **24 buildings** — see below. **+15 MW** for that is a bad trade on engines. |
+| **Export the CO2** | **Preferred.** 440 MW at 119 process buildings, no bio dependency. Needs a consumer — design 07's Moss-2 takes 8.17/s, and anywhere running `moondrop-co2` (free, no inputs) can take yours instead. |
+| `methane-co2` — 100 CO2 + 100 water + 1 moondrop-seeds → 40 methane | Self-contained, ~455 MW, but **24 buildings** — see below. **+15 MW** for that is a bad trade on engines. |
 | `Moss-1` / `Moss-2` | Impractical — moss-farm speed 0.0625 on a 100s recipe needs **~62 farms** even with 15 moss modules. |
 | `chromium-01` | Only if chromium is wanted; needs chromite-sand and sand-casting. |
 | Barrelling | 1.24 barrels/s is not a sink, just deferred storage. |
@@ -286,11 +291,11 @@ below — not an unsunk CO2 stream.
 
 | Configuration | Net MW | Process bldgs | Note |
 |---|--:|--:|---|
-| **f=0, x=1, n=0 + acetylene, CO2 exported** | **~446** | **103** | this design |
-| f=0, x=1, n=0 + acetylene + methane-co2 | ~461 | 127 | self-contained; +15 MW for 24 buildings |
+| **f=0, x=1, n=0 + acetylene, CO2 exported** | **~440** | **119** | this design |
+| f=0, x=1, n=0 + acetylene + methane-co2 | ~455 | 143 | self-contained; +15 MW for 24 buildings |
 | f=0, x=1, n=0 + acetylene, CO2 unsunk | — | — | stalls; not a real option |
 | f=1, x=1, n=0 (recycle coke, no acetylene) | ~178 | 90 | no CO2, no acetylene chain. The fallback. |
-| *same chain on `steam-turbine`* | *~446* | *103* | *identical power, 36 generators not 142 (locked)* |
+| *same chain on `steam-turbine`* | *~440* | *119* | *identical power, 36 generators not 142 (locked)* |
 | Burn 15/s raw-coal directly | 45 | — | effectivity-1 solid boiler |
 
 **Why coke → acetylene beats coke recycling.** Marginal value of one coke:
@@ -315,11 +320,11 @@ large net loss); `coke-co2` and `graphite` (no fuel output); `syngas2` (locked, 
 - **Boiler fuel priority still matters:** naphthalene → carbolic → everything else. Those two have no
   non-fuel consumer, so if the boilers prefer gasoline they back up and stall `tar-refining-tops` and
   `pitch-refining`. The one piece of control logic this design needs.
-- **Electricity demand must be real.** Generators draw steam in proportion to grid load. 446 MW of
+- **Electricity demand must be real.** Generators draw steam in proportion to grid load. 440 MW of
   engine capacity into a base that wants 200 MW means steam backs up, boilers stop, and fuel queues
   behind them throttle the chain. Build the power island to actual load and scale it as demand grows —
   the chain is sized for the ceiling, the engines need not be. This is also the cheap way to stage the
-  build: the 103-building process chain is the hard part, the 142 engines can arrive incrementally.
+  build: the 119-building process chain is the hard part, the 142 engines can arrive incrementally.
 - **Creosote 31.75/s is the structural floor** (tar-refining emits 24 per 100 tar) and cannot be
   reduced at this tech. Per the brief, an external sink is assumed.
 - Acetylene at 391.48/s is also the mining fluid for lead, titanium and quartz-rock — if ore demand
@@ -334,7 +339,7 @@ splits grid load across *every* generator on the network in proportion to capaci
 u  =  grid_demand / total_generation_capacity      (including every other power plant)
 ```
 
-Add 200 MW of other generation to this block's 446 MW and a 300 MW grid load gives `u = 300/646 = 46%`
+Add 200 MW of other generation to this block's 440 MW and a 300 MW grid load gives `u = 300/640 = 47%`
 — this block's engines run at 46% regardless of how much fuel it is making. At `u < 1` the chain
 produces fuel faster than the boilers consume it:
 
@@ -349,8 +354,8 @@ At `u = 0.46` that is 283 MJ/s of fuel with nowhere to go.
 Every term scales with throughput `t` (fraction of the 15/s raw-coal feed):
 
 ```
-F(t) = 612.12t      S(t) = 357.21t      draw(t) ≈ 77.91t
-electric(t) = 612.12t − 88.14t − 77.91t = 446.07t
+F(t) = 612.12t      S(t) = 357.21t      draw(t) ≈ 84.11t
+electric(t) = 612.12t − 88.14t − 84.11t = 439.87t
 ```
 
 **No ratio shifts anywhere in the chain** — it is input-limited end to end, so reducing raw-coal scales
@@ -359,7 +364,7 @@ proportionally. The only nonlinearity is idle drain (~1/30 of full draw on stopp
 makes low throughput slightly less efficient: at `t = 0.1` output is 42.3 MW rather than a linear 44.6.
 Net-positive above `t ≈ 0.6%`, so effectively always worth running.
 
-**Required raw-coal feed = `15 × (MW wanted / 446)`.** 200 MW → 6.72/s.
+**Required raw-coal feed = `15 × (MW wanted / 440)`.** 200 MW → 6.82/s.
 
 ### Without any control: the chain self-regulates
 
@@ -378,7 +383,7 @@ Solving for the fixed point (fuel produced = fuel burned):
 
 | engine steam /s | t | gross MW | net MW | acetylene burned | (produced) |
 |--:|--:|--:|--:|--:|--:|
-| 2123.5 | 1.000 | 524.0 | 446.1 | 391.5 | 391.5 |
+| 2123.5 | 1.000 | 524.0 | 439.9 | 391.5 | 391.5 |
 | 1600 | 0.753 | 394.8 | 336.1 | 295.0 | 295.0 |
 | 1061.75 | 0.500 | 262.0 | 223.0 | 195.7 | 195.7 |
 | 500 | 0.235 | 123.4 | 105.0 | 92.2 | 92.2 |
@@ -459,7 +464,7 @@ acetylene loop's deadlock condition even theoretically reachable.
 ### Make this block base-load, not a peaker
 
 Throttling solves the stall, but it does not solve the *dilution* — at `u = 0.46` the block is only
-delivering 205 MW of its 446 MW capability while other plants carry the rest. To invert that, put the
+delivering 205 MW of its 440 MW capability while other plants carry the rest. To invert that, put the
 **other** generators behind an accumulator-triggered power switch:
 
 - this block's engines: connected directly, always available
@@ -471,9 +476,9 @@ throttle then tracks real demand rather than a diluted share of it.
 
 ### Black start
 
-The chain needs ~77.91 MW to make the fuel that makes the power, so **this block cannot cold-start
+The chain needs ~84.11 MW to make the fuel that makes the power, so **this block cannot cold-start
 itself**. On a dead grid it is inert. Keep either an independent generator or an accumulator bank sized
-to carry the 77.91 MW through spin-up — the chain must be producing fuel before its own engines can
+to carry the 84.11 MW through spin-up — the chain must be producing fuel before its own engines can
 contribute.
 
 ### Fuel priority is cascade selection — pick the deepest buffer
@@ -592,10 +597,10 @@ scale with `t` regardless of how much electricity the grid wants, so each impose
 
 ```
 t  =  min( P_gross/524,  S_creosote/31.75,  S_CO2/61.98,  S_ash/2.16,  S_gravel/1.63,  S_ironoxide/0.435 )
-net MW = 446.07 × t
+net MW = 439.87 × t
 ```
 
-| non-fuel output | rate at t=1 | sink needed for full 446 MW |
+| non-fuel output | rate at t=1 | sink needed for full 440 MW |
 |---|--:|--:|
 | carbon-dioxide | 61.98/s | 61.98/s |
 | creosote | 31.75/s | 31.75/s |
@@ -607,22 +612,22 @@ net MW = 446.07 × t
 
 | scenario | t | net MW |
 |---|--:|--:|
-| CO2 sink = design 07's Moss-2 only (7.59/s) | 0.122 | **54.6** |
-| CO2 sink = 20/s | 0.323 | 143.9 |
-| creosote sink = 10/s | 0.315 | 140.5 |
-| **all sinks sized to full rate** | **1.000** | **446.1** |
+| CO2 sink = design 07's Moss-2 only (7.59/s) | 0.122 | **53.7** |
+| CO2 sink = 20/s | 0.323 | 142.1 |
+| creosote sink = 10/s | 0.315 | 138.6 |
+| **all sinks sized to full rate** | **1.000** | **439.9** |
 
 ### Consequence 3: CO2 is vented — the cap disappears for one tile
 
 At **61.98/s** there is no plausible external consumer: Moss-2 takes 7.59/s, and every other site makes
 CO2 for free from `moondrop-co2`, so nobody wants an import. With Moss-2 as the only outlet the block
-would be capped at **54.6 MW — 12% of its capability.** Every unlocked conversion sink is gated on an
+would be capped at **53.7 MW — 12% of its capability.** Every unlocked conversion sink is gated on an
 input this block lacks (olefin needs 124/s hydrogen against 18.52/s; log6 needs 5.31/s ash against
 2.16/s; formamide needs 61.98/s ammonia against 0.81/s).
 
 **Per the project ruleset, CO2 is vented.** `carbon-dioxide-pyvoid-gas` (20,000 CO2 → nothing) in a
 `py-gas-vent`: **1×1 tile, 25 kW, no fuel, 40,000/s capacity** — one vent at 0.15% utilisation. The cap
-disappears for a rounding error, and the block holds 446 MW with no bio dependency and no chromium line.
+disappears for a rounding error, and the block holds 440 MW with no bio dependency and no chromium line.
 
 Venting is a deliberate, approved exception rather than a default — see CLAUDE.md § Rules. Both
 conversion routes stay documented in case CO2 becomes worth capturing later:
@@ -638,7 +643,7 @@ already unlocked, and it absorbs creosote as a side effect. Build it if a chromi
 anyway; otherwise vent.
 
 Creosote at 31.75/s has the same structure — the brief assumes an external sink, and that assumption is
-load-bearing for 446 MW, not a tidying detail.
+load-bearing for 440 MW, not a tidying detail.
 
 ### Consequence 4: where the backpressure front sits determines buffer state
 

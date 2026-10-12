@@ -140,7 +140,8 @@ Multi-product recipes stall completely when ANY output buffer is full. Every pro
     - Prefer `assembling-machine-1` (75 kW burner, chemical+biomass) over `automated-factory-mk01` (electric) — every craft produces ash from fuel as `burnt_result`
     - Prefer `stone-furnace` (200 kW burner) over `advanced-foundry-mk01` (electric) for the same reason
     - **Self-power as ash source**: boilers burning raw-coal produce ash at the same rate they consume fuel. At typical block loads (5-10 MW), boiler ash alone (1.5-3.5/s) often covers the entire ash demand. Self-powering trades electricity import for raw-coal import + ash self-sufficiency — worth it when the block already imports raw-coal for burner machines, or when eliminating the ash import removes a train station
-    - **Compute the ash balance manually** — exclude ash from every burner recipe in the solver (prevents LP from gaming furnace scaling for ash), then verify: total ash from burner machines + boiler fuel ≥ total ash consumed by recipes. The solver can't model this correctly because it treats ash production as a recipe output it can scale. See [solver-reference.md](solver-reference.md) § Solver setup checklist for the `--fuel` override and ash exclude pattern
+    - **Compute the ash balance manually** — exclude ash from every burner recipe in the solver (prevents LP from gaming furnace scaling for ash), then verify: total ash from burner machines + boiler fuel ≥ total ash consumed by recipes. See [solver-reference.md](solver-reference.md) § Solver setup checklist for the `--fuel` override and ash exclude pattern
+    - **The overlay is only needed when ash is a *wanted ingredient*** — then it has LP value and the LP over-builds burners to manufacture it. When ash is the waste being destroyed, nothing is gamed and target mode solves the `burnt_result` loop natively: pin intermediates with `--max-import "<item>:0"` and set the burner's `--fuel` to the recycled product. Input mode cannot — it forces the fuel item to balance to zero, scaling whatever burns it until all of it is consumed
     
     Example: automation-science at 0.4/s needs 3.18/s ash (planter-box + log3). Burner assemblers + furnaces produce 1.70/s ash from fuel; 4 boilers (7.0 MW self-power, engine effectivity 0.5) add 4.69/s → total 6.43/s, surplus 3.25/s. No ash import needed.
 
@@ -155,6 +156,14 @@ convenience: 15/s raw-coal is 45 MJ/s burned directly, but refined through the c
 200.73 MJ/s in fluid fuels plus 36.70/s coke — a 4.5× multiplier before counting the aromatics,
 creosote and plastics alongside. Recipes do not conserve energy; Py balances deep chains to reward
 running them. Treat "just burn it" as the baseline to beat, not the default.
+
+**A mandatory sink may be energy-negative; that is a price, not a defect.** The amplification
+framing above assumes you are choosing *whether* to run a chain. When a byproduct has exactly one
+ruleset-compliant destroyer there is nothing to compare against — report the number, state
+separately where the block does earn, and move on. Example: ash separation spends 1.65 MW to
+destroy 9.96 ash/s and returns 0.49 coal-dust/s, net −0.61 raw-coal/s on plain steam; break-even
+is 1.11 MJe/MJ, which even `oil-boiler-mk01` (1.00) misses. Cheaper than processing a mandatory
+loop is eliminating it upstream — ashless fuels (`wood`, `treated-wood`) have no `burnt_result`.
 
 **Rank conversion routes by energy destroyed per unit of output, not by volume ratio.** Recipes
 producing the same item from different feedstocks differ in how much fuel value they annihilate, and

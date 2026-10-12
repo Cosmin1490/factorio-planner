@@ -500,6 +500,7 @@ Once you have critical mass, only the steady-state matters for pipeline planning
 | Auog | Codex/creature-chamber | Pups (native-flora+moss)->mature | Permanent building modules |
 | Fish | Catch from water | 12->25 eggs->25 fish | Surplus loads more farms |
 | Native-flora | Mine (ore-bioreserve) | No loop — treat like ore | Bioreserve-farm locked |
+| Digosaurus | Creature-chamber, 1 per run | **No phase 2 — never breeds** | Every unit is a fresh lab build: 250 titanium + 150 automation-science |
 
 ---
 

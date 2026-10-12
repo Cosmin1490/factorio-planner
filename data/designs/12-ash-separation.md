@@ -145,6 +145,11 @@ burn **0.00643/s, or 1.29% of production.** Even with the one large furnace driv
 (§ Iron-oxide headroom) it is 14.50%. The reason is the probability skew — a stone-furnace is
 only 200 kW while coal-dust arrives carrying 1.50 MW of fuel value.
 
+Stated as furnaces: one `stone-furnace` at 100% eats **0.06667 coal-dust/s** (0.2 MW ÷ 3.00 MJ,
+= 4/min, one item burning for 15s). So 0.50000/s would keep **7.5 furnaces running flat out**,
+against the 0.0964 furnace-equivalents of real smelting work this block contains — it makes
+roughly **78× more fuel than it can burn.**
+
 Burning it elsewhere doesn't close the loop either, because coal-dust's `burnt_result` is ash
 at 1:1 — whatever burns it hands the ash straight back. Ash per MJ across the solid fuels:
 
@@ -220,9 +225,11 @@ coal-dust/s, and its own soot-separation at 10% util. No shared infrastructure t
 
 **Target mode is required, not stylistic.** Input mode forces coal-dust to balance to zero —
 it isn't a terminal output there, so the forward-propagation simplex scales whichever recipe
-burns it until all 0.50/s is consumed. That needs **44.5 iron-oxide/s** against the 0.05/s the
-separator makes, and the LP imports the difference for free (confirmed localized to the fuel
-assignment: put coal-dust on `zinc-plate-1` alone and *that* recipe goes to 8 furnaces).
+burns it until all 0.50/s is consumed. A `stone-furnace` eats 0.06667 coal-dust/s at 100%
+(0.2 MW ÷ 3 MJ), so 0.50/s supports **7.5 furnaces flat out** — needing **42.86 iron-oxide/s**
+against the 0.05/s the separator makes, with the LP importing the difference for free. Confirmed
+localized to the fuel assignment: put coal-dust on `zinc-plate-1` alone and *that* recipe goes
+to 8 furnaces instead.
 Target mode's real LP constrains intermediates to `production >= consumption`, which lets
 coal-dust be surplus *and* fuel at the same time.
 

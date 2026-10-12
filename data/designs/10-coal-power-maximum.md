@@ -6,9 +6,10 @@ sinks.
 
 **Result: ~446 MW net electric from 15/s raw-coal** — a 9.9× gain over burning the coal directly (45 MW).
 
-Generators are **`steam-engine`** (effectivity 0.5), which is the binding constraint on output. With
-`steam-turbine-mk01` the same chain yields ~970 MW off 36 turbines instead of 142 engines — see
-§ Generator choice.
+Generators are **`steam-engine`** (effectivity 0.5). This is not a choice — **every plain-steam
+generator in the tree is effectivity 0.5**, so ~446 MW is the ceiling for this chain rather than a tier
+that could be bought out of. `steam-turbine-mk01` requires `pressured-steam @>=500°C` and cannot accept
+the oil-boiler's 250°C `steam` at all — see § Generator choice.
 
 CO2 (61.98/s) is **vented** via one `py-gas-vent` — an approved exception in this ruleset, see
 CLAUDE.md § Rules. Converting it instead (`chromium-01`, or `methane-co2` for +15 MW) is documented but
@@ -101,8 +102,8 @@ All moondrop-greenhouses need **16 moondrop modules each** (speed 0.0588 × 17 =
 unmoduled they are unbuildable at this rate.
 
 **The acetylene chain costs 60 MW of electricity and returns ~391 MW** on engines (391.48 MJ/s of
-acetylene × 1.00 MJ/MJ). A 6.5× return — still decisive, but note it is half what turbines would give,
-and the 60 MW draw is now 13% of gross output.
+acetylene × 1.00 MJ/MJ). A 6.5× return, and since 1.00 MJ/MJ is the generator ceiling there is no
+better configuration to measure it against. The 60 MW draw is 13% of gross output.
 
 ## Fuel budget and power
 
@@ -131,8 +132,8 @@ block draw                                         =   77.91 MW
 net                                                = ~446 MW
 ```
 
-Equivalently: **`electric = F − 0.24675 × S − draw`** for steam-engines, or
-`2F − 0.4935 × S − draw` for turbines.
+Equivalently: **`electric = F − 0.24675 × S − draw`**. (The `2F − 0.4935 × S − draw` form would apply
+to an effectivity-1 generator; none exists for plain steam — see § Generator choice.)
 
 ### Generator choice — the binding constraint
 
@@ -142,34 +143,47 @@ oil-boiler-mk01   max_energy_usage 493,500 J/tick       = 29.61 MW heat
                   target 250°C, water default 15°C, steam heat_capacity 2100
                   energy per steam unit = 235 × 2100     = 0.4935 MJ
                   steam output = 29.61 / 0.4935          = 60.00 /s
-steam-turbine-mk01  60 steam/s × 0.4935 MJ × effectivity 1 = 29.61 MW electric
-
-                  14.805 MW fuel  →  29.61 MW electric   = 2.000 MJ/MJ
 ```
 
-That 2.000 MJ/MJ is what the boiler alone delivers. **The generator then decides how much survives.**
+The boiler's `effectivity 2` is real and is why this chain works at all: burning fuel as a **fluid** is
+worth double burning it as a solid (the plain `boiler` is `effectivity 1`). That 2× is then halved by
+the generator — and **there is no generator that doesn't halve it.**
 
-`steam-engine` loses twice over — half the nameplate *and* half the energy:
+```
+generator            fuel                          eff   fluid/s  unlocked
+steam-engine         steam @>=100°C                0.5      15     yes
+steam-turbine        steam @>=100°C                0.5      60     no — advanced-material-processing-2
+steam-turbine-mk01   pressured-steam @>=500°C      1        60     yes, but no fuel for it
+gasturbinemk01       combustion-mixture1 @>=500°C  1        60     no
+py-turbine           pressured-steam @>=500°C      1      2000     no
+```
+
+**`effectivity 0.5` is universal across plain steam.** `steam-turbine-mk01` reports as unlocked, but its
+fluidbox filter is `pressured-steam @>=500` and `oil-boiler-mk01` emits `steam` at 250°C — it will not
+accept this chain's output. The only unlocked `pressured-steam` producer is `he-01`
+(200 hot-molten-salt + 75 pressured-water → 75 pressured-steam @1000°C), which belongs to the
+molten-salt/solar-thermal branch and has nothing to do with coal.
+
+`steam-engine` therefore loses twice over — half the nameplate *and* half the energy:
 
 ```
 nameplate at 500°C:  15 steam/s × (500−15) × 2100 × 0.5  = 7.64 MW
 actual at 250°C:     15 steam/s × (250−15) × 2100 × 0.5  = 3.70 MW   ← oil-boiler caps at 250°C
 ```
 
-The temperature shortfall costs building count; `effectivity 0.5` costs energy on top.
+The temperature shortfall costs building count; `effectivity 0.5` costs energy on top. Neither is
+recoverable here.
 
-| generator | per building | buildings | net MW | MJ electric / MJ fuel |
-|---|--:|--:|--:|--:|
-| **`steam-engine`** (eff 0.5, 15 steam/s) | 3.70 MW | **142** | **446.07** | **1.00** |
-| `steam-turbine-mk01` (eff 1, 60 steam/s) | 29.61 MW | 36 | 970.05 | 2.00 |
+| generator | per building | buildings | tiles | net MW | MJ electric / MJ fuel |
+|---|--:|--:|--:|--:|--:|
+| **`steam-engine`** (eff 0.5, 15 steam/s, 3×5) | 3.70 MW | **142** | **2,130** | **446.07** | **1.00** |
+| `steam-turbine` (eff 0.5, 60 steam/s, 3×5) | 14.81 MW | 36 | 540 | 446.07 | 1.00 |
 
-**This design assumes steam-engines.** The turbine would give 2.17× the net power from a quarter of the
-buildings, and `force.recipes` reports it unlocked — worth re-checking in game, because it is by far the
-largest single improvement available to this block. Net is not exactly double because the 77.91 MW block
-draw does not halve.
-
-The turbine is also temperature-limited (29.61 MW against a 1000°C nameplate of 124.1 MW) but loses no
-energy to it — effectivity 1 extracts everything the 250°C steam carries. Only the engine wastes any.
+**1.00 MJ/MJ is the ceiling, not a choice.** The only generator upgrade reachable from this chain is
+`steam-turbine` — the unnumbered one, behind `advanced-material-processing-2`
+(1100 × [6 automation, 3 py-1, 2 logistic, 1 py-2]). Same effectivity 0.5 on the same 250°C steam, so
+**identical net power**; it simply swallows 60 steam/s instead of 15. That makes it a pure density win —
+36 buildings and 540 tiles in place of 142 and 2,130, saving 1,590 tiles with no change to output.
 
 ### Sanity-decomposing the 9.9×
 
@@ -181,10 +195,11 @@ energy to it — effectivity 1 extracts everything the 250°C steam carries. Onl
 | less block draw (77.91 MW) | −1.73× |
 | **net** | **9.91×** |
 
-With steam-engines the boiler's 2× and the engine's 0.5× cancel exactly, so conversion is energy-neutral
-and the entire gain is chemical. Note the block draw is now 1.73× of the input energy — at 15% of gross
-output it matters far more than it did with turbines (7%), which makes the acetylene chain's 60 MW the
-one place worth hunting for savings.
+The boiler's 2× and the generator's 0.5× cancel exactly, so conversion is energy-neutral and **the
+entire gain is chemical.** This is not an artifact of choosing steam-engines — it holds for every
+plain-steam generator, so energy-neutral conversion is the ceiling rather than a compromise. Note the
+block draw is 1.73× of the input energy; at 15% of gross output that makes the acetylene chain's 60 MW
+the one place worth hunting for savings.
 
 The conversion half is well-understood prototype arithmetic. The 13.6× chemical amplification is the
 part worth an in-game check before committing 42 boilers — it is Py's recipe balance rather than an
@@ -193,7 +208,8 @@ accounting artifact, with coke → acetylene (5 MJ → 10 MJ) the single largest
 **Power island:** 42 oil-boilers (2480.7 ÷ 60) and **142 steam-engines** (2123.5 ÷ 15). Not matched
 1:1 — process steam takes 357.21/s off the top before the engines see it, and each engine swallows only
 15 steam/s against a boiler's 60. Footprint is **3,180 tiles** (boilers 1,050 + engines 2,130), larger
-than the entire process chain. This is the dominant cost of the engine constraint.
+than the entire process chain. This is the dominant cost of the engine constraint, and the one part
+`steam-turbine` would fix — same power, 540 tiles instead of 2,130.
 
 ## Imports, exports, byproducts
 
@@ -259,9 +275,9 @@ Balanced, each nursery craft yields **4.7 net seeds** and needs 0.7 greenhouse c
 | moondrop cultivation | 13 greenhouse + 1 nursery | ~1,170 | 208 moondrop | 5.85 |
 | **total** | **24** | **~1,980** | **368** | **10.35** |
 
-Gain is 19.83 MJ/s of fuel, which on steam-engines is only **+15.3 MW net** after the 10.35 MW the
-greenhouses draw — 24 buildings and 368 bio modules for 3% more power. (On turbines it would be +35 MW,
-still poor.) **Prefer exporting the CO2** unless the block must stand alone.
+Gain is 19.83 MJ/s of fuel, which is only **+15.3 MW net** after the 10.35 MW the greenhouses draw —
+24 buildings and 368 bio modules for 3% more power. **Prefer exporting the CO2** unless the block must
+stand alone.
 
 If neither export nor methane is available, the honest fallback is the no-acetylene configuration
 below — not an unsunk CO2 stream.
@@ -274,7 +290,7 @@ below — not an unsunk CO2 stream.
 | f=0, x=1, n=0 + acetylene + methane-co2 | ~461 | 127 | self-contained; +15 MW for 24 buildings |
 | f=0, x=1, n=0 + acetylene, CO2 unsunk | — | — | stalls; not a real option |
 | f=1, x=1, n=0 (recycle coke, no acetylene) | ~178 | 90 | no CO2, no acetylene chain. The fallback. |
-| *same chain on `steam-turbine-mk01`* | *~970* | *103* | *2.17× for a quarter the generators* |
+| *same chain on `steam-turbine`* | *~446* | *103* | *identical power, 36 generators not 142 (locked)* |
 | Burn 15/s raw-coal directly | 45 | — | effectivity-1 solid boiler |
 
 **Why coke → acetylene beats coke recycling.** Marginal value of one coke:
@@ -649,10 +665,5 @@ Regenerate with `node scripts/build-materials.mjs data/designs/10-coal-power-max
 
 | Possibly missing | Status | Needed by |
 |---|---|---|
-| `intermetallics` | needs its own chain | oil-boiler-mk01, steam-turbine-mk01 |
-| `brake-mk01` | needs its own chain | steam-turbine-mk01 |
-| `duralumin` | makeable now | steam-turbine-mk01 |
-| `gearbox-mk01` | needs its own chain | steam-turbine-mk01 |
+| `intermetallics` | needs its own chain | oil-boiler-mk01 |
 | `quenching-tower` | needs its own chain | evaporator |
-| `shaft-mk01` | needs its own chain | steam-turbine-mk01 |
-| `utility-box-mk01` | needs its own chain | steam-turbine-mk01 |

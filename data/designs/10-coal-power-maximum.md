@@ -26,7 +26,7 @@ draws against the budget, this maximises the budget itself and draws nothing.
 | **x** — anthracene | **1** (all cracked) | Cracking is a 5.9× fuel amplifier. Creosote is 0 MJ. |
 | **n** — naphthalene/carbolic | **0** (burn) | Creosote is the only non-fuel product; never make it deliberately. |
 | **g** — coal-gas tap | **0** | Gasify everything; syngas is a 3.4× multiplier on coal-gas. |
-| coke destination | **acetylene** | The single biggest lever — see below. |
+| coke destination | **acetylene** | The single biggest lever — see below. Molten-salt powerplants are worth 4.4× more per coke but need a salt expedition; § Upgrade. |
 
 ## The three multipliers that make this work
 
@@ -297,6 +297,7 @@ below — not an unsunk CO2 stream.
 | f=1, x=1, n=0 (recycle coke, no acetylene) | ~178 | 90 | no CO2, no acetylene chain. The fallback. |
 | *same chain on `steam-turbine`* | *~440* | *119* | *identical power, 36 generators not 142 (locked)* |
 | Burn 15/s raw-coal directly | 45 | — | effectivity-1 solid boiler |
+| **coke → molten-salt powerplants** | **~1,553** | **47** | **3.5× power, 136 total buildings — gated on ~62,000 salt. See § Upgrade below.** |
 
 **Why coke → acetylene beats coke recycling.** Marginal value of one coke:
 
@@ -312,6 +313,174 @@ acetylene versus 376.28 MJ/s at `f=1` without.
 **Rejected outright:** `tar-to-carbolic` (100 tar + 1 raw-coal + steam → 10.5 MJ out of 23 MJ in — a
 large net loss); `coke-co2` and `graphite` (no fuel output); `syngas2` (locked, would be +43% syngas for
 60 oxygen/craft); `tar-distilation` (flue-gas has no unlocked sink).
+
+## Upgrade: coke → molten-salt powerplants (10.B)
+
+Route the 36.70 coke/s to `py-coal-powerplant-mk01` instead of the acetylene chain, and close the ash
+it leaves back into fuel. **~1,553 MW from 136 buildings** against this design's 440 from 303.
+
+The reason it works is that `steam-turbine-mk01` is the only effectivity-1 generator reachable at this
+tech, and § Generator choice shows why it cannot be fed from a boiler: its fluidbox filters
+`pressured-steam ≥500 °C`, which only `he-01` produces. The powerplant is the thing that unlocks it.
+
+```
+py-coal-powerplant-mk01   10 MW chemical burner, effectivity 1, 13×13
+  coal-molten-salt-01     500 molten-salt → 500 hot-molten-salt      20s  → 25 hot-salt/s per plant
+py-heat-exchanger         speed 2, 7×7
+  he-01   200 hot-molten-salt + 75 pressured-water
+            → 200 molten-salt + 75 pressured-steam @1000 °C          2.5s → 160 hot-salt/s, 60 steam/s
+steam-turbine-mk01        generator, 5×5, fluid_usage_per_tick 1 → 60 pressured-steam/s
+                          max_power_output 7.88 MJ/tick             → 472.8 MW
+```
+
+Turbine cross-check: 7.88 MJ ÷ 8,000 J/°C heat capacity = 985 °C over ambient 15 = 1000 °C, exactly
+what `he-01` emits. Rating and recipe agree, so **7.3875 MJ electric per MJ of fuel** against the
+1.00 MJ/MJ ceiling this design runs at.
+
+### The ash loop
+
+`coke` is 5.00 MJ `chemical` with `burnt_result: ash` 1:1, and ash converts back to fuel:
+
+```
+ash-separation   [solid-separator, 1s]  10 ash  → 1 coal-dust + 1 iron-oxide + 1 soot
+soot-separation  [solid-separator, 1s]   2 soot → 1 iron-ore + 1 copper-ore + 1 ash
+                                                  + 1 ore-aluminium + 1 ore-zinc + 1 ore-lead
+coal-dust        3.00 MJ chemical, burnt_result: ash 1:1
+```
+
+Two return legs — coal-dust burns back to ash, and soot returns 0.5 ash each:
+
+```
+A = 36.70 + A/10 (coal-dust burn) + A/20 (soot separation)
+A × 0.85 = 36.70   →   A = 43.176 ash/s
+balance: 36.70 coke + 4.3176 coal-dust + 2.1588 soot-return = 43.176 in = 43.176 separated ✓
+```
+
+| | rate | |
+|---|--:|---|
+| coke | 36.70/s | 183.50 MW |
+| coal-dust | 4.3176/s | **+12.95 MW** |
+| | | **196.45 MW** |
+
+**Plant count: 18.35 for the coke, +1.30 for the coal-dust = 19.65 → 20.** Without the soot leg the
+loop closes at `36.70/0.9 = 40.78` ash/s → 4.08 coal-dust/s → +1.22 plants; run soot-separation for
+the ore, not the 0.08 of a plant.
+
+### Building counts
+
+```
+┌──────────────────────┬─────────────────────────┬───────┬──────────┐
+│ Section              │ Building                │ Count │ MW draw  │
+├──────────────────────┼─────────────────────────┼───────┼──────────┤
+│ coal front end       │ distilator              │    31 │          │
+│ (unchanged)          │ gasifier (syngas)       │     7 │     3.50 │
+│                      │ tar-processing-unit     │     9 │          │
+├──────────────────────┼─────────────────────────┼───────┼──────────┤
+│ residual fuel island │ oil-boiler-mk01         │    16 │     0    │
+│                      │ steam-engine            │    36 │     0    │
+├──────────────────────┼─────────────────────────┼───────┼──────────┤
+│ molten-salt power    │ py-coal-powerplant-mk01 │    20 │     0*   │
+│                      │ py-heat-exchanger       │     4 │     0.03 │
+│                      │ steam-turbine-mk01      │     4 │     0    │
+├──────────────────────┼─────────────────────────┼───────┼──────────┤
+│ ash loop             │ solid-separator (ash)   │     5 │     7.50 │
+│                      │ solid-separator (soot)  │     3 │     4.50 │
+│                      │ furnace (iron-oxide)    │     1 │     0.40 │
+└──────────────────────┴─────────────────────────┴───────┴──────────┘
+136 buildings · ~30.4 MW draw     (*plants burn chemical fuel, not electricity)
+```
+
+Residual island sizing, using this design's identity with acetylene removed from F:
+
+```
+F = 612.12 − 391.48 = 220.64 MJ/s
+heat 441.28 → steam 894.2/s → 16 boilers;  process steam 357.21/s unchanged
+to engines 536.99/s → 36 engines;  gross = 536.99 × 0.4935 × 0.5 = 132.50 MW
+net = 1,451 (turbines) + 132.50 (engines) − 30.4 (draw) = ~1,553 MW
+```
+
+| | this design | 10.B |
+|---|--:|--:|
+| net power | 440 MW | **~1,553 MW** |
+| buildings | 303 | 136 |
+| intermetallics | 420 | 1,228 |
+| per MW | 0.955 | **0.791** |
+
+### What it deletes, and what it adds
+
+Gone: the 72-building acetylene branch, its 66.20 MW of draw, the **61.98 CO2/s** problem and all of
+§ The CO2 problem, the slacked-lime loop and the 20-extractor dial from rule 30, ~1,484 water/s, and
+132 of the 184 power-island buildings.
+
+Added, and all of it has a real sink — nothing voided:
+
+| output | rate | sink |
+|---|--:|---|
+| iron-oxide | 4.32/s | `iron-oxide-smelting` → **2.16 iron-plate/s** |
+| iron-ore | 2.16/s | design 06 imports 11/s |
+| copper-ore | 2.16/s | design 06 imports 3/s — covers 72% |
+| ore-aluminium | 2.16/s | → 0.216 aluminium-plate/s |
+| ore-zinc | 2.16/s | **no consumer today** |
+| ore-lead | 2.16/s | **no consumer today** |
+
+The soot sink was a choice: `soot-separation` beats `soot-pyvoid` (`1 soot → 1 ash`), which would
+recirculate more ash for **+0.8 MW** and produce zero ore. Trading 10.8/s of ore for 0.8 MW is not
+close, and it is a venting recipe besides.
+
+### Two gates
+
+**Ash backpressure stalls the plants.** A burner puts `burnt_result` in its output slot, so if ash
+cannot leave, the plant stops: `ore export blocked → soot-separation stalls → ash backs up →
+ash-separation stalls → all 20 plants stop`. The ore stations are load-bearing on 1,451 MW, and per
+§ Consequence 2 the shortest leg of `t = min(sink/rate)` is **ore-zinc and ore-lead** — the two with
+no home. Either give them a station and a smelter, or run `soot-pyvoid` as a lowest-priority overflow
+so soot always has somewhere to go. The second costs the ore but keeps the block alive.
+
+**Salt: ~62,000.** 20 plants × 500 molten-salt locked at craft start × 2 (Factorio consumes
+ingredients at craft start, and 2.x divides fluid evenly across connected machines, so a bare-minimum
+fill deadlocks all-partial) plus exchanger fill ≈ 20,800 molten-salt, at `300 salt → 100 molten-salt`
+in `bof-mk01`. `salt` comes only from mining `salt-rock` — `salt-ex` and `nacl-biomass-extraction` are
+both locked — so it is a rail line or repeated car trips before the first turbine spins.
+
+### It is a dial, not a switch
+
+Coke divides, and both destinations have fixed marginal rates:
+
+| destination | MW per coke/s |
+|---|--:|
+| → acetylene → boiler → engine | 8.86 |
+| → powerplant → exchanger → turbine (incl. ash loop) | 39.2 |
+
+**Every 1 coke/s moved is worth +30.3 MW**, linear across the range, and the lime/carbide/evaporator
+chain scales down proportionally rather than disappearing. So the first unit is the cheap entry:
+**6.4 plants, 1 exchanger, 1 turbine on ~12 coke/s ≈ +363 MW net for ~21,000 salt** — the same
+expedition size as a single 470 MW unit — leaving 24.7 coke/s on acetylene. Note also that acetylene
+is the mining fluid for lead, titanium and quartz-rock (§ Notes and risks), so some of it may be
+wanted as a product regardless of which way the power dial sits.
+
+### Provenance
+
+**No solver command — this half is not expressible in the LP.** `steam-turbine-mk01` is a generator,
+not a recipe, so the turbine and powerplant stages cannot enter the matrix. Every figure above is
+arithmetic on verified prototype data (`fluid_usage_per_tick`, `max_power_output`, `burnt_result`,
+`fuel_value`, the three recipes quoted verbatim) combined with this design's own validated
+`electric = F − 0.24675·S − draw` identity. The coal front end and the 16-boiler/36-engine residual
+island are solvable and have not been re-run — doing so means dropping
+`extract-limestone-01,lime,calcium-carbide,acetylene,slacked-lime-void` from the recipe list and
+re-solving in input mode at `--input raw-coal:900`.
+
+### Additional build materials
+
+On top of § Build materials you may not have. Inferred against designs 01/03/06 as before.
+
+| Possibly missing | Status | Needed by |
+|---|---|---|
+| `salt` / `molten-salt` | mining expedition — the gate | py-coal-powerplant-mk01 (loop seed) |
+| `mechanical-parts-01` | needs its own chain | py-coal-powerplant-mk01, py-heat-exchanger |
+| `brake-mk01`, `gearbox-mk01`, `shaft-mk01`, `utility-box-mk01` | drivetrain parts, own chain | steam-turbine-mk01 |
+| `automated-factory-mk01`, `py-tank-7000` | needs its own chain | py-heat-exchanger |
+| `duralumin` | needs its own chain | steam-turbine-mk01 |
+| `inductor1` | needs its own chain | solid-separator |
 
 ## Notes and risks
 

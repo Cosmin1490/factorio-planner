@@ -173,6 +173,8 @@ A 4-digosaurus site is therefore 16 ore/min on guts or dried-meat, 32 on meat, 1
 | workers-food-02 | 16 | | | |
 | workers-food-03 | 32 | | | |
 
+**Food is a yield multiplier, not a fuel** — the natural wrong reading, since it sits in a fuel-like slot. `Digosaurus.eat` removes exactly `count = 1` per trip whatever the food is, and the item eaten sets that trip's `ores_gained_per_trip`. So food consumption is flat at ~4 items/min per creature and **ore per food item = `ores_gained_per_trip` × `creature_bonus`**: upgrading guts → workers-food is 8× the ore at *identical* item throughput, not a slower burn. Confirmed in game 2026-10-15. Note `eat` returns the first matching food it finds rather than the best one, so feed a single food type per site — a mixed chest yields an unpredictable blend of multipliers.
+
 Modules are **worker count, not a speed bonus** — each slot is one creature that can be out at a time, so a full site is **4×** one creature and an empty site produces nothing. Do not read the 4 slots as `1 + 4 × 100%`. The handler dispatches one creature per site per 61 ticks, which only binds if trips run under ~1 s. The site **stops mining once its output buffer passes 1000 ore**, so it must be drained to keep running, and it also needs food, scanned ore in range, and an electric buffer above 90%.
 
 Since this mechanic is invisible to `recipe-tree`, `recipes --produces`, and `buildProducerIndex`, check for `helmod-recipe` variants when an ore appears to have no recipe producers — but treat their rates as display-only. Food sourcing (especially meat/guts from slaughterhouses) creates cross-block dependencies that must be planned explicitly.

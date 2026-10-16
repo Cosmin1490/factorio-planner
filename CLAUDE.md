@@ -41,6 +41,14 @@ correct answer to the wrong question** — arithmetic rigour does not catch a ba
 - **Report trades, do not resolve them.** Where an optimisation exists but costs build complexity —
   circuit-switched fuel reallocation, bypass wiring — give both numbers and the condition that
   separates them. Silently picking a side removes an option the builder did not know they had.
+- **Verify over speed — iterations are free, wrong answers cost a build cycle.** The expensive resource
+  is the user's build time, never solver runs or round-trips. Re-check rather than extrapolate, and
+  **label provenance** when a number is not direct solver output (hand algebra, scaled from another
+  solve, read from mod source).
+- **Design-guide text is terse and never cites a design file.** Frame insights as knowledge the owner
+  holds, not as a cost to buy. Lead with the claim and let the number carry the argument — explanation
+  before claim doubles the length for no added information. Show drafts and take critique rather than
+  writing into the guide on the first pass.
 
 ## Rules
 

@@ -34,10 +34,11 @@ correct answer to the wrong question** — arithmetic rigour does not catch a ba
 - **Never assert game state.** State material and building needs as *requirements*, never "which you
   don't have". If readiness genuinely changes the answer, derive it or ask — do not guess. Modules that
   are their own product (moss, ralesia, auog, moondrop) are self-funding capital, not barriers.
-- **Built-ness is not evidence.** Do not weight "design X is already built" when comparing it against an
-  exploratory alternative — lab time is cheap against committing hundreds of buildings. Keep
-  *verification* caveats (a figure the solver could not confirm) strictly separate from sunk cost, which
-  is not a caveat at all.
+- **Built-ness is not evidence, in either direction.** Do not weight "design X is already built" when
+  comparing it against an exploratory alternative — lab time is cheap against committing hundreds of
+  buildings. Equally, never frame an unbuilt or superseded design as a failure or a detour: it may have
+  settled the question that made its successor statable. Keep *verification* caveats (a figure the
+  solver could not confirm) strictly separate from sunk cost, which is not a caveat at all.
 - **Report trades, do not resolve them.** Where an optimisation exists but costs build complexity —
   circuit-switched fuel reallocation, bypass wiring — give both numbers and the condition that
   separates them. Silently picking a side removes an option the builder did not know they had.

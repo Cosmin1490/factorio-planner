@@ -28,6 +28,10 @@ This is why a self-contained design and a shared-infrastructure block for the sa
 
 **Solver for correctness, design docs for scale.** The solver's cost is justified by questions where being wrong means teardowns — byproduct cascades, recipe selection, feedback loops. Once a design is solver-validated and documented (modes, rates, outputs), scaling it is arithmetic. "Three stamps at 22.5/s raw-coal" is grounded in the design doc's rate tables — the solver already did the hard work when it validated the original. Headroom (rule 13: idle buildings cost nothing) covers the gap between estimate and exact computation. When the player understands a design's behavior — its modes, ratios, and coupling points — scaling it is a confident decision, not a guess. That confidence is what the original solver work and design doc built.
 
+**Requirements emerge from exploration — expect not to know them at the first question.** The opening ask is rarely the real one; it probes one piece of something still being assembled, and the specification is an *output* of the exploration, not its input. So is the tradeoff preference: which costs you will accept only becomes visible after seeing what the alternatives charge. Keep exploratory work cheap — fast answers, no design file, nothing to undo when a branch closes — and expect most branches to close. The dead ends are what make the live one findable.
+
+**An unbuilt design is not a failed one.** It still carries the information the next one needs, often as a negative result. Mapping a dial space usually finds most parameters have exactly one correct setting — a parameter with one answer is a constant, and welding it shrinks the design. That is a finding, not a wasted pass, and the same exercise tends to surface the knob that *does* earn the name, frequently not among the ones you started with. Judge a design by what it settled, not by whether it was stamped. Building one is never wasted either: a validated point design becomes the trusted endpoint of the range design that supersedes it.
+
 ---
 
 ## Comparing alternatives

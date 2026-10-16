@@ -53,6 +53,8 @@ This is why a self-contained design and a shared-infrastructure block for the sa
 6. **Match the limiting reagent** — don't force the abundant byproduct to zero; that over-scales the consumer and imports the scarce one. Let the scarce one set the pace.
 7. **Recycle intermediates through every producing step** — when multiple recipes produce the target as byproduct (coal chain: raw-coal -> coal -> coke -> coal-gas all produce tar), force intermediates back. Coal chain: 3x raw-material reduction (33 -> 11/s for 100 tar/s).
 
+    **A recycle return is a fixed point, not a reduction.** The rule above counts import savings; recycling also amplifies *internal* flow, which is what sets building counts. Return fraction `k` per pass gives `X = X₀/(1 − k)`, `X₀` being what the raw input alone produces. Trace a full pass to get `k`, **including indirect legs** — one coke loop reads 25.7% on its direct tar leg and 41.1% once the gas leg that becomes more tar is counted; at `k = 0.41` everything downstream grows 1.7×. A recycle valve is never a bolt-on.
+
 ### Backpressure analysis — the default way to check a design
 
 Byproduct *classification* (rules 5–7) asks "does every output have somewhere to go?". Backpressure
@@ -202,6 +204,12 @@ in an amplified chain is structural — decide where it goes rather than diallin
 **electricity is a bounded sink**: generators draw steam in proportion to real grid load, so turbine
 capacity beyond demand idles, steam backs up, and the fuel queued behind it throttles the chain. A mode
 table invites the wrong question — "which setting achieves this?" presumes it is reachable.
+
+**Diverting a byproduct you already burn beats making more of it.** Two ways to get more of a product
+the block burns as fuel: divert what exists, or push the chain harder. Diverting costs exactly the fuel
+value removed — fixed, independent of dial position. Growing costs whatever the chain's inefficiency
+destroys, usually several times more: one plant pays **57.5 MW per unit to divert, 303 to grow**. Reach
+for the dial last.
 
 ## Block delta planning
 
@@ -484,6 +492,8 @@ Example cascade: `clean-nexelit:muddy-sludge:exclude` alone caused the LP to shi
     **Train priority as tiering mechanism.** When both a direct consumer (stone-brick block) and a cascade block import the same byproduct, use train station priority to implement the tier ordering: direct consumer gets high priority, cascade block gets low priority. Trains deliver to the consumer first; only surplus reaches the cascade. This replaces in-block overflow wiring with train scheduling — simpler, no circuits at the producer, and the consumer and cascade are fully independent blocks. The cascade block still applies overflow-to-void internally for its own conversion products.
 
 30. **Document the response surface, not just the design point.** Building counts describe one operating point. Knowing how the block behaves *off* it — leech a stream, stop recycling something, starve an input — is what keeps you free to change your mind later, and that knowledge costs nothing. Physical slack is a separate, optional purchase.
+
+    **Size a range-design per consumer group, not per total.** A consumer fed from one pipe stays on that input as the dial moves, so the default envelope is `Σ(max over range)`, not `max(Σ)`. They diverge whenever groups peak at opposite ends, which is common: one plant's acetylene boilers peak at one end and every other fuel at the other — **55 boilers against the 46 a blended total gives**. `max(Σ)` is reachable by pump-and-circuit reallocation between input lines, so the gap is **spare buildings versus build complexity — the builder's call, not the design's**. Report both numbers and which end each group peaks at; that is what keeps the choice open instead of pre-made. If they peak together the distinction vanishes.
 
     Designs reliably document the dial that obviously varies (demand) and treat internal recycle loops as constants, because nobody expects the *owner* to vary them. That asymmetry is the bug. For every dial — each internal recycle loop, each byproduct with more than one sink, each input another block might leech — record:
     - **Range, and whether it's a slope or a cliff.** Some dials degrade gracefully; some have no operating point past a threshold, because the byproduct's only sink was the thing you switched off.

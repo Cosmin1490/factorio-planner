@@ -57,6 +57,27 @@ The design guide's classification (recycle > export > convert > void) determines
 - **Recycle intermediates through every producing step** (design guide rule 7) — implement by forcing intermediates back with `--max-import item:0`.
 - **Excluded production is invisible** — when a recipe's product is excluded, the solver treats it as if the recipe doesn't produce that item at all. If another recipe in the same solve consumes that item, the solver will report it as an import. The actual production still happens in-game. Subtract excluded production manually from solver-reported import rates.
 
+### Closed self-sustaining loops — an invocation problem, not a solver fault
+
+A product feeding back into its own production, net-positive without external input: breeding
+(`animal → pup → animal`), forestry (`wood → seeds → seedling → log → wood`), fluid recycles
+(`water → sludge → water`), coke/tar. The LP is correct on all of them; the invocation has to change.
+
+- **Never cap both ends.** `--max-import` on two nodes of one closed cycle over-determines it — the
+  loop needs no external input, so simplex settles on an inflated vertex. One breeding loop gave a flat
+  **45× overshoot at every target scale** with two caps, and the right answer with one or none.
+- **Target mode can go Phase-1 infeasible** (`stuck artificials: <item>`). Solve in legs: import the
+  looped item, size the loop's balance by hand (`X = X₀/(1−k)`, design guide rule 7), reconcile.
+- **It will not partially mix two recipes serving one demand under a cap.** Given two moss recipes and
+  a stone cap it took the all-stone-free option at nearly double the buildings. Blend by hand: cheap
+  recipe up to the capped input, the other for the remainder.
+- **A cycle warning is information.** Its suggested `:exclude` usually breaks the loop you are
+  modelling. Read it as "confirm this is intentional", then check the intermediates table shows
+  producer = consumer on every looped item.
+
+**Always check output against target** — overshoot is the over-constrained signature, and it scales
+linearly so it looks plausible at any size.
+
 ---
 
 ## Recipe verification

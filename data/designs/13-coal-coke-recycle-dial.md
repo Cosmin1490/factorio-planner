@@ -144,9 +144,9 @@ acetylene block peaks at `r=0`.
 
 ### Boilers — fuel affinity, not just fragmentation
 
-A boiler has **one fluid fuel box**, and in practice it is plumbed to one fuel line and never
-re-piped when the dial moves. So the envelope is **Σ over fuels of max over r**, not max over r of
-Σ — each fuel's boiler group must carry *its own* peak, wherever on the dial that falls:
+A boiler has **one fluid fuel box**, so by default it sits on one fuel line and stays there as the
+dial moves. The envelope is then **Σ over fuels of max over r**, not max over r of Σ — each fuel's
+boiler group carries *its own* peak, wherever on the dial that falls:
 
 **Build this table. No boiler ever changes fuel.**
 
@@ -170,10 +170,21 @@ the whole reason affinity matters: the 27 acetylene boilers and the 28 tar-fuel 
 fully loaded, so neither group can be sized against a blended total. Bank utilisation is **75 % at
 `r=0`, 64 % at `r=0.5`, 46 % at `r=1`**.
 
-`Σ ceil(MJ/14.805)` evaluated *at a single r* gives 46 at `r=0` and 28 at `r=1`; taking the max of
-those (**46**) is wrong, because it assumes 18 boilers migrate from the acetylene line to the tar-fuel
-lines as the dial turns. **55 is the number that builds.** Venting hydrogen (pre-approved, 0.10 MJ is
-noise) removes one boiler → **54**.
+`Σ ceil(MJ/14.805)` at a *single* r gives 46 at `r=0` and 28 at `r=1`. Taking max(46) assumes 18
+boilers migrate off the acetylene line onto the tar-fuel lines as the dial turns — which **is**
+buildable, with pumps and per-boiler circuit switching.
+
+**Both numbers, pick your side:**
+
+| | boilers | what it needs |
+|---|--:|---|
+| **no control** | **55** | fixed pipe per fuel group, build and forget |
+| **with reallocation** | **46** | pumps + per-boiler fuel switching; saves 9 boilers / 90 intermetallics |
+
+Neither is the right answer — it depends on who is building it and how much circuit work they want to
+own. Design 10 makes the same call in the other direction, publishing 42 (its control-assuming floor)
+against a fragmented 46. Venting hydrogen (pre-approved, 0.10 MJ is noise) removes one from either
+column.
 
 **Engines have no affinity problem.** All boiler steam is 250 °C into a common header, so engines pool
 freely across every fuel. Steam-to-engines peaks at `r=0` (2,123.5/s) and falls monotonically to
@@ -268,6 +279,60 @@ you intend to sit at `r=0`**, since that is the one thing dialling up can break.
 Secondary: at `r=1` the 68 idle buildings of the acetylene branch hold inventory. `calcium-carbide`
 and `acetylene` should be circuit-disabled rather than starved, so they do not sit full of
 part-consumed coke when `r` is dialled back down.
+
+### Dial transients — why it settles, and how fast
+
+**It settles because every terminal is a fuel feeding a throttling boiler** (creosote excepted, which
+leaves on its own line). Boilers burn to *steam demand*, not to fuel availability, so turning the dial
+redistributes flow rather than jamming it — there is no hard deadlock at any `r`, only a period of
+pipes refilling while the plant re-converges.
+
+**An undersized group de-rates; it does not stop.** Its input backs up, the producer throttles because
+its output box is full, and that throttle propagates upstream — the plant settles at the bottleneck's
+rate. Three `light-oil-aromatics` distilators instead of four would give ~75 % of the `r=1` rates
+across the whole tree, not a dead plant, and is fixed by adding the building. **Creosote is the single
+exception**: it is the only terminal without a throttling consumer behind it, so a blocked creosote
+run genuinely stalls `tar-refining`, and `tar-refining` is upstream of everything.
+
+**How fast it re-converges is set by the tightest group**, since clearing a transient backlog needs
+spare capacity. Rounding up the building counts is what provides that spare capacity — had any group
+landed on exactly 100 %, it could never work through a backlog at all. Slack at each group's own peak:
+
+| group | need | built | slack |
+|---|--:|--:|--:|
+| **`light-oil-aromatics`** | 3.99 | 4 | **0.2 %** |
+| `anthracene-gasoline-cracking` | 21.72 | 22 | 1.3 % |
+| gasoline boilers | 12.84 | 13 | 1.2 % |
+| acetylene boilers | 26.44 | 27 | 2.1 % |
+| `coal-gas-from-coke` | 15.58 | 16 | 2.7 % |
+| `tar-refining` | 11.60 | 12 | 3.5 % |
+| `pitch-refining` | 16.24 | 17 | 4.7 % |
+| `syngas` gasifiers | 10.22 | 11 | 7.6 % |
+| `tar-refining-tops` | 2.78 | 3 | 7.7 % |
+| naphthalene / carbolic / aromatics boilers | — | 3 / 1 / 3 | 10–27 % |
+
+**The dial itself does not create a backlog.** Flows ramp monotonically: dialling `r` up walks
+light-oil from 56.9/s toward 99.77/s against 100/s of installed capacity, so that group moves from
+57 % duty to 99.8 % without ever exceeding it, and dialling down only lowers it. The transient is
+buffers refilling — an undershoot downstream, not an overshoot. **Convergence is guaranteed at every
+`r` by slack being strictly positive everywhere.**
+
+What the thin slack costs is **recovery, not convergence**. If something *else* backs a line up — a
+blocked creosote run, a brownout stopping boilers mid-cycle — then `light-oil-aromatics` at 0.2 %
+clears that backup at 0.2 % of throughput, i.e. hours rather than minutes. And it is the group
+producing the aromatics the plastic line depends on.
+
+**Recommended over-build, for recovery time rather than throughput:**
+
+| group | → | new slack | cost |
+|---|---|--:|---|
+| `light-oil-aromatics` 4 → **5** distilator | | **25.3 %** | **0 intermetallics** |
+| `anthracene-gasoline-cracking` 22 → **23** distilator | | **5.9 %** | **0 intermetallics** |
+| gasoline boilers 13 → **14** | | 9.0 % | 10 intermetallics |
+
+Two free buildings take the worst-case slack from **0.2 % to 5.9 %**, which is the difference between
+a dial that responds in minutes and one that responds in hours. Taking all three puts the plant at
+**362 buildings / 560 intermetallics**.
 
 ## Additional build materials
 

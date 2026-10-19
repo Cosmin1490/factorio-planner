@@ -1,9 +1,9 @@
 {
-  "name": "helmod-web-export",
-  "version": "0.1.0",
-  "title": "Helmod Web Data Export",
-  "author": "helmod-web",
-  "description": "Exports Factorio prototype data as JSON for use with the Helmod web calculator",
+  "name": "cosmin1490-export-mod",
+  "version": "0.1.1",
+  "title": "cosmin1490-export-mod",
+  "author": "cosmin1490",
+  "description": "Exports Factorio prototype data as JSON",
   "factorio_version": "2.0",
   "dependencies": ["base >= 2.0.0"]
 }

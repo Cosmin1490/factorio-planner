@@ -76,6 +76,13 @@ divergence creates backpressure that corrects it. The block reduces to one scala
 makes the rest of the analysis tractable, and it is worth confirming before assuming a design can be
 "partially" run.
 
+This is also why a belt tap is not a free action here, unlike in vanilla. Tapping a *terminal* output
+moves `t` proportionally for everything and is recoverable. Tapping an *internal* line starves a
+downstream recipe — and where the stream is a closed loop or a catalyst (barrels, cages, heat-carrier
+bricks), it is not proportional at all: those net to zero, so nothing refills what you removed and the
+loop stays short until someone notices. **A stream that is not in the design's export table is a design
+change, not a use of the design.**
+
 **3. Every terminal output caps `t` independently — including the ones you don't care about.**
 This is the finding most often missed, because minor byproducts get waved through:
 
@@ -526,6 +533,8 @@ Example cascade: `clean-nexelit:muddy-sludge:exclude` alone caused the LP to shi
     - **The exchange rate as a rate**, not two endpoints — cost per unit diverted, usually identical wherever the material ends up. One number spans the range and kills the urge to re-derive the middle.
     - **Which rows move.** Usually few; naming them is most of the value.
     - **The acceptability call, stated.** "At zero recycling this costs X and needs Y, and that's fine" is what stops future-you re-deriving it. Same discipline as energy-negative (§ Energy economics): report the number, name where it still earns, move on.
+
+    **Dials interact — a per-dial range is not an envelope.** Every dial recorded individually in range can still put the design outside it jointly, and that is where late failures come from: two reasonable decisions made months apart by different parts of the base, neither wrong alone. Where two draws trade against one budget, record the boundary as a **relation**, not a list of scenarios — one glassworks' safe science draw ran `0.440 + 0.524 × (building-material draw)`, so a draw that sat comfortably while the incidental tap ran became a deficit the day it stopped. A scenario table enumerates points; a relation answers "am I inside it" for the combination nobody thought to tabulate.
 
     Sizing is a footnote — size for the range if you want the dial movable without a rebuild, or don't, and pay the rebuild to act on it. Both are fine; not knowing isn't.
 

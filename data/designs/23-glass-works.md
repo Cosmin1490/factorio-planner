@@ -63,9 +63,28 @@ behind it. Derivation in § How the fuel closes.
 The margin tracks itself. No circuit measures a fuel balance, and crossing zero cannot fail silently —
 the flask chest simply drains and the stub opens. The formula above is for **sizing**, not control.
 
-### Operating envelope
+### Operating envelope — the boundary, not a scenario list
 
-At design 01's P = 0.240 and the raw-coal 30/s clamp (G = 1.843):
+Flask and glass trade against one budget, so the safe region is a **relation over both draws**, not a
+set of named cases. At design 01's petri demand `P = 0.240`:
+
+```
+F_max(G)  =  (18.333·P + 5.238·G) / 10  =  0.440 + 0.524·G        flask/s
+```
+
+| glass draw G | **max safe flask** |
+|--:|--:|
+| 0 | **0.440 /s** |
+| 0.268 | 0.581 /s |
+| 1.000 | 0.964 /s |
+| **1.843** (nominal) | **1.406 /s** |
+
+**Check two numbers against the line, not the table below.** A flask draw of 0.50/s sits comfortably
+while glass is being pulled and becomes a deficit the day somebody stops pulling glass — neither
+decision is wrong alone, and they can be months apart. That conjunction is the failure this block can
+actually suffer; the named scenarios below are only samples of it.
+
+At the raw-coal 30/s clamp (G = 1.843):
 
 | scenario | P | G | F | net COG | **acetylene** |
 |---|--:|--:|--:|--:|--:|

@@ -43,7 +43,11 @@ Full recycling mode with ore crushing, barrel loop, and grade-2-tin consumption.
 
 ### Steam accounting note
 
-The solver reports steam as both import (60.70/s) and byproduct (58.33/s). Polybutadiene produces 58.33/s steam internally but the solver doesn't net it against consuming recipes. Actual net steam import is ~2.37/s.
+The solver reports steam as both import (60.70/s) and byproduct (58.33/s), and **that is correct — they are different temperatures.** `polybutadiene` emits `steam @150 °C`; `tar-refining`, `pitch-refining` and `tar-refining-tops` all specify `minimum_temperature: 250`. The 150 °C stream cannot satisfy them, so the two do not net and the import stands at 60.70/s.
+
+The only consumers with no minimum are `agar`, `latex` and `bone-to-bonemeal-2` — roughly 28/s of the 58.33/s, and only if piped separately from the 250 °C header.
+
+The remaining ~30/s leaves the block as a 150 °C export. Disposition not settled here.
 
 ### Self-power analysis
 
@@ -496,7 +500,7 @@ All raw mined resources — no processed items. Mining fluid chain adds ~85/60s 
 
 | Byproduct | /s | Notes |
 |---|---:|---|
-| steam | 58.33 | from polybutadiene (→ cooling-tower) |
+| steam | 58.33 | @150 °C from polybutadiene; **exported** (see § Steam accounting note) |
 | flue-gas | 40.84 | from smelting; **vented** (`py-gas-vent`, tier 1 — combustion exhaust). No filtration retrofit needed. |
 | naphthalene-oil | 6.86 | from pitch-refining + tar-refining-tops |
 | oxygen | 4.23 | from electrolysis |
@@ -550,7 +554,7 @@ Major waste streams eliminated: coal-gas (100% consumed), pitch (100% consumed),
 - **Raw-coal 67% reduction via `--max-import "raw-coal:600"`.** Without the cap, the LP wastes coal-gas rather than processing it. The raw-coal cap forces recycling (5.73/s raw-coal base + 1.41/s mining fluid chain = 7.14/s total).
 - **Self-power at 26% from byproducts.** ~28 MW from byproduct fuels. Remaining ~79 MW imported.
 - **Iron-oxide-smelting is incompatible with oil refining in the LP.** When both are present without stone-import, the LP scales sb-grade-01 +45% to source iron-oxide.
-- **Cooling-water (cooling-tower-mk01) for steam recovery.** polybutadiene produces 58.33/s excess steam. Route through cooling-water (400 steam → 400 water@100°C, 1 tower) to recover ~58/s water. Not in solver — the LP abuses it.
+- **150 °C steam is exported.** polybutadiene emits 58.33/s steam @150 °C, which the ≥250 °C refining recipes cannot use; `agar`, `latex` and `bone-to-bonemeal-2` take ~28/s of it if piped separately. See § Steam accounting note.
 - **coarse-classification handled manually.** Adding coarse-classification to the solver causes LP infeasibility, but 1 classifier at 4% utilization handles 0.83/s coarse outside the solver (see [§ Coarse processing](#coarse-processing)).
 - **Flue-gas is vented.** `fluegas-filtration` and `fluegas-to-syngas` both require `filtration` tech, which costs logistic-science-pack — a bootstrap problem. Not an issue: flue-gas is tier 1 under the project ruleset (combustion exhaust), so one `py-gas-vent` handles all 40.84/s permanently. Convert later only if `fluegas-to-syngas` is wanted for the syngas, not out of necessity.
 
@@ -770,7 +774,7 @@ Investigated and rejected during design:
 
 ## Design notes for block layout
 
-- **cooling-tower-mk01**: place 1 after polybutadiene's steam output, converts 58.33/s excess steam → water@100°C. Reduces water import by ~8%. ~0.8 kW power draw. Not in solver — LP abuses it to replace all water imports with steam imports.
+- **Polybutadiene steam output is an export**: 58.33/s @150 °C, on its own header — the 250 °C refining recipes cannot take it. See § Steam accounting note.
 - **Byproduct fuels for self-power** (oil-boiler-mk01 eff 2 + steam engine eff 0.5, net MW = rate × fuel_value):
   - Burn all: syngas 18.89 + gasoline 4.10 + naphthalene-oil 2.06 + carbolic-oil 0.62 + coal 2.16 (solid boiler eff 1) = **28 MW** (26% of 107 MW)
   - Export syngas, burn rest: 28 − 18.89 = **~9 MW** (8% of 107 MW)

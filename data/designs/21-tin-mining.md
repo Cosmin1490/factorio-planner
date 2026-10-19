@@ -1,7 +1,7 @@
 # 21 — Tin mining + grading — 1.00 tin-plate/s, 16 buildings
 
-Third of the mining upgrades (designs 19 titanium, 20 lead). Same pattern: mk02 drills, the grading
-chain, gas smelters. Ore-to-plate goes **10.0 → 6.0**.
+Third of four mining upgrades (19 titanium, 20 lead, 22 zinc). Same pattern: mk02 drills, the
+grading chain, gas smelters. Ore-to-plate goes **10.0 → 6.0**.
 
 ```
 tin-plate-1        [U] [smelting, 60 s]  ore-tin 40      →  tin-plate 4      10.0 ore/plate
@@ -14,16 +14,17 @@ The grade-2 recycle returns 20 % of the grade-1 supply, same shape as titanium. 
 (`grade-3-tin`, `tin-ore-rejects`, `wash-grade-3-tin`, `ball-grade-4-tin`) are locked — with them
 this would improve again, as titanium's reject recycle does.
 
-**Tin is the one outpost whose mining fluid is steam, not acetylene.** That turns out to be an
-advantage, not a complication — see § Steam.
+**Tin is the one outpost whose mining fluid is steam, not acetylene.** Under the island pattern that
+is a cost, not a saving: the steam is boiled on site from imported acetylene so the outpost still
+takes exactly one fluid. See § Steam.
 
 ## Block boundary
 
 | class | items |
 |---|---|
-| **import** | steam (any temperature), acetylene (steel-furnace fuel + boiler fuel), water, electricity |
+| **import** | acetylene (boiler fuel + steel-furnace fuel), water, electricity |
 | **mined in-block** | ore-tin — `fluid-drill-mk02` on the patch |
-| **must-consume-internally** | grade-1-tin, grade-2-tin |
+| **must-consume-internally** | steam, grade-1-tin, grade-2-tin |
 | **byproduct-exclude** | none |
 
 ## Recipe table
@@ -42,7 +43,9 @@ advantage, not a complication — see § Steam.
 
 **16 buildings · 8.88 MW electric** — 5.40 drills + 3.48 process. ~440 tiles of building.
 
-**Inputs** (/s): **steam 60.00** · **acetylene 15.1–22.3** (see below) · water 60.00 (to the boiler)
+**Inputs** (/s): **acetylene 22.30** — 14.8 boiler + 7.5 steel-furnaces · water 60.00 (to the boiler)
+
+One fluid in. Steam is produced in-block and never crosses the boundary.
 
 **Exports** (/s): **tin-plate 1.00** · stone 0.60
 
@@ -58,25 +61,25 @@ advantage, not a complication — see § Steam.
 └─────────────┴─────────┴──────────────────────────────────────────┴──────────────────────────┘
 ```
 
-## Steam — the cheapest part of this design
+## Steam — boiled on site
 
 ```
 ore-tin   required_fluid = steam,  fluid_amount 100 ÷ 10  =  10 steam per ore   →  60 /s
 oil-boiler-mk01   effectivity 2    60 steam/s on 14.805 MW of fuel              →  1 boiler
 ```
 
-**`required_fluid` carries no temperature**, so any steam qualifies — which makes design 17's
-150 °C polybutadiene surplus a direct feed. It exports 57.50/s, design 18 claims 28.13, leaving
-**29.37/s** for tin:
+**The steam is made on site, not imported.** `required_fluid` carries no temperature so any steam
+would qualify, and cheaper surplus steam exists elsewhere in the base — but importing it would mean
+a second caravan route *and* would couple this outpost's uptime to whatever produces it. The outpost
+pattern is one fluid in, solids out; the boiler buys that for 14.8 acetylene/s.
 
-| steam source | boiler fuel | furnace fuel | **total acetylene** |
-|---|--:|--:|--:|
-| boiler alone | 14.8 | 7.5 | **22.3 /s** |
-| **design 17 leftover + top-up boiler** | 7.6 | 7.5 | **15.1 /s** |
+```
+boiler fuel   14.8 /s        furnace fuel   7.5 /s        total acetylene  22.3 /s
+```
 
-The feedwater lever applies on top: fed 100 °C water rather than 15 °C, the same boiler makes
-**94 steam/s instead of 60** — enough for nine drills on the same fuel. Worth wiring if any warm
-return water is nearby.
+The feedwater lever applies if warm return water is ever available locally: fed 100 °C water rather
+than 15 °C the same boiler makes **94 steam/s instead of 60**, enough for nine drills on the same
+fuel. That is an in-block optimisation and does not break the island.
 
 ## Utilisation
 
@@ -103,33 +106,34 @@ The boiler is the only thing at 100 % — a seventh drill needs a second one (or
 | buildings | 12 | 16 |
 | ore-tin | 3.00 /s | 6.00 /s |
 | **tin-plate** | **0.30 /s** | **1.00 /s** — 3.3× |
-| steam | 30 /s | 60 /s |
+| steam (made in-block) | 30 /s | 60 /s |
 | electric | 2.40 MW | 8.88 MW |
-| acetylene | ~7.4 /s | 15.1–22.3 /s |
+| acetylene | ~7.4 /s | **22.3 /s** |
 | coal in · ash out | 0.23 · 0.23 /s | — |
 | stone out | — | 0.60 /s |
-| **acetylene per plate** | 24.7 | **15.1** (d17 steam) / 22.3 (boiler) |
+| **acetylene per plate** | 24.7 | **22.3** |
 
-**This is the weakest of the three upgrades on acetylene efficiency.** Titanium went 40.0 → 24.6 and
-lead 60.0 → 26.0; tin only reaches 15.1 *if* design 17's steam is available, and barely moves at
-22.3 without it. The reason is that tin's old route spent no acetylene on smelting at all — stone
-furnaces burned coal — so the gas smelter is a new cost rather than a saving.
+**This is the weakest of the four upgrades on acetylene efficiency** — 24.7 → 22.3 per plate, where
+titanium went 40.0 → 24.6 and lead 60.0 → 26.0. The reason is that tin's old route spent no
+acetylene on smelting at all (stone furnaces burned coal), so the gas smelter is a new cost rather
+than a saving, and the boiler is a new cost on top.
 
 It is still 3.3× the plate for four more buildings, and the stone is free.
 
-## Acetylene across the three mining outposts
+## Acetylene across the four mining outposts
 
 ```
-design 19  titanium  14.16 /s
-design 20  lead      77.91 /s
-design 21  tin       15.1–22.3 /s
-                     ───────────
-                     107–114 /s     ≈ 29 % of design 13's 391.5/s at r=0
+design 19  titanium   14.16 /s
+design 20  lead       77.91 /s
+design 21  tin        22.30 /s
+design 22  zinc        3.67 /s
+                      ────────
+                      118.04 /s   ≈ 30 % of design 13's 391.5/s at r=0
 ```
 
-Lead is two-thirds of the total. A design-13 copy sized to supply all three needs **`r ≈ 0.80`**,
-costing roughly 12 % of its aromatics — derived from the recursion, not re-solved. Running lead at
-3 drills instead of 6 brings the total to ~68/s and most of that back.
+Lead is two-thirds of it. A design-13 copy sized to supply all four needs **`r ≈ 0.79`**, which
+still leaves it 86.5 aromatics/s — enough for zinc's 24.0 plus plastic and rubber. Derived from the
+recursion, not re-solved. Running lead at 3 drills instead of 6 brings the total to ~79/s.
 
 ## Build gotchas
 
@@ -138,9 +142,9 @@ costing roughly 12 % of its aromatics — derived from the recursion, not re-sol
 - `ore-tin` has `fluid_amount 100` → **10 steam per ore** after the 10× prototype correction.
 - Drill rate is `mining_speed ÷ mining_time`: mk02 on tin is `1 ÷ 1` = **1.00 ore/s**, same as lead,
   double what it does on titanium.
-- **`fluid-drill-mk02` consumes `fluid-drill-mk01 ×1`** each. Designs 19, 20 and 21 together need
-  **18 mk01 drills** as feedstock — you have 6 per outpost today, so all three upgrades can run in
-  parallel only if each outpost's own drills are consumed in place.
+- **`fluid-drill-mk02` consumes `fluid-drill-mk01 ×1`** each. Designs 19–22 together need **24 mk01
+  drills** as feedstock — six per outpost, which is exactly what each outpost already has, so every
+  upgrade is done in place.
 - `tin-plate-3` (casting, 50 plate per craft) and `tin-plate-4` (grade-4-tin) are both locked and
   would beat this again.
 

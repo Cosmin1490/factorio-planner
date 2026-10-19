@@ -124,6 +124,16 @@ consumes 60 slacked-lime per lime, draining one buffer far faster than it fills 
 condition `slacked_lime_capacity < 60 × lime_capacity`. Satisfied by any sane layout, but worth knowing
 which inequality you are relying on.
 
+**7. A buffer behind a gate is time-to-intervene, not just variance absorption.** Points 4–5 size
+buffers against variance that corrects itself. An external draw past the envelope does not correct
+itself — it persists until someone acts, and accrues quietly meanwhile. Two cheap things change that.
+**The gate that enforces the envelope is already the alarm:** a pump or switch that opens only on a
+breach is the earliest notice obtainable, and a lamp on its enable condition costs nothing —
+instrument the gate, not the margin, because nothing reliably watches a margin. **And the reserve
+behind it is the decision window:** size it in hours-to-intervene at the breach rate you consider
+plausible, rather than in units. One tank behind a gate bought ~6 h just past the threshold and ~2 h
+at twice the design draw — the difference between choosing a response and discovering a stall.
+
 ### In-game byproduct handling
 
 Multi-product recipes stall completely when ANY output buffer is full. Every product must have somewhere to go.
@@ -512,6 +522,7 @@ Example cascade: `clean-nexelit:muddy-sludge:exclude` alone caused the LP to shi
 
     Designs reliably document the dial that obviously varies (demand) and treat internal recycle loops as constants, because nobody expects the *owner* to vary them. That asymmetry is the bug. For every dial — each internal recycle loop, each byproduct with more than one sink, each input another block might leech — record:
     - **Range, and whether it's a slope or a cliff.** Some dials degrade gracefully; some have no operating point past a threshold, because the byproduct's only sink was the thing you switched off.
+    - **What the slope is paid from.** A slope is not automatically safe. Ask whether the block absorbs the move by making less of something it already produces, or by *importing* — the first can be leeched casually, since the cost lands on a graph already being watched; the second creates an unplanned dependency whose symptom surfaces displaced from the cause, so the tap goes in now and the stutter or the import appears later, pointing nowhere. The same block is routinely both in opposite directions: one glassworks degraded to zero on its building-material output with no external effect at all, while a modest extra draw on its science output opened an acetylene line instead. Record the direction, not just the range.
     - **The exchange rate as a rate**, not two endpoints — cost per unit diverted, usually identical wherever the material ends up. One number spans the range and kills the urge to re-derive the middle.
     - **Which rows move.** Usually few; naming them is most of the value.
     - **The acceptability call, stated.** "At zero recycling this costs X and needs Y, and that's fine" is what stops future-you re-deriving it. Same discipline as energy-negative (§ Energy economics): report the number, name where it still earns, move on.

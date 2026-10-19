@@ -82,6 +82,39 @@ stub engages at all (break-even 1.406/s against design 01's 0.200), and the `py-
 further. At this clamp the stub is near-ceremonial; it earns its place only if petri *and* glass demand
 both go to zero.
 
+### Floor configuration — no glass at all
+
+The `G = 0` row above is the one that makes the build decision easy: **the block closes on science
+alone.** Petri and flask by themselves are COG-positive, so glass is upside, not justification.
+
+| | floor (G = 0) | ceiling (G = 1.843) |
+|---|--:|--:|
+| **buildings** | **21** | 41 |
+| raw-coal | 12.444 /s | 30.000 /s |
+| molten-glass · hot-air | 12.667 · 9.333 | 25.833 · 22.500 |
+| COG produced | 24.889 | 60.000 |
+| glassworks draw | 22.489 MW | 47.944 MW |
+| **excess COG** | **+2.400 /s** | +12.056 /s |
+| oil-boiler · engines | 1 · 1 | 1 · 4 |
+| net grid | 5.93 MW | 6.98 MW |
+| ore-quartz · stone | 4.222 · 0.422 | 8.611 · 0.861 |
+| **coke out** | **4.978 /s** | 12.000 /s |
+| acetylene | 0 | 0 |
+
+Against design 01's current chain **with no glass product at all**: 27 buildings → **21**, acetylene
+120.2/s → **0**, ore-quartz 13.20 → **4.22/s**, plus **4.98 coke/s** exported — for 12.44 raw-coal/s and
+0.4 MW more grid. The whole case closes before glass is mentioned.
+
+**At the floor the boiler and engine are not optional.** The 2.400 COG/s surplus has no other sink, and
+COG backing up stalls `coke-coal` → no hot-air → the whole block. At the ceiling the large `glass-2`
+bank absorbs most of the gas and the boiler is a trim; at `G = 0` it is the only thing between you and a
+deadlock on a fluid the ruleset will not let you vent. One boiler, one engine, load-bearing.
+
+The block walks continuously between the two columns — pull less glass and `hotair-molten-glass` stops,
+molten-glass backs up, `glass-2` throttles, hot-air backs up, `coke-coal` throttles, and raw-coal intake
+falls to 12.444/s. **The surplus is monotonic in glass and never crosses zero**, so no point on that
+curve asks for acetylene. The 41 buildings are a ceiling, not an operating point.
+
 ## Sizing: glass is the residual
 
 Petri-dish and flask are pinned to design 01's demand. **Raw-coal is clamped at 30/s** and whatever
@@ -332,8 +365,24 @@ Energy-positive. Valuing coke at its plain 5 MJ fuel value instead gives +37.0 M
   distribution equalises rather than prioritising, so without it the boiler steals COG the flask machine
   needs and acetylene gets imported for no reason. Cost of the gate: the boiler's 12.06 MW stops being
   firm, so grid draw swings 6.98 → 19.04 MW during a drawdown.
-- **`py-tank-4000`** (40,000 in 3×3) is 1.6× `storage-tank`'s capacity in the same footprint.
-  `py-tank-10000` buys far longer ride-through if 8×8 is affordable.
+- **Wire a lamp to the acetylene pump's enable condition.** That pump opens only when the block has left
+  its envelope, so it is already the alarm — reading it costs one lamp and turns "realised months later"
+  into "it is importing right now." Without it the first symptom is an import bill or a glassworks
+  stutter, displaced from whatever incidental tap caused it. A second lamp on COG tank level below ~50 %
+  catches a slow drawdown before the stub even opens.
+- **`py-tank-4000`** (40,000 in 3×3) is 1.6× `storage-tank`'s capacity in the same footprint. Behind the
+  gate its job is **time-to-intervene**, not smoothing — the window between the lamp lighting and the
+  stub carrying real volume:
+
+  | breach | deficit | window |
+  |---|--:|--:|
+  | flask 1.60/s (vs 1.406 break-even) | 1.94 COG/s | **5.7 h** |
+  | flask 2.00/s | 5.94 | 1.9 h |
+  | flask 3.00/s | 15.94 | 0.7 h |
+  | petri *and* glass demand both off | 2.00 | 5.6 h |
+
+  `py-tank-10000` multiplies all of it by 2.5 for 8×8 instead of 3×3. Hours, not minutes — enough to
+  choose between pulling the tap back, accepting the import, raising the clamp, or building the annex.
 - **`borax-mine` costs `fluid-drill-mk01` ×1 + `soil-extractor-mk01` ×1** each. Nine here against the 14
   the current ore rate implies, so this still **frees 5 mines** rather than consuming drills.
 - `steam-turbine-mk01` accepts only `pressured-steam` ≥500 °C. `steam-engine` is the generator here

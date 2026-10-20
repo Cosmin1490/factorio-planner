@@ -98,9 +98,10 @@ plus the `glass-2` behind it. Derivation in § How the fuel closes.
 | below ~30 % | **COG@250 → tank** | the bypass: unblocks the fuel path |
 
 Non-overlapping thresholds, no arithmetic, nothing measures a fuel balance. In normal operation the
-surplus is 12.056 MJ/s against the boiler's 29.61 MJ/s maximum fuel draw, so **the boiler duty-cycles at
-41 %** and the tank oscillates in a narrow band below the high gate. One boiler is sufficient and the
-pairing is unaffected.
+surplus is 12.056 MJ/s against the boiler's **14.805 MJ/s** fuel ceiling (`max_energy_usage` 29.61 MW is
+heat output, not fuel burn — solver-reference § Power & energy), so **the boiler runs at 81 %** and the
+tank drains only 2.75 MJ/s faster than it fills while the gate is open. It oscillates in a narrow band
+below the high gate; one boiler is sufficient and the 1 : 4 pairing is unaffected.
 
 ### Operating envelope — the built caps, not the ledger
 
@@ -387,8 +388,8 @@ coal-gas-from-coke  [U] [distilator, 5 s]  coke 20  →  coal-gas 20 + tar 20 + 
 │ Recipe                 │ Factory          │ Count │ Size  │ MW each │ load   │
 ├────────────────────────┼──────────────────┼───────┼───────┼─────────┼────────┤
 │ coal-gas-from-coke     │ distilator       │     3 │ 8x8   │    0.50 │ 100.0% │
-│ (burn coal-gas)        │ oil-boiler-mk01  │     1 │ 5x5   │  (gas)  │   8.1% │
-│ (burn tar)             │ oil-boiler-mk01  │     1 │ 5x5   │  (gas)  │   8.1% │
+│ (burn coal-gas)        │ oil-boiler-mk01  │     1 │ 5x5   │  (gas)  │  16.2% │
+│ (burn tar)             │ oil-boiler-mk01  │     1 │ 5x5   │  (gas)  │  16.2% │
 │ (power)                │ steam-engine     │     2 │ 3x5   │       — │  64.8% │
 └────────────────────────┴──────────────────┴───────┴───────┴─────────┴────────┘
 ```
@@ -402,11 +403,12 @@ coal-gas-from-coke  [U] [distilator, 5 s]  coke 20  →  coal-gas 20 + tar 20 + 
 **It captures 8 % of the coke's energy.** `coal-gas` and `tar` are **0.2 MJ/unit each**, so 60.0 MJ/s of
 chemical energy becomes 4.80 MJ/s. That is the deliberate trade — see what it beat.
 
-**The boilers are 8.1 % loaded and that is not a sizing error.** `oil-boiler-mk01` draws 29.61 MJ/s at
-full tilt against 2.40 MJ/s of fuel each, so **the pair absorbs up to 148 coke/s** — 12× this block's
-output. Raising the raw-coal clamp never touches them and there is no sizing risk anywhere in the annex.
-Two is forced only because coal-gas and tar cannot share a fuel box. The cost is 50 tiles of 5×5 boiler
-at 8 %, which cannot be shrunk.
+**The boilers are 16.2 % loaded and that is not a sizing error.** `oil-boiler-mk01`'s
+`max_energy_usage` 29.61 MW is **heat output, not fuel burn** (solver-reference § Power & energy), so at
+effectivity 2 its fuel ceiling is **14.805 MJ/s** against 2.40 MJ/s of fuel each — **the pair absorbs up
+to 74 coke/s**, 6× this block's output. Raising the raw-coal clamp never touches them and there is no
+sizing risk anywhere in the annex. Two is forced only because coal-gas and tar cannot share a fuel box.
+The cost is 50 tiles of 5×5 boiler at 16 %, which cannot be shrunk.
 
 **This sits at lowest priority on a coke splitter** (rule 29). It is a fallback, not a commitment: when
 design 13 is running you bias the splitter toward 3 distilators *there* and these boilers idle. Unlike a

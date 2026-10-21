@@ -1,7 +1,7 @@
-# 27 — Battery + urea + melamine — 0.20 battery-mk01/s + 1.60 melamine/s, 99 buildings
+# 27 — Battery + urea + melamine — 0.20 battery-mk01/s + 1.60 melamine/s, 72 buildings
 
 The cascade half of the circuit chain. `battery-mk01` takes **cyanic-acid 30 per battery**, and that
-30:1 ratio drags in the whole urea → manure → auog → native-flora chain — **71 of the 99 buildings are
+30:1 ratio drags in the whole urea → manure → auog → native-flora chain — **45 of the 72 buildings are
 a bio annex.** Feeds design 26 with batteries and design 25 with melamine and urea.
 
 ```
@@ -10,38 +10,13 @@ battery-mk01        [U] [chemistry,  10 s]  pbsb-alloy 1 + melamine 2 + graphite
 urea-decomposition  [U] [distilator,  8 s]  urea 20  →  ammonia 30 + cyanic-acid 30
 melamine            [U] [fbreactor,  10 s]  water 200 + cyanic-acid 20 + ammonia 20
                                                      →  melamine 20 + CO₂ 30 + muddy-sludge 50
+auog-pooping-2      [U] [auog,       80 s]  water-barrel 5 + native-flora 20 + moss 10
+                                            + auog-food-01 3  →  barrel 5 + manure (5-12)
 ```
 
 **`urea-decomposition` is the only unlocked source of ammonia or cyanic-acid in the game.** Nine other
 ammonia recipes exist; all nine are locked. There is no bypass around
 `urea → liquid-manure → manure → auog paddocks`.
-
-## What changed — melamine 0.40 → 2.00/s
-
-Design 25 switched to `formica-2`, which consumes **melamine 1.60/s and urea 0.40/s** as imports. Both
-are made here. `melamine` went from a byproduct-balancing sideline to the block's second product.
-
-| | at melamine 0.40 /s | **at melamine 2.00 /s** |
-|---|--:|--:|
-| buildings | 79 | **99** |
-| tiles | ~5,574 | **~7,678** |
-| MW at load | 26.0 | **37.12** |
-| cyanic-acid | 6.40 /s | **8.00 /s** |
-| urea | 4.27 /s | **5.73 /s** |
-| **native-flora** | 5.17 /s | **6.95 /s** |
-| water | 365.09 /s | **483.27 /s** |
-| moss · auog · seaweed · moondrop · fwf | 33 · 13 · 4 · 1 · 1 | **45 · 18 · 5 · 2 · 1** |
-| **`auog` modules** | 52 | **72** (~6.0 h of chamber time) |
-| **ammonia exported** | **6.00 /s** | **6.00 /s** |
-
-**The ammonia surplus did not move.** Melamine went up 5× and the export is still exactly 6.00/s — the
-invariant in § The ammonia decision is independent of melamine rate, which is the whole point of it.
-**+20 buildings bought design 25 a 120-building saving**, so the melamine demand is the single best
-trade in the complex.
-
-**Only +1.78 native-flora/s for 5× the melamine**, because melamine's own cyanic-acid draw is 2.00 of
-the 8.00/s — the battery's 6.00 was always the bulk of it. The bio annex grows by a quarter, not
-fivefold.
 
 ## Block boundary
 
@@ -51,15 +26,60 @@ fivefold.
 | **export — to design 25** | **melamine** 1.60/s · **urea** 0.40/s |
 | **export — external** | **ammonia** 6.00/s — *no consumer identified* |
 | **import — whitelisted** | coke, copper-plate, iron-plate, glass, zinc-plate, water |
-| **import — asked and approved** | **pbsb-alloy**, **native-flora** |
+| **import — asked and approved** | **pbsb-alloy**, **native-flora**, **auog-food-01** |
 | **import — boundary inherited from design 15** | **empty-petri-dish** 0.19/s |
 | **made in-block** | cyanic-acid, ammonia, melamine, graphite, bolts, iron-stick, small-lamp, copper-cable · the whole urea chain: manure, liquid-manure, zogna-bacteria, petri-dish, agar, seaweed, urea · moss, muddy-sludge, soil, CO₂, wood, steam, pressured-air |
 | **byproduct-exclude** | none |
 
+## The auog food decision
+
+`auog-pooping-2` is **1.93× the manure per paddock** (avg 8.5 per 80 s against variant 1's 5.5 per 100 s)
+and **−19 % native-flora per manure**. Both variants are unlocked; the only difference is that variant 2
+needs `auog-food-01 3` per craft. **The food is imported, not made here.**
+
+That choice is the whole argument, because the food chain is large and the paddock saving is not:
+
+| | `auog-pooping-1` | `-2`, **food imported** | `-2`, food made in-block |
+|---|--:|--:|--:|
+| **paddocks** | 18 | **9** | 9 |
+| **total buildings** | 99 | **72** | 105 |
+| tiles | ~7,678 | **~5,221** | ~8,440 |
+| **MW at load** | 37.12 | **30.65** | 64.9 |
+| **native-flora** | 6.95 /s | **4.50 /s** | 4.50 /s |
+| water | 483.27 /s | **360.64 /s** | 583 /s |
+| **`auog` modules** | 72 | **36** | 36 |
+| new imports | — | **auog-food-01 0.68/s** | aromatics 22.5 · syngas 45.0 |
+
+**Making the food on site costs 33 buildings and doubles the power.** `auog-food-01` is
+`native-flora 5 + ralesia 5 + moss 5 + seaweed 3 + plastic-bar 2 + steam 100 → 3`, and at 0.68/s that is
+**29 `ralesia-plantation-mk01`**, 2 `electrolyzer-mk01` for ralesia's hydrogen (11.25 MW), a
+`py-electric-boiler` for the food's steam (9.38 MW), and `aromatics-to-plastic` — the only unlocked
+plastic route — at `aromatics 50 + syngas 100 → plastic-bar 1`, i.e. 67 fluid units/s for 0.45
+plastic-bar/s.
+
+> **Importing moves the ralesia chain, it does not delete it.** Those ~35 buildings exist wherever the
+> food is made. The reason that is still the right call: **`auog-food-01` is shared infrastructure.**
+> It feeds `auog-pooping-2/3`, `auog-maturing-2` through `-5`, and `auog-recharge-0` — so one food block
+> serves every auog consumer in the base, where building it here serves exactly one. That is the Tier B
+> boundary argument (rule 16), not a cost being hidden.
+
+**`ralesia` is self-funding** — `ralesia-plantation-mk01` takes `ralesia` as its own module (12 slots,
+13×, reaching speed 1.00) and `ralesia-seeds` closes the loop at `ralesia 5 → seeds 8`. Whoever builds
+the food block pays soil, hydrogen and plastic, not a module bootstrap.
+
 ## Recipe table
 
 Bio counts are **module-corrected**; the solver reports base crafting speed, a 5–17× error here.
-Multipliers from solver-reference § Bio module system, all reaching effective speed 1.0.
+**Divide the solver count by the multiplier** — that is correct whatever absolute speed the building
+lands on, since `machines = solver_count × base_speed ÷ actual_speed` and `actual = base × multiplier`.
+
+> **`auog-paddock-mk01` reaches effective speed 2.0, not 1.0** (base 0.400 × 5) — it is the only bio
+> building here that does not land on exactly 1.0: moss-farm 0.0625 × 16, moondrop-greenhouse
+> 0.0588 × 17, seaweed-crop and fwf 0.0909 × 11, ralesia-plantation 0.0769 × 13. Solver-reference
+> § Bio module system has this right and uses the paddock as its worked example; **an earlier revision of
+> this file said "all reaching effective speed 1.0", which is where the error was.** The counts are
+> unaffected — they divide by the multiplier — but sizing paddocks as `crafts/s × craft_time` on an
+> assumed 1.0 gives a **2× overbuild.**
 
 ```
 ┌──────────────────────────┬──────────────────────────┬──────┬───────┬───────┬─────────┐
@@ -76,38 +96,39 @@ Multipliers from solver-reference § Bio module system, all reaching effective s
 │ graphite                 │ hpf                      │   1  │ 7x7   │  90 % │   1.802 │
 │ bolts                    │ automated-factory-mk01   │   1  │ 7x7   │   6 % │   0.122 │
 │ iron-stick               │ automated-factory-mk01   │   1  │ 7x7   │  15 % │   0.302 │
-│ small-lamp               │ automated-factory-mk01   │   1  │ 7x7   │   5 % │   0.104 │
-│ copper-cable             │ automated-factory-mk01   │   1  │ 7x7   │   8 % │   0.156 │
+│ small-lamp               │ automated-factory-mk01   │   1  │ 7x7   │   6 % │   0.116 │
+│ copper-cable             │ automated-factory-mk01   │   1  │ 7x7   │   9 % │   0.174 │
 │ wood-seeds               │ automated-factory-mk01   │   1  │ 7x7   │   2 % │   0.034 │
-│ water-barrel             │ barrel-machine-mk01      │   1  │ 3x3   │  70 % │   0.139 │
-│ muddy-sludge             │ washer                   │   2  │ 6x6   │  78 % │   0.628 │
-│ soil                     │ soil-extractor-mk01      │   2  │ 7x7   │  98 % │   0.785 │
+│ water-barrel             │ barrel-machine-mk01      │   1  │ 3x3   │  45 % │   0.090 │
+│ muddy-sludge             │ washer                   │   1  │ 6x6   │  96 % │   0.382 │
+│ soil                     │ soil-extractor-mk01      │   2  │ 7x7   │  60 % │   0.478 │
 │ pressured-air            │ vacuum-pump-mk01         │   1  │ 3x3   │   3 % │   0.025 │
 │ log-wood-fast            │ wpu-mk01                 │   1  │ 6x6   │   1 % │   0.007 │
 │ wood-seedling            │ botanical-nursery        │   1  │ 7x7   │  25 % │   0.031 │
 │ electric-boiler-water-…  │ py-electric-boiler       │   1  │ 3x3   │  32 % │   8.025 │
 ├──────────────────────────┼──────────────────────────┼──────┼───────┼───────┼─────────┤
-│ Moss-1                   │ moss-farm-mk01           │ *45  │ 6x6   │  98 % │   4.421 │
-│ auog-pooping-1           │ auog-paddock-mk01        │ *18  │ 14x14 │  97 % │   8.687 │
+│ Moss-1                   │ moss-farm-mk01           │ *29  │ 6x6   │ 100 % │   2.888 │
+│ auog-pooping-2           │ auog-paddock-mk01        │  *9  │ 14x14 │ 100 % │   4.497 │
 │ seaweed-1                │ seaweed-crop-mk01        │  *5  │ 13x13 │  96 % │   2.150 │
-│ moondrop-co2             │ moondrop-greenhouse-mk01 │  *2  │ 9x9   │  52 % │   0.464 │
 │ log2                     │ fwf-mk01                 │  *1  │ 15x15 │  74 % │   0.333 │
+│ moondrop-co2             │ moondrop-greenhouse-mk01 │  *1  │ 9x9   │  65 % │   0.291 │
 └──────────────────────────┴──────────────────────────┴──────┴───────┴───────┴─────────┘
-   * module-corrected. Solver base counts: 707 / 87 / 53 / 18 / 8
-     multipliers:                          16x /  5x / 11x / 17x /11x
+   * module-corrected. Solver base counts: 462 / 45 / 53 / 8 / 11
+     multipliers:                           16x /  5x / 11x /11x /17x
 ```
 
-**99 buildings · ~7,678 tiles · 37.12 MW at load · 67.73 MW rated**
+**72 buildings · ~5,221 tiles · 30.65 MW at load · 60.78 MW rated**
 
-**71 buildings and ~6,380 tiles (83 % of the area) are the bio annex** — 45 moss-farm, 18 auog-paddock,
-5 seaweed-crop, 2 moondrop-greenhouse, 1 fwf. The 28 process buildings are the chemistry.
+**45 buildings and ~3,959 tiles (76 % of the area) are the bio annex** — 29 moss-farm, 9 auog-paddock,
+5 seaweed-crop, 1 fwf, 1 moondrop-greenhouse. The 27 process buildings are the chemistry.
 
-**At 7,678 tiles this block is past the ~5,000-tile stamping threshold** (rule 20 / phase 8) and should
-be laid out as **two stamps**: the chemistry plus the moss/sludge/soil web in one, the auog paddocks and
-seaweed in the other. The seam is `moss` and `water-barrel` — one solid and one barrelled fluid.
+**At 5,221 tiles this is now borderline for a single stamp**, against 7,678 under variant 1 which
+definitely needed two (rule 20 / phase 8). If you do split it, the seam is `moss` and `water-barrel` —
+one solid and one barrelled fluid.
 
-**Inputs** (/s): water 483.27 · **native-flora 6.95** · coke 1.50 · zinc-plate 0.60 · iron-plate 0.38 ·
-glass 0.35 · copper-plate 0.20 · **pbsb-alloy 0.20** · empty-petri-dish 0.19
+**Inputs** (/s): water 360.64 · **native-flora 4.50** · coke 1.50 · **auog-food-01 0.68** ·
+zinc-plate 0.60 · iron-plate 0.38 · glass 0.36 · copper-plate 0.19 · **pbsb-alloy 0.20** ·
+empty-petri-dish 0.19
 
 **Exports** (/s): **battery-mk01 0.20** → 26 · **melamine 1.60** → 25 · **urea 0.40** → 25 ·
 **ammonia 6.00** → *no destination*
@@ -127,55 +148,55 @@ glass 0.35 · copper-plate 0.20 · **pbsb-alloy 0.20** · empty-petri-dish 0.19
 ├── urea ────────┼──────────┼───────────────────────────────┼──────────────────────────────────────────┤
 │ urea           │    5.73  │ urea-from-liquid-manure       │ urea-decomposition 5.33, **export 0.40** │
 │ liquid-manure  │   19.11  │ liquid-manure                 │ urea-from-liquid-manure                  │
-│ manure         │    1.91  │ auog-pooping-1                │ liquid-manure                            │
+│ manure         │    1.91  │ auog-pooping-2                │ liquid-manure                            │
 │ zogna-bacteria │    1.91  │ zogna-bacteria                │ urea-from-liquid-manure                  │
-│ barrel         │    1.74  │ auog-pooping-1                │ water-barrel       ← closed loop          │
-│ water-barrel   │    1.74  │ water-barrel                  │ auog-pooping-1                           │
+│ barrel         │    1.13  │ auog-pooping-2                │ water-barrel       ← closed loop          │
+│ water-barrel   │    1.13  │ water-barrel                  │ auog-pooping-2                           │
 │ pressured-air  │    4.78  │ pressured-air                 │ zogna-bacteria                           │
 │ petri-dish     │    0.19  │ petri-dish                    │ zogna-bacteria                           │
 │ agar           │    0.19  │ agar                          │ petri-dish                               │
 │ seaweed        │    0.96  │ seaweed-1                     │ agar                                     │
 │ steam          │   19.26  │ electric-boiler-water-to-steam│ agar                                     │
-│ small-lamp     │    0.10  │ small-lamp                    │ zogna-bacteria                           │
-│ copper-cable   │    0.29  │ copper-cable                  │ small-lamp                               │
+│ small-lamp     │    0.11  │ small-lamp                    │ zogna-bacteria                           │
+│ copper-cable   │    0.32  │ copper-cable                  │ small-lamp                               │
 ├── moss ────────┼──────────┼───────────────────────────────┼──────────────────────────────────────────┤
-│ moss           │    3.54  │ Moss-1                        │ auog-pooping-1 3.47, wood-seedling 0.06  │
-│ muddy-sludge   │   44.21  │ muddy-sludge 39.23            │ Moss-1 44.21                             │
+│ moss           │    2.31  │ Moss-1                        │ auog-pooping-2 2.25, wood-seedling 0.06  │
+│ muddy-sludge   │   28.88  │ muddy-sludge 23.88            │ Moss-1 28.88                             │
 │                │          │ + melamine 5.00               │                                          │
-│ carbon-dioxide │   44.21  │ moondrop-co2 41.20            │ Moss-1 44.21                             │
+│ carbon-dioxide │   28.88  │ moondrop-co2 25.88            │ Moss-1 28.88                             │
 │                │          │ + melamine 3.00               │                                          │
-│ soil           │    3.92  │ soil                          │ muddy-sludge                             │
+│ soil           │    2.39  │ soil                          │ muddy-sludge                             │
 │ wood           │    0.49  │ log-wood-fast                 │ zogna-bacteria 0.48, wood-seeds 0.01     │
 │ log            │    0.05  │ log2                          │ log-wood-fast                            │
 │ wood-seedling  │    0.04  │ wood-seedling                 │ log2               ← closed loop          │
 └────────────────┴──────────┴───────────────────────────────┴──────────────────────────────────────────┘
 ```
 
-**`melamine`'s byproducts are still fully consumed internally, and now they matter.** At 2.00 melamine/s
-it emits **CO₂ 3.00/s and muddy-sludge 5.00/s**, both of which go straight into the moss bank — covering
-7 % of the CO₂ demand and 11 % of the sludge. This is why `moondrop-co2` lands at 1.03 machines rather
-than 1.11: the extra melamine partly pays for its own moss.
+**`melamine`'s byproducts now cover a much larger share.** At 2.00 melamine/s it emits **CO₂ 3.00/s and
+muddy-sludge 5.00/s**, both straight into the moss bank — and because the bank shrank 45 → 29 farms,
+that is now **10 % of the CO₂ and 17 % of the sludge** rather than 7 % and 11 %. One `moondrop-co2`
+greenhouse at 65 % covers the rest; variant 1 needed two.
 
-**The barrel loop is net zero** on barrels but not on water — `water-barrel` pulls **87.12 water/s** to
-refill what the paddocks drink. Barrels are a one-time stock; the water inside is consumed.
+**The barrel loop is net zero** on barrels but not on water — `water-barrel` pulls **56.38 water/s** to
+refill what the paddocks drink, down from 87.12 with nine fewer paddocks. Barrels are a one-time stock.
 
 ## Where the water goes
 
-483.27/s is the largest single flow in the complex, and it is not the chemistry:
+360.64/s, down from 483.27 — and still not the chemistry:
 
 | consumer | /s | share |
 |---|--:|--:|
-| **`soil`** (soil-extractor, 800 per craft) | **196.20** | **41 %** |
-| `liquid-manure` | 95.63 | 20 % |
-| `water-barrel` → paddocks | 87.12 | 18 % |
-| `muddy-sludge` | 39.23 | 8 % |
-| `melamine` | 20.00 | 4 % |
-| `electric-boiler` → `agar` steam | 19.26 | 4 % |
-| `seaweed-1` | 19.11 | 4 % |
+| **`soil`** (soil-extractor, 800 per craft) | **119.50** | **33 %** |
+| `liquid-manure` | 95.63 | 27 % |
+| `water-barrel` → paddocks | 56.38 | 16 % |
+| `muddy-sludge` | 23.90 | 7 % |
+| `melamine` | 20.00 | 6 % |
+| `electric-boiler` → `agar` steam | 19.26 | 5 % |
+| `seaweed-1` | 19.11 | 5 % |
 | `log2` · `wood-seedling` | 7.41 | 2 % |
 
-**`soil` + `muddy-sludge` = 235.43/s — 49 % of the block's water exists to feed the moss bank**, and the
-moss exists to feed the auog paddocks. See § Build notes for the recipe that would delete it.
+**`soil` + `muddy-sludge` = 143.40/s — 40 % of the block's water still feeds the moss bank** (was 49 %).
+See § Build notes for the recipe that would delete it entirely.
 
 ## The ammonia decision
 
@@ -194,8 +215,10 @@ ammonia:      30a − 20m − X               =  0   →   X = 6.00,  for any m
 **Design 25's melamine demand tested this and it held.** Going 0.40 → 2.00/s raises both sides together:
 more melamine consumes more ammonia *and* needs exactly as much more `urea-decomposition` to make the
 cyanic-acid it pairs with. The gap equals the battery's cyanic-acid draw precisely, because that is the
-one demand with no matching ammonia. **This is also why the block split lands at battery rather than at
-cyanic-acid** — the surplus belongs in the same block as the demand that creates it.
+one demand with no matching ammonia. **The paddock swap did not move it either** — it changes how the
+manure is made, not the urea:cyanic:ammonia stoichiometry above it. **This is also why the block split
+lands at battery rather than at cyanic-acid** — the surplus belongs in the same block as the demand that
+creates it.
 
 **`cyanic-acid-01` would close it** (`coal 20 + methane 100 + ammonia 100 → cyanic-acid 100 +
 hydrogen 50`), and was in an earlier revision. It was removed because it needs **`coal`** — a distinct
@@ -205,32 +228,31 @@ item from both `raw-coal` (3.0 MJ) and `coke` (5.0 MJ), reachable only through `
 fuels. Four small byproducts and one extra import were traded for one large export.
 
 > **The 6.00 ammonia/s has no consumer identified.** There are exactly two unlocked ammonia recipes in
-> the game — `melamine` and `cyanic-acid-01` — and both are in this block. All 42 locked ammonia
+> the game — `melamine` and `cyanic-acid-01` — and both are inside this block. All 42 locked ammonia
 > consumers sit behind chemical science or worse. Ammonia is on the never-vent list, so it cannot be
 > disposed of either. This is an export awaiting a destination, not a routed one. Recorded as risk 1,
 > and it makes **`t = 0` for designs 25, 26 and 27 all three** — 25 now depends on this block too.
 
 ## Where the CO₂ comes from
 
-`Moss-1` needs **CO₂ 44.21/s**; `melamine` contributes 3.00 and `moondrop-co2` makes the other 41.20
+`Moss-1` needs **CO₂ 28.88/s**; `melamine` contributes 3.00 and `moondrop-co2` makes the other 25.88
 from nothing at all:
 
 ```
 moondrop-co2  [U] [moon, 5 s]  (no ingredients)  →  carbon-dioxide 200
 ```
 
-**Two `moondrop-greenhouse-mk01` at 52 %** — 0.46 MW, 162 tiles, zero inputs. It was one greenhouse at
-82 % before the melamine increase; 1.03 fractional is barely over the line, so the second runs half
-idle. The catch is 16 `moondrop` modules each to reach effective speed 1.0, and this block runs no
-moondrop chain.
+**One `moondrop-greenhouse-mk01` at 65 %** — 0.29 MW, 81 tiles, zero inputs. The catch is 16 `moondrop`
+modules to reach effective speed 1.0, and this block runs no moondrop chain.
 
-**That is a one-time transfer of 32 modules from design 25, not a dependency.** Design 25 runs
-`moondrop-1` and `moondrop-seeds` as a closed breeding loop for its methane, so 32 units is a brief
-surplus off its nursery — and the creature-chamber codex that starts the loop is a once-per-base cost
-design 25 has already paid. It crosses at build time and never again.
+**That is a one-time transfer of 16 modules from design 25, not a dependency** — halved from 32, since
+the smaller moss bank needs one greenhouse rather than two. Design 25 runs `moondrop-1` and
+`moondrop-seeds` as a closed breeding loop for its methane, so 16 units is a brief surplus off its
+nursery, and the creature-chamber codex that starts the loop is a once-per-base cost design 25 has
+already paid. It crosses at build time and never again.
 
-The alternative was `coke-co2` (`coke 2 → CO₂ 80`): at 41.20 CO₂/s that is **4 hpf, coke 1.03/s,
-5.15 MW**, destroying 5.15 MJ/s of fuel value to avoid borrowing 32 modules from next door. Rejected —
+The alternative was `coke-co2` (`coke 2 → CO₂ 80`): at 25.88 CO₂/s that is **3 hpf, coke 0.65/s,
+3.23 MW**, destroying 3.24 MJ/s of fuel value to avoid borrowing 16 modules from next door. Rejected —
 it priced a once-paid bootstrap as though it had to be paid per block.
 
 ## Terminal outputs and their sinks
@@ -238,7 +260,7 @@ it priced a once-paid bootstrap as though it had to be paid per block.
 | output | /s | sink chosen | cost | what it beat |
 |---|--:|---|---|---|
 | **battery-mk01** | 0.20 | **design 26** `electronic-circuit-2` — stack 100, 21 consumers overall (11 unlocked) | — | it is a Tier B bus item; other consumers will want it |
-| **melamine** | 1.60 | **design 25** `melamine-resin` → `formica-2` — solid, stack 100 | — | design 25's route 1 needed none, at +120 buildings |
+| **melamine** | 1.60 | **design 25** `melamine-resin` → `formica-2` — solid, stack 100 | — | design 25's route 1 needed none, at +122 buildings |
 | **urea** | 0.40 | **design 25** `melamine-resin` — solid, stack 100 | — | making it in 25 would mean a second urea chain, i.e. a second bio annex |
 | **ammonia** | **6.00** | **export — no consumer identified** | — | `cyanic-acid-01` would close it at the cost of a `coal` import. Not ventable |
 
@@ -246,18 +268,25 @@ it priced a once-paid bootstrap as though it had to be paid per block.
 
 | building | ×count | module | needed | self-funding? |
 |---|--:|---|--:|---|
-| `moss-farm-mk01` | 45 | `moss` 15 | **675** | **yes** — `Moss-1` is its own product |
-| `auog-paddock-mk01` | 18 | `auog` 4 | **72** | **no** |
+| `moss-farm-mk01` | 29 | `moss` 15 | **435** | **yes** — `Moss-1` is its own product |
 | `seaweed-crop-mk01` | 5 | `seaweed` 10 | **50** | **yes** — `seaweed-1` runs here |
-| `moondrop-greenhouse-mk01` | 2 | `moondrop` 16 | **32** | **one-time from design 25** |
+| **`auog-paddock-mk01`** | **9** | `auog` 4 | **36** | **no** |
+| `moondrop-greenhouse-mk01` | 1 | `moondrop` 16 | **16** | **one-time from design 25** |
 | `fwf-mk01` | 1 | `tree-mk01` 10 | **10** | needs **10 planter-boxes** |
 
-**`auog` ×72 is the long pole, and it got longer.** The only non-circular route is `auog`
-[creature-chamber, 300 s] from a codex plus samples, at **1 per run** — so 72 modules is **~6.0 hours**
-of chamber time (was 4.3 h at 52), and the paddocks run at 1/5 speed until it finishes.
-`auog-recharge-0` is not a shortcut: it needs `auog-food-01`, which needs **ralesia**, an entire
-additional plantation. **Start this before anything else in the complex** — design 25 waits on design 27
-for melamine and urea, so this gates all three blocks.
+**`auog` ×36 is still the long pole, but it halved.** The only traceable route is `auog`
+[creature-chamber, 300 s] from a codex plus samples, at **1 per run** — so 36 modules is **~3.0 hours**
+of chamber time (was 6.0 at 72 under variant 1), and the paddocks run at 1/5 speed until it finishes.
+**Start this before anything else in the complex** — design 25 waits on design 27 for melamine and urea,
+and 26 waits on both.
+
+> **`auog-recharge-0` may now be viable and would end the codex bootstrap entirely** —
+> `[bay, 5 s] auog-food-01 1 + used-auog 1 + moss 5 → auog 1`, i.e. 5 seconds against 300. Two of its
+> three ingredients are now on hand (the food is imported, the moss is made here). **`used-auog` has no
+> recipe anywhere in the export**, so it is script-driven like the digosaurus ore and cannot be sized
+> from prototype data — presumably what a paddock returns when a module is spent. **Check in game.** If
+> the paddocks do return `used-auog`, the module bank becomes renewable and the 3-hour bootstrap becomes
+> a one-time seed of a handful.
 
 `tree` [nursery, 30 s] is `planter-box 1 + wood-seedling 3 → tree-mk01 1`, so the ten modules need
 **10 planter-boxes**: `ash 30 + soil 50 + empty-planter-box 10`, and `empty-planter-box` is
@@ -268,13 +297,18 @@ one-time imports** appearing nowhere in the flows.
 
 | | risk | why |
 |---|---|---|
-| 1 | **ammonia 6.00/s with no consumer** | both unlocked consumers are in this block and it is not ventable, so it cannot be disposed of. **`t = 0` until a destination exists** — a design-level open item, not an operational one, and it now gates designs 25 and 26 too |
-| 2 | **moss 3.54/s** | 3.47 feeds `auog-pooping-1` → manure → urea → cyanic-acid → batteries **and** melamine → design 25's formica. A moss outage now stops two blocks, and with 45 farms at 100 s per craft recovery is slow |
-| 3 | **native-flora 6.95/s** | no recipe exists at all — map-placed only. Same cascade as moss, one step earlier. `flora-collector-mk01` mines it at 1.0/s, so **7 collectors**, map permitting |
-| 4 | **the barrel loop** | nets to zero, so nothing refills it. One stray inserter drains it and the paddocks stop with no obvious cause |
-| 5 | **`soil` at 98 % and `Moss-1` at 98 %** | both effectively saturated; see § Capacity pads |
-| 6 | coke 1.50/s | feeds `graphite` only; throttles the battery rather than stalling it |
-| 7 | the auog module bootstrap | a schedule risk, not a flow one — 72 codex runs at 300 s each is ~6.0 h before the paddocks reach full speed |
+| 1 | **ammonia 6.00/s with no consumer** | both unlocked consumers are in this block and it is not ventable, so it cannot be disposed of. **`t = 0` until a destination exists** — a design-level open item, not an operational one, and it gates designs 25 and 26 too |
+| 2 | **auog-food-01 0.68/s has no producer yet** | the ralesia chain has to exist somewhere before the paddocks run at all. **Variant 2 cannot start without it** — unlike `native-flora`, there is no partial-rate fallback except reverting the paddocks to `auog-pooping-1` |
+| 3 | **moss 2.31/s** | 2.25 feeds `auog-pooping-2` → manure → urea → cyanic-acid → batteries **and** melamine → design 25's formica. A moss outage stops two blocks, and with 29 farms at 100 s per craft recovery is slow |
+| 4 | **native-flora 4.50/s** | no recipe exists at all — map-placed only. Same cascade as moss, one step earlier. `flora-collector-mk01` mines it at 1.0/s, so **5 collectors**, map permitting |
+| 5 | **the barrel loop** | nets to zero, so nothing refills it. One stray inserter drains it and the paddocks stop with no obvious cause |
+| 6 | **`Moss-1`, `auog-pooping-2`, `battery-mk01`, `melamine` all at 100 %** | four rows with zero headroom; see § Capacity pads |
+| 7 | coke 1.50/s | feeds `graphite` only; throttles the battery rather than stalling it |
+| 8 | the auog module bootstrap | a schedule risk, not a flow one — 36 codex runs at 300 s each is ~3.0 h before the paddocks reach full speed |
+
+**Importing the food raised a risk as well as lowering a count.** Under `auog-pooping-1` the paddocks
+needed only native-flora and moss, both of which degrade gracefully; variant 2 adds a hard external
+dependency with no fallback short of rebuilding nine paddocks into eighteen.
 
 ## Capacity pads
 
@@ -282,39 +316,35 @@ one-time imports** appearing nowhere in the flows.
 |---|--:|--:|--:|---|
 | **`battery-mk01`** | 2.000 | 2 | **100 %** | exactly saturated — a third chemical-plant at ~0 % is 81 tiles and covers science's 0.025 bat/s later |
 | **`melamine`** | 1.000 | 1 | **100 %** | exactly saturated, and it now feeds design 25. 25 tiles for a second `fbreactor-mk01` |
-| `soil` | 1.962 | 2 | 98 % | effectively saturated; one more `soil-extractor-mk01` is 49 tiles |
-| `Moss-1` | 44.205 | 45 | 98 % | 45 is already the ceiling of 44.2; a 46th farm is 36 tiles for 2 % headroom |
-| `auog-pooping-1` | 17.374 | 18 | 97 % | **196 tiles and 4 more `auog` modules** per paddock — the expensive pad. Leave it |
-| `petri-dish` · `agar` | 0.957 | 1 | 96 % | 49 tiles each. Both feed `zogna-bacteria` → urea |
+| **`Moss-1`** | 28.875 | 29 | **100 %** | no rounding slack left at all. A 30th farm is 36 tiles and 0.10 MW — **cheapest pad in the block** |
+| **`auog-pooping-2`** | 8.994 | 9 | **100 %** | **196 tiles and 4 more `auog` modules** — 20 more minutes of chamber time. The expensive pad; leave it |
+| `muddy-sludge` · `petri-dish` · `agar` | 0.956 · 0.957 | 1 each | 96 % | 36–49 tiles each |
 
-**`melamine` and `battery-mk01` are the two worth padding**, because both are outputs feeding other
-blocks and both cost under 100 tiles. The paddocks are the one place where padding is genuinely
-expensive — 4 extra `auog` modules is 20 more minutes of chamber time.
+**Variant 2 is tighter than variant 1 everywhere.** Halving the paddocks also halved the rounding slack
+that used to pad the moss bank — `Moss-1` went from 44.205 (45 placed, 98 %) to 28.875 (29 placed,
+100 %). **Pad the moss farm and the two chemistry outputs; skip the paddocks.**
 
 ## Build notes
 
-- **Never size the bio buildings without modules.** The three runs sum to **~889 fractional machines**
-  before correction; the multipliers bring the block to 99. `moss-farm-mk01` 16× at 15 slots,
+- **`auog-pooping-2` with imported food** — see § The auog food decision for the three-way comparison.
+  Reverting to `auog-pooping-1` costs 27 buildings and 2.45 native-flora/s but removes the block's only
+  no-fallback import.
+- **Never size the bio buildings without modules.** The three runs sum to **~594 fractional machines**
+  before correction; the multipliers bring the block to 72. `moss-farm-mk01` 16× at 15 slots,
   `auog-paddock-mk01` 5× at 4, `seaweed-crop-mk01` 11× at 10, `moondrop-greenhouse-mk01` 17× at 16,
-  `fwf-mk01` 11× at 10. **The five bio rows are 872 of those 889** — read them uncorrected and the block
-  looks nine times its real size.
-- **Unexamined, and the largest lever in the complex: `Moss-1-without-sludge-for-real`** —
-  `[moss, 100 s] carbon-dioxide 100 → moss 8`, **identical yield to `Moss-1` with no muddy-sludge at
-  all.** That deletes 2 washers and 2 soil-extractors (**4 buildings, 170 tiles**) and
-  **235.43 water/s — 49 % of this block's water and 40 % of the whole complex's.** The catch:
-  `melamine`'s muddy-sludge 5.00/s would lose its only sink, and `moondrop-co2` would need to cover the
-  3.00 CO₂/s melamine currently contributes. Not applied — it is a recipe swap outside this revision's
-  scope, but it should be the next thing examined.
+  `fwf-mk01` 11× at 10.
+- **Unexamined, and still the largest lever: `Moss-1-without-sludge-for-real`** — `[moss, 100 s]
+  carbon-dioxide 100 → moss 8`, **identical yield to `Moss-1` with no muddy-sludge at all.** That
+  deletes 1 washer and 2 soil-extractors (**3 buildings, 134 tiles**) and **143.40 water/s — 40 % of
+  this block's water.** The catch: `melamine`'s muddy-sludge 5.00/s would lose its only sink, and
+  `moondrop-co2` would have to cover the 3.00 CO₂/s melamine currently contributes. Not applied — a
+  recipe swap outside this revision's scope, but it should be the next thing examined.
 - **Unexamined: `seaweed-1-dry`** — `[seaweed, 50 s] → seaweed 10`, same yield as `seaweed-1` with **no
   water**. Removes 19.11 water/s for zero cost if the dry variant has no hidden requirement. Check it.
-- **`auog-pooping-1`, not `-2`.** Variant 2 is 1.9× the manure per paddock but needs `auog-food-01` →
-  **ralesia**. Variant 1 costs **+54 % native-flora** and roughly double the paddocks to avoid an
-  entire plantation chain.
 - **`Moss-1`, not `Moss-2`.** Moss-2 gives 16 moss per craft against 8 but needs **stone 20**, which at
-  44.21 sludge/s means **~4.4 stone/s**. It would cut the bank **45 → 23 farms (~790 tiles)**. Design 24
-  exports 1.833 stone/s and design 25 now imports 1.20 of it — so this needs a second stone supplier,
-  not a spare chest. **Worth revisiting the moment a stone outpost exists**; it is the biggest
-  building-count saving on the table after the sludge question.
+  28.88 sludge/s means **~2.9 stone/s**. It would cut the bank **29 → 15 farms (~500 tiles)**. Design 24
+  exports 1.833 stone/s, so this still needs a second stone supplier — but **the gap is much smaller now
+  than the 4.4/s variant 1 implied.** Worth revisiting the moment a stone outpost exists.
 - **The boiler makes process steam, not power.** `agar` [hpf, 5 s] takes `steam 100` per craft as an
   *ingredient*. One `py-electric-boiler` at 32 % is 8.03 MW. It is under-loaded because the block split
   left `clay`'s 38.22 steam/s in design 26 — if the two blocks sit adjacent, one boiler covers both at
@@ -324,28 +354,26 @@ expensive — 4 extra `auog` modules is 20 more minutes of chamber time.
   **rayon**, which needs `fiber` + `sulfuric-acid` + `sodium-carbonate` + `carbon-sulfide`, none of
   which has an unlocked producer. **Revisit the moment sulfuric-acid lands** — it would collapse this
   entire block.
-- **Entity figures in the pre-revision table were wrong** for `melamine` (5×5 / 0.50 MW, not 9×9 /
-  1.00), `soil` (7×7 / 0.40, not 5×5 / 0.30), `zogna-bacteria` (7×7 / 0.60, not 5×5 / 0.30) and both
-  `bio-reactor-mk01` rows (7×7 / 0.40, not 9×9 / 1.00). The table above reads them from prototype data.
 
 ## Solver command
 
-**Two solver runs, summed.** `--target` takes one item and this block has three independent products
+**Three solver runs, summed.** `--target` takes one item and this block has three independent products
 (battery, melamine export, urea export). The chains are linear below `urea-decomposition`, so the
 fractional machine counts add; they were recovered by re-running each at 1000× target and dividing.
+**`auog-food-01` is absent from every `--recipes` list — that is what makes it an import.**
 
 Run 1 — battery 0.20/s, which carries melamine 0.40/s internally:
 
 ```bash
 npx tsx src/cli.ts solve \
-  --recipes "battery-mk01,melamine,urea-decomposition,urea-from-liquid-manure,liquid-manure,auog-pooping-1,zogna-bacteria,petri-dish,agar,seaweed-1,water-barrel,Moss-1,muddy-sludge,soil,moondrop-co2,graphite,bolts,iron-stick,small-lamp,copper-cable,pressured-air,log2,log-wood-fast,wood-seedling,wood-seeds,electric-boiler-water-to-steam" \
+  --recipes "battery-mk01,melamine,urea-decomposition,urea-from-liquid-manure,liquid-manure,auog-pooping-2,zogna-bacteria,petri-dish,agar,seaweed-1,water-barrel,Moss-1,muddy-sludge,soil,moondrop-co2,graphite,bolts,iron-stick,small-lamp,copper-cable,pressured-air,log2,log-wood-fast,wood-seedling,wood-seeds,electric-boiler-water-to-steam" \
   --target "battery-mk01:0.20" --time 1 \
   --factory "battery-mk01:chemical-plant-mk01" \
   --factory "melamine:fbreactor-mk01" \
   --factory "urea-decomposition:distilator" \
   --factory "urea-from-liquid-manure:bio-reactor-mk01" \
   --factory "liquid-manure:bio-reactor-mk01" \
-  --factory "auog-pooping-1:auog-paddock-mk01" \
+  --factory "auog-pooping-2:auog-paddock-mk01" \
   --factory "zogna-bacteria:incubator-mk01" \
   --factory "petri-dish:automated-factory-mk01" \
   --factory "agar:hpf" \
@@ -374,13 +402,13 @@ Run 2 — the **melamine 1.60/s export** to design 25:
 
 ```bash
 npx tsx src/cli.ts solve \
-  --recipes "melamine,urea-decomposition,urea-from-liquid-manure,liquid-manure,auog-pooping-1,zogna-bacteria,petri-dish,agar,seaweed-1,water-barrel,Moss-1,muddy-sludge,soil,moondrop-co2,pressured-air,log2,log-wood-fast,wood-seedling,wood-seeds,electric-boiler-water-to-steam" \
+  --recipes "melamine,urea-decomposition,urea-from-liquid-manure,liquid-manure,auog-pooping-2,zogna-bacteria,petri-dish,agar,seaweed-1,water-barrel,Moss-1,muddy-sludge,soil,moondrop-co2,pressured-air,log2,log-wood-fast,wood-seedling,wood-seeds,electric-boiler-water-to-steam" \
   --target "melamine:1.60" --time 1 \
   --factory "melamine:fbreactor-mk01" \
   --factory "urea-decomposition:distilator" \
   --factory "urea-from-liquid-manure:bio-reactor-mk01" \
   --factory "liquid-manure:bio-reactor-mk01" \
-  --factory "auog-pooping-1:auog-paddock-mk01" \
+  --factory "auog-pooping-2:auog-paddock-mk01" \
   --factory "zogna-bacteria:incubator-mk01" \
   --factory "petri-dish:automated-factory-mk01" \
   --factory "agar:hpf" \
@@ -405,11 +433,11 @@ Run 3 — the **urea 0.40/s export** to design 25. `urea-decomposition` and `mel
 
 ```bash
 npx tsx src/cli.ts solve \
-  --recipes "urea-from-liquid-manure,liquid-manure,auog-pooping-1,zogna-bacteria,petri-dish,agar,seaweed-1,water-barrel,Moss-1,muddy-sludge,soil,moondrop-co2,small-lamp,bolts,iron-stick,copper-cable,pressured-air,log2,log-wood-fast,wood-seedling,wood-seeds,electric-boiler-water-to-steam" \
+  --recipes "urea-from-liquid-manure,liquid-manure,auog-pooping-2,zogna-bacteria,petri-dish,agar,seaweed-1,water-barrel,Moss-1,muddy-sludge,soil,moondrop-co2,small-lamp,bolts,iron-stick,copper-cable,pressured-air,log2,log-wood-fast,wood-seedling,wood-seeds,electric-boiler-water-to-steam" \
   --target "urea:0.40" --time 1 \
   --factory "urea-from-liquid-manure:bio-reactor-mk01" \
   --factory "liquid-manure:bio-reactor-mk01" \
-  --factory "auog-pooping-1:auog-paddock-mk01" \
+  --factory "auog-pooping-2:auog-paddock-mk01" \
   --factory "zogna-bacteria:incubator-mk01" \
   --factory "petri-dish:automated-factory-mk01" \
   --factory "agar:hpf" \
@@ -433,14 +461,16 @@ npx tsx src/cli.ts solve \
   --unlocked
 ```
 
-**Run 2 reports `small-lamp 0.02/s` as a raw input and run 3 reports it as internal** — in the merged
-block it is internal, produced at 0.10/s total. Same for `copper-cable`. The merged fractional count is
-the sum, 0.052 machines, still one building.
+**`auog-pooping-2` has variable output** — manure 5–12, averaged to 8.5 per solver-reference
+§ Variable-output recipes. Sizing on `amount_min` instead would need **14 paddocks rather than 9**, so
+if the paddocks turn out to be on a critical path with no manure buffer, re-read this block at 5.
 
-Run 1 reports **`ammonia: 6.00/1s` as an output — that is the design intent, not an artefact.** Contrast
-an earlier revision where the same row appeared because the LP was scaling `melamine` for its CO₂ and
-muddy-sludge byproducts; check the urea rate to tell them apart, since the artefact ran it at 6.95/s
-against this design's 5.73.
+Run 2 reports `small-lamp` as a raw input and run 3 reports it as internal — in the merged block it is
+internal. Same for `copper-cable`. The merged fractional count is the sum, still one building each.
+
+Run 1 reports **`ammonia: 6.00/1s` as an output — that is the design intent, not an artefact.** Check
+the urea rate to tell it from an earlier revision's artefact, which ran at 6.95/s against this design's
+5.73.
 
 All three runs emit a long cycle warning spanning the moss/CO₂/urea/barrel web. That is intentional and
 the solver zeroes it correctly; do not add the suggested excludes.
@@ -456,6 +486,6 @@ Distinct construction materials across this block's 16 building types, separate 
 `small-parts-01` · `steam-engine` · `steel-furnace` · `steel-plate` · `stone-brick` · `stone-furnace` ·
 `wood`
 
-The items to check first are **`auog` ×72** (§ Bio modules — a 6.0 h codex bootstrap, not a material)
+The items to check first are **`auog` ×36** (§ Bio modules — a 3.0 h codex bootstrap, not a material)
 and the one-time **`ash` ×30 and `stone-brick` ×40** for ten planter-boxes. Inferred from the recipe
 graph, not from save state.

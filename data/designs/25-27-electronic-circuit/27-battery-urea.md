@@ -1,7 +1,7 @@
-# 27 — Battery + urea — 0.20 battery-mk01/s, 81 buildings
+# 27 — Battery + urea — 0.20 battery-mk01/s, 79 buildings
 
 The cascade half of the circuit chain. `battery-mk01` takes **cyanic-acid 30 per battery**, and that
-30:1 ratio drags in the whole urea → manure → auog → native-flora chain — **51 of the 81 buildings are
+30:1 ratio drags in the whole urea → manure → auog → native-flora chain — **52 of the 79 buildings are
 a bio annex that exists to make one item.** Feeds design 26.
 
 ```
@@ -28,8 +28,7 @@ ammonia recipes exist; all nine are locked. There is no bypass around
 | **byproduct-exclude** | none |
 
 **Independent — nothing crosses but the battery.** The block runs its own wood chain (0.37/s for
-`zogna-bacteria`), its own moss bank, and makes CO₂ from coke rather than sharing design 25's free
-`moondrop-co2`; see § Why CO₂ comes from coke.
+`zogna-bacteria`), its own moss bank, and its own `moondrop-co2`; see § Where the CO₂ comes from.
 
 ## Recipe table
 
@@ -48,7 +47,6 @@ Multipliers from solver-reference § Bio module system, all reaching effective s
 │ zogna-bacteria              │ incubator-mk01         │     1 │ 5x5   │   0.30 │
 │ agar                        │ hpf                    │     1 │ 7x7   │   2.00 │
 │ graphite                    │ hpf                    │     1 │ 7x7   │   2.00 │
-│ coke-co2                    │ hpf                    │     3 │ 7x7   │   2.00 │
 │ petri-dish · bolts          │ automated-factory-mk01 │   1+1 │ 7x7   │   2.00 │
 │ iron-stick · small-lamp     │ automated-factory-mk01 │   1+1 │ 7x7   │   2.00 │
 │ copper-cable · wood-seeds   │ automated-factory-mk01 │   1+1 │ 7x7   │   2.00 │
@@ -64,17 +62,18 @@ Multipliers from solver-reference § Bio module system, all reaching effective s
 │ auog-pooping-1              │ auog-paddock-mk01      │  *13  │ 14x14 │   0.50 │
 │ seaweed-1                   │ seaweed-crop-mk01      │   *4  │ 13x13 │   0.50 │
 │ log2                        │ fwf-mk01               │   *1  │ 15x15 │   0.45 │
+│ moondrop-co2                │ moondrop-greenhouse-mk01│ *1   │ 9x9   │   0.45 │
 └─────────────────────────────┴────────────────────────┴───────┴───────┴────────┘
-   * module-corrected. Solver base counts: 527 / 65 / 40 / 7
-     multipliers:                          16x /  5x / 11x / 11x
+   * module-corrected. Solver base counts: 527 / 65 / 40 / 7 / 14
+     multipliers:                          16x /  5x / 11x / 11x / 17x
 ```
 
-**81 buildings · ~5,640 tiles · 29.8 MW electric**
+**79 buildings · ~5,574 tiles · 26.0 MW electric**
 
-**51 buildings and ~4,640 tiles are the bio annex** — 33 moss-farm, 13 auog-paddock, 4 seaweed-crop,
-1 fwf. The 30 process buildings are the chemistry.
+**52 buildings and ~4,720 tiles are the bio annex** — 33 moss-farm, 13 auog-paddock, 4 seaweed-crop,
+1 fwf, 1 moondrop-greenhouse. The 27 process buildings are the chemistry.
 
-**Inputs** (/s): water 365.09 · **native-flora 5.17** · coke 2.31 · zinc-plate 0.60 · iron-plate 0.37 ·
+**Inputs** (/s): water 365.09 · **native-flora 5.17** · coke 1.50 · zinc-plate 0.60 · iron-plate 0.37 ·
 glass 0.34 · **pbsb-alloy 0.20** · copper-plate 0.18 · empty-petri-dish 0.14
 
 **Exports** (/s): **battery-mk01 0.20** · **ammonia 6.00**
@@ -108,7 +107,7 @@ glass 0.34 · **pbsb-alloy 0.20** · copper-plate 0.18 · empty-petri-dish 0.14
 │ moss           │    2.63  │ Moss-1                               │ auog-pooping-1 2.59, wood-seedling 0.05      │
 │ muddy-sludge   │   32.90  │ muddy-sludge 31.90 + melamine 1.00   │ Moss-1 32.90                                 │
 │ soil           │    3.19  │ soil                                 │ muddy-sludge 3.19                            │
-│ carbon-dioxide │   32.90  │ coke-co2 32.30 + melamine 0.60       │ Moss-1 32.90                                 │
+│ carbon-dioxide │   32.90  │ moondrop-co2 32.30 + melamine 0.60   │ Moss-1 32.90                                 │
 │ wood           │    0.37  │ log-wood-fast                        │ zogna-bacteria 0.36, wood-seeds 0.01         │
 │ log            │    0.04  │ log2                                 │ log-wood-fast                                │
 │ wood-seedling  │    0.03  │ wood-seedling                        │ log2                                         │
@@ -163,20 +162,25 @@ byproducts are solid fuels. Four small byproducts and one extra import were trad
 > list, so it cannot be disposed of either. This is an export awaiting a destination, not a routed one.
 > Recorded as risk 1, and it makes `t = 0` for designs 26 and 27 both.
 
-## Why CO₂ comes from coke
+## Where the CO₂ comes from
 
-`Moss-1` needs **CO₂ 32.90/s**, and design 25 gets its CO₂ free from `moondrop-co2` (no ingredients at
-all). Using that here would mean one `moondrop-greenhouse` plus **16 `moondrop` modules** to bring it to
-effective speed 1.0 — a codex bootstrap for a single building, with no moondrop chain here to supply it.
+`Moss-1` needs **CO₂ 32.90/s**, and `moondrop-co2` makes it from nothing at all:
 
 ```
-coke-co2  [U] [hpf, 5 s]  coke 2  →  carbon-dioxide 80
+moondrop-co2  [U] [moon, 5 s]  (no ingredients)  →  carbon-dioxide 200
 ```
 
-**3 hpf and coke 0.81/s instead**, using an import the block already has for graphite. It destroys
-4.05 MJ/s of coke fuel value and draws 6 MW — the honest cost of independence — but removes a
-bio-module dependency entirely. Switch to `moondrop-co2` if a moondrop line ever sits nearby: 1 building
-against 3, and no coke.
+**One `moondrop-greenhouse-mk01` at 82 %** — 0.37 MW, 81 tiles, zero inputs. The catch is 16 `moondrop`
+modules to reach effective speed 1.0, and this block runs no moondrop chain.
+
+**That is a one-time transfer from design 25, not a dependency.** Design 25 runs `moondrop-1` and
+`moondrop-seeds` as a closed breeding loop for its methane, so 16 units is a brief surplus off its
+nursery — and the creature-chamber codex that starts the loop is a once-per-base cost design 25 has
+already paid. It crosses at build time and never again.
+
+The alternative was `coke-co2` (`coke 2 → CO₂ 80`): **3 hpf, coke 0.81/s, 4.04 MW**, destroying
+4.05 MJ/s of fuel value to avoid borrowing 16 modules from next door. Rejected — it priced a
+once-paid bootstrap as though it had to be paid per block.
 
 ## Terminal outputs and their sinks
 
@@ -193,6 +197,7 @@ against 3, and no coke.
 | `seaweed-crop-mk01` | 4 | `seaweed` 10 | **40** | **yes** — `seaweed-1` runs here |
 | `auog-paddock-mk01` | 13 | `auog` 4 | **52** | **no** |
 | `fwf-mk01` | 1 | `tree-mk01` 10 | **10** | needs 1 planter-box |
+| `moondrop-greenhouse-mk01` | 1 | `moondrop` 16 | **16** | **one-time from design 25** — § Where the CO₂ comes from |
 
 **`auog` ×52 is the long pole.** The only non-circular route is `auog` [creature-chamber, 300 s] from a
 codex plus samples, at **1 per run** — so 52 modules is a slow bootstrap, and the paddocks run at 1/5
@@ -211,14 +216,14 @@ stone-brick are one-time imports** appearing nowhere in the flows.
 | 2 | **moss 2.63/s** | 2.59 feeds `auog-pooping-1` → manure → urea → cyanic-acid → batteries. A moss outage stops the product, and with 33 farms at 100 s per craft recovery is slow |
 | 3 | **native-flora 5.17/s** | no recipe exists at all — map-placed only. Same cascade as moss, one step earlier |
 | 4 | **the barrel loop** | nets to zero, so nothing refills it. One stray inserter drains it and the paddocks stop with no obvious cause |
-| 5 | **coke 2.31/s** | feeds `graphite` *and* `coke-co2`, so a shortfall hits the battery directly and the moss farms through CO₂ |
+| 5 | coke 1.50/s | feeds `graphite` only; throttles the battery rather than stalling it |
 | 6 | the auog module bootstrap | not a flow risk but a schedule one — 52 codex runs at 300 s each is ~4.3 h of chamber time before the paddocks reach full speed |
 
 ## Build notes
 
 - **Never size the bio buildings without modules.** The solver's 669 is meaningless; the multipliers
-  bring it to 81. `moss-farm-mk01` 16× at 15 slots, `auog-paddock-mk01` 5× at 4, `seaweed-crop-mk01`
-  11× at 10, `fwf-mk01` 11× at 10.
+  bring it to 79. `moss-farm-mk01` 16× at 15 slots, `auog-paddock-mk01` 5× at 4, `seaweed-crop-mk01`
+  11× at 10, `fwf-mk01` 11× at 10, `moondrop-greenhouse-mk01` 17× at 16.
 - **`auog-pooping-1`, not `-2`.** Variant 2 is 1.9× the manure per paddock but needs `auog-food-01` →
   **ralesia**. Variant 1 costs **+54 % native-flora** and roughly double the paddocks to avoid an
   entire plantation chain.
@@ -246,7 +251,7 @@ are specified at mk01 and **must be re-read with the module multipliers above**.
 
 ```bash
 npx tsx src/cli.ts solve \
-  --recipes "battery-mk01,melamine,urea-decomposition,urea-from-liquid-manure,liquid-manure,auog-pooping-1,zogna-bacteria,petri-dish,agar,seaweed-1,water-barrel,Moss-1,muddy-sludge,soil,coke-co2,graphite,bolts,iron-stick,small-lamp,copper-cable,pressured-air,log2,log-wood-fast,wood-seedling,wood-seeds,electric-boiler-water-to-steam" \
+  --recipes "battery-mk01,melamine,urea-decomposition,urea-from-liquid-manure,liquid-manure,auog-pooping-1,zogna-bacteria,petri-dish,agar,seaweed-1,water-barrel,Moss-1,muddy-sludge,soil,moondrop-co2,graphite,bolts,iron-stick,small-lamp,copper-cable,pressured-air,log2,log-wood-fast,wood-seedling,wood-seeds,electric-boiler-water-to-steam" \
   --target "battery-mk01:0.20" --time 1 \
   --factory "battery-mk01:chemical-plant-mk01" \
   --factory "melamine:fbreactor-mk01" \
@@ -262,7 +267,7 @@ npx tsx src/cli.ts solve \
   --factory "Moss-1:moss-farm-mk01" \
   --factory "muddy-sludge:washer" \
   --factory "soil:soil-extractor-mk01" \
-  --factory "coke-co2:hpf" \
+  --factory "moondrop-co2:moondrop-greenhouse-mk01" \
   --factory "graphite:hpf" \
   --factory "bolts:automated-factory-mk01" \
   --factory "iron-stick:automated-factory-mk01" \

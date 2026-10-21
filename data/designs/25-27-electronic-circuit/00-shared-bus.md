@@ -15,8 +15,8 @@ its own solver command, each can be stamped or resized without touching the othe
 |---|--:|--:|--:|--:|---|
 | [25 — formica](25-formica.md) | 166 | ~9,080 | 42.75 | 3 | formica |
 | [26 — electronic circuits](26-electronic-circuit.md) | 20 | ~684 | 29.13 | 9 | electronic-circuit |
-| [27 — battery + urea](27-battery-urea.md) | 81 | ~5,640 | 29.8 | 9 | battery-mk01, ammonia |
-| **complex** | **267** | **~15,400** | **101.7** | **12 distinct** | **2 external** |
+| [27 — battery + urea](27-battery-urea.md) | 79 | ~5,574 | 26.0 | 9 | battery-mk01, ammonia |
+| **complex** | **265** | **~15,340** | **97.9** | **12 distinct** | **2 external** |
 
 Scaled for **1.0 electronic-circuit/s**. Every rate below is linear in that.
 
@@ -24,13 +24,13 @@ Scaled for **1.0 electronic-circuit/s**. Every rate below is linear in that.
 
 ## Imports — union and sum
 
-### Solids — 10 items, 22.49 /s
+### Solids — 10 items, 21.68 /s
 
 | item | 25 | 26 | 27 | **bus total** | shared? |
 |---|--:|--:|--:|--:|---|
 | **native-flora** | — | — | 5.17 | **5.17** | 27 only |
 | **copper-plate** | 2.00 | 2.80 | 0.18 | **4.98** | **all three** |
-| **coke** | — | 2.41 | 2.31 | **4.72** | **26 + 27** |
+| **coke** | — | 2.41 | 1.50 | **3.91** | **26 + 27** |
 | **tin-plate** | — | 1.87 | — | **1.87** | 26 only |
 | **iron-plate** | — | 1.50 | 0.37 | **1.87** | **26 + 27** |
 | **lead-plate** | — | 1.60 | — | **1.60** | 26 only |
@@ -38,9 +38,9 @@ Scaled for **1.0 electronic-circuit/s**. Every rate below is linear in that.
 | **zinc-plate** | — | — | 0.60 | **0.60** | 27 only |
 | **pbsb-alloy** | — | — | 0.20 | **0.20** | 27 only |
 | **empty-petri-dish** | — | — | 0.14 | **0.14** | 27 only |
-| | | | | **22.49 /s** | |
+| | | | | **21.68 /s** | |
 
-**All solids fit one red belt** — 22.49/s against 30/s, or 1.5 yellow belts. No single item exceeds
+**All solids fit one red belt** — 21.68/s against 30/s, or 1.5 yellow belts. No single item exceeds
 5.17/s, so nothing needs a dedicated lane on throughput; the only question is how many lanes you want
 to route.
 
@@ -95,12 +95,12 @@ Both are tiny and solid. They ride the same bus as the imports; neither needs sp
 **Design 26 is the station-heavy one** — 20 buildings against 10 stations. That is the rule 20 trade in
 miniature: a small block spending its space budget on stations rather than factories.
 
-**Worth considering: merge 26 into 27 physically.** 27 already imports five of 26's six external solids
-(coke, iron-plate, glass, copper-plate, and shares the `graphite` recipe), the `battery-mk01` handoff
-stops being bus traffic, and **the two boilers become one**. Design 26's `clay` wants 38.22 steam/s and
-27's `agar` wants 14.22 — separately that is a `py-electric-boiler` at 64 % and one at 24 %; together it
-is one at 87 %. Saves a building and ~6 MW of idle rated draw. They stay separate *designs* either way;
-this is only about where the blueprints sit.
+**Worth considering: merge 26 into 27 physically.** 27 already imports **four of 26's six** external
+solids (copper-plate, coke, iron-plate, glass) and runs the same `graphite` recipe, the `battery-mk01`
+handoff stops being bus traffic, and **the two boilers become one**: 26's `clay` wants 38.22 steam/s and
+27's `agar` 14.22, so separately that is a `py-electric-boiler` at 64 % and one at 24 %, together one at
+87 %. **The saving is one building and 9 tiles, not power** — load-weighted draw is 15.93 + 5.93 against
+21.85, a wash. They stay separate *designs* either way; this is only about where the blueprints sit.
 
 ---
 
@@ -130,16 +130,16 @@ Everything is linear in circuits/s, but the useful anchors are:
 
 | | 1.0 c/s | 2.0 c/s | 5.0 c/s |
 |---|--:|--:|--:|
-| buildings | 267 | ~534 | ~1,335 |
+| buildings | 265 | ~530 | ~1,325 |
 | water | 733.92 | 1,467.84 | 3,669.60 |
 | creosote | 40.00 | 80.00 | 200.00 |
 | native-flora | 5.17 | 10.34 | 25.85 |
-| solids total | 22.49 | 44.98 | 112.45 |
+| solids total | 21.68 | 43.36 | 108.40 |
 | ammonia out | 6.00 | 12.00 | 30.00 |
 
 **Ratios are integer only at C = 1, 2, 5** — design 26's scale anchor is one `pcb-factory-mk01` at
 0.2 pcb1/s, and anything between leaves fractional sub-part banks. Past 1.0 c/s the solids exceed a red
-belt at ~1.33 c/s and water exceeds a mk02 wagon immediately, so **stamping the complex is cheaper than
+belt at ~1.38 c/s and water exceeds a mk02 wagon immediately, so **stamping the complex is cheaper than
 scaling it** (rule 25) — and because the three designs are independent, you can stamp them at different
 multiples if one is the bottleneck.
 
@@ -154,6 +154,7 @@ None of this appears in any solver output or in the tables above. It is one-time
 | 25 | `moss` 255 · `moondrop` 384 | | **self-funding** — both are their own product |
 | 25 | `sap-tree` 160 · `tree-mk01` 170 | | **effectively** — `sap-seeds ← saps 5 → 2`, so the sap field funds its own 800 seeds in ~8 min |
 | 27 | `moss` 495 · `seaweed` 40 | | **self-funding** |
+| 25 → 27 | **`moondrop` 16** | | **one-time transfer** — 25 breeds them; 27's single `moondrop-co2` greenhouse needs them to reach speed 1.0 |
 | 27 | **`auog` 52** | | **codex only** — `auog` [creature-chamber, 300 s] yields 1 per run. **~4.3 h** of chamber time, and the paddocks run at 1/5 speed until done |
 | 25 + 27 | **331 planter-boxes** | `ash` 993 · `stone-brick` 1,324 · `iron-plate` 331 | **import, one-time** |
 

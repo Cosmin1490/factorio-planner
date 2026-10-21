@@ -23,6 +23,161 @@ and the slaughterhouse runs at 39 %.
 and costs +24 % saline and +24 % oxygen. The pick is held for `breed-fish-2`+, where `fish-food-01`
 becomes a required ingredient.
 
+## Upgrade path — `fish-mk02`, 535 units
+
+**The best research-per-benefit available to this block.** Three techs — `nitrogen-mk01` → `filtration`
+→ `fish-mk02` — **535 units total**, all at the automation + py-1 + logistic tier. It unlocks
+`breed-fish-2`, `fish-food-01` and (via `filtration`) `filtration-media`, and takes the block to **zero
+mineral imports except saline, at a fifth of today's rate.**
+
+Three steps, in order:
+
+### 1. `breed-fish-2` — every per-fish input halves
+
+```
+breed-fish-1  [150 s]  small-lamp 3 + biomass 10 + fish-egg 10 + oxygen 60 + saline 100      →  fish 10
+breed-fish-2  [130 s]  same  + filtration-media 1 + fish-food-01 1                           →  fish 20
+```
+
+Double the fish for the same per-craft inputs, in less time. The upstream shrinks twice over, because
+fewer breed crafts means fewer eggs, which means less phytoplankton, which means less tin:
+
+| | now | after |
+|---|--:|--:|
+| **fish farms** (breed + egg) | 3 + 1 | **1 + 1** |
+| biomass | 0.379 /s | **0.130 /s** |
+| oxygen | 1.200 /s | **0.411 /s** |
+| water-saline | 2.800 /s | **0.958 /s** |
+| grade-1-tin | 0.040 /s | **0.014 /s** |
+| **biomass margin** | **1.3 %** | **~2×** |
+
+**That margin is the real prize.** Today every co-product is load-bearing; after this, composting skin and
+surplus guts alone covers the budget with room, so bones and meat become free.
+
+### 2. TURD `a-select` — the fish-food import becomes a surplus
+
+```
+breed-fish-2-agressive-selection  [117 s]  … + fish-food-01 1 …  →  fish 18 + fish-food-01 2
+```
+
+**Rate-neutral again** (18/117 = 20/130), so the farm count holds at 1 — but net **+1 fish-food-01 per
+craft** instead of −1, turning an import of 0.0068/s into a **surplus of 0.0079/s**.
+
+**Take the pick here, not before.** At tier 1 it buys nothing (`breed-fish-1` uses no fish-food) and costs
++24 % saline and oxygen. At tier 2 it removes an import that is otherwise a **nine-ingredient recipe
+needing `mukmoux-fat` and `fawogae`** — neither of which exists in any current design. Cost is **+15 % on
+every input** (18 fish per craft means 15 % more crafts), so saline 0.958 → 1.103/s.
+
+### 3. `meat-to-tin` — the tin import disappears
+
+With tin demand down to 0.0158/s, the block's own meat finally covers it:
+
+```
+meat-to-tin        meat 5    →  ore-tin 15
+grade-1-tin        ore-tin 5 →  grade-1-tin 1 + grade-2-tin 1
+grade-2-crush-tin  grade-2-tin 1 → grade-1-tin 1 + stone 1      net: 0.833 meat per grade-1-tin
+
+meat needed 0.0131/s   against   meat produced 0.0260/s     →  2× margin
+```
+
+**This is why it works now and didn't before.** `meat-to-tin` is **7.2× more meat-efficient than the
+jerky route** (0.833 vs 6.0 meat per grade-1-tin), but its atomizer is a second burner — and only the
+post-`breed-fish-2` biomass budget can absorb it. Adds **3 buildings**: `atomizer-mk01`,
+`automated-screener-mk01` (7×7, 0.30 MW) and `jaw-crusher` (7×7, 1.00 MW), all at 2–3 % load.
+
+### End state — solver-validated
+
+**13 buildings · ~1,056 tiles · 2.05 MW at load · 15.95 MW rated** — same count as today, but the
+flows are transformed:
+
+```
+┌──────────────────────────────────┬─────────────────────────┬──────┬───────┬───────┬─────────┐
+│ Recipe                           │ Factory                 │ Cnt  │ Size  │ Load  │ MW load │
+├──────────────────────────────────┼─────────────────────────┼──────┼───────┼───────┼─────────┤
+│ breed-fish-2-agressive-selection │ fish-farm-mk01          │  *1  │ 11x11 │  92 % │   0.922 │
+│ breed-fish-egg-1                 │ fish-farm-mk01          │  *1  │ 11x11 │  25 % │   0.252 │
+│ full-render-fish                 │ slaughterhouse-mk01     │   1  │ 11x11 │  39 % │   0.117 │
+│ phytoplankton                    │ plankton-farm           │   1  │ 7x7   │  24 % │   0.083 │
+│ biomass-skin                     │ compost-plant-mk01      │   1  │ 11x11 │  12 % │   0.059 │
+│ biomass-guts                     │ compost-plant-mk01      │   1  │ 11x11 │   9 % │   0.045 │
+│ biomass-bones                    │ compost-plant-mk01      │   1  │ 11x11 │   8 % │   0.039 │
+│ hydrogen  (for oxygen)           │ electrolyzer-mk01       │   1  │ 6x6   │   5 % │   0.480 │
+│ grade-1-tin                      │ automated-screener-mk01 │   1  │ 7x7   │   4 % │   0.011 │
+│ grade-2-crush-tin                │ jaw-crusher             │   1  │ 7x7   │   3 % │   0.026 │
+│ waste-water-void                 │ quenching-tower         │   1  │ 7x7   │   2 % │   0.012 │
+│ meat-to-tin                      │ atomizer-mk01           │   1  │ 7x7   │   4 % │  burner │
+│ guts-to-chlorine                 │ atomizer-mk01           │   1  │ 7x7   │   2 % │  burner │
+└──────────────────────────────────┴─────────────────────────┴──────┴───────┴───────┴─────────┘
+   * module-corrected. Solver base counts: 7.38 / 2.02, multiplier 8x
+   `biomass-meat` solves to 0 — not needed.
+```
+
+| | /s |
+|---|--:|
+| **Imports** | water 8.194 · **water-saline 1.103** (= **stone 0.221** or gravel 0.331) · small-lamp 0.024 · **filtration-media 0.0079** |
+| **Exports** | **fish-oil 1.30** · guts 0.024 · fish-food-01 0.0079 · stone 0.0063 · meat 0.005 |
+| **Vented** | hydrogen 0.946 |
+| **Gone** | **grade-1-tin · two fish farms · 60 % of the saline · 60 % of the water · 62 % of the power** |
+
+**Power drops 5.40 → 2.05 MW at load** — the fish farms were two thirds of it and three of the four are
+gone. `stone 0.0063/s` is a new trace *export* from `grade-2-crush-tin`.
+
+**Biomass: 0.287/s needed (0.079 breeding + 0.208 atomizer fuel) against 0.412/s available** if the
+exported guts and meat are also composted — **~1.4× headroom.** The LP leaves them out because it does
+not need them, which is itself the margin. Better than today's 1.3 %, but **the two burners are now 72 %
+of the biomass demand**, so it is not slack to spend.
+
+> **Sequence matters.** `breed-fish-2` first (it creates the biomass headroom), then `a-select`, then the
+> tin chain. Taking `a-select` before `fish-mk02` is a strict loss, and adding `meat-to-tin` before
+> `breed-fish-2` breaks the biomass by 19 % — see § Why not the alternatives.
+
+```bash
+npx tsx src/cli.ts solve \
+  --recipes "breed-fish-2-agressive-selection,breed-fish-egg-1,phytoplankton,full-render-fish,biomass-skin,biomass-guts,biomass-bones,biomass-meat,guts-to-chlorine,meat-to-tin,grade-1-tin,grade-2-crush-tin,waste-water-void,hydrogen" \
+  --target "fish-oil:1.3" --time 1 \
+  --max-import "water:100" \
+  --fuel "guts-to-chlorine:biomass" \
+  --fuel "meat-to-tin:biomass" \
+  --factory "breed-fish-2-agressive-selection:fish-farm-mk01" \
+  --factory "breed-fish-egg-1:fish-farm-mk01" \
+  --factory "phytoplankton:plankton-farm" \
+  --factory "full-render-fish:slaughterhouse-mk01" \
+  --factory "biomass-skin:compost-plant-mk01" \
+  --factory "biomass-guts:compost-plant-mk01" \
+  --factory "biomass-bones:compost-plant-mk01" \
+  --factory "biomass-meat:compost-plant-mk01" \
+  --factory "guts-to-chlorine:atomizer-mk01" \
+  --factory "meat-to-tin:atomizer-mk01" \
+  --factory "grade-1-tin:automated-screener-mk01" \
+  --factory "grade-2-crush-tin:jaw-crusher" \
+  --factory "waste-water-void:quenching-tower" \
+  --factory "hydrogen:electrolyzer-mk01" \
+  --solver simplex \
+  --unlocked
+```
+
+**`filtration-media 0.0079/s` does not appear in the output at this target** — it is under the ~0.01/s
+display floor. Re-run at `--target "fish-oil:130"` to see it, along with the `fish-food-01 0.0079`
+surplus and `stone 0.0063`. Fractionals from `--target "fish-oil:1300"` ÷ 1000.
+
+## Water independence is not reachable
+
+```
+water 8.194/s  =  phytoplankton 7.88  +  electrolyzer 1.42  −  waste-water-void 1.10
+```
+
+**96 % of the water is phytoplankton feedstock** — it becomes fish, then fish-oil. That is product, not
+loss, and no `phytoplankton` variant omits `water 500`.
+
+The apparent fix is `water-from-oxygen-and-hydrogen` (`[quenching-tower, 2 s] oxygen 100 + hydrogen 200 →
+water 300`, enabled), which would recombine the vented hydrogen. **It cannot help:** it is the exact
+inverse of the electrolyser at the same 2:1 ratio, so it demands back precisely the oxygen the fish
+consume. Electrolysis plus recombination nets zero. `cooling-water` (`steam 400 → water 400`) would
+recover the hydrogen's energy as steam, but at 0.095 MJ/s that is **0.385 water/s against 8.19 imported.**
+
+**The block is a water-to-fish-oil converter.** Reducing water means raising yield per fish, which is
+exactly what the upgrade path does — 20.80 → 8.19/s, a 61 % cut — not eliminating it.
+
 ## Fuel independent, and nearly closed
 
 **Four imports, one product, one vent.** No coke, no ash, no solid exports except a trace.
@@ -156,11 +311,16 @@ clean solve and is not one.
 **Three meat alternatives were priced and all fail on the same thing** — rendering yields meat 2 per 8
 fish, and every downstream use wants an order of magnitude more:
 
-| route | covers | why not |
+| route | covers | why not *at this tier* |
 |---|--:|---|
-| `meat-to-tin` → `grade-1-tin` | 78 % of tin | breaks biomass by 19 %; the extra `atomizer` is a second burner |
+| `meat-to-tin` → `grade-1-tin` | 78 % of tin | breaks biomass by 19 %; the extra `atomizer` is a second burner. **Becomes correct after `breed-fish-2`** — see § Upgrade path step 3 |
 | `meat → dried-meat-01 → jerky-to-phytoplankton` | **10.8 %** of phytoplankton | needs **meat 0.240/s** against 0.026 produced — fixed ratio, never closes at any scale |
 | trickle (0.0016/s) → tin | 4.8 % | the atomizer's fuel to process it costs **0.0102 biomass/s** against a 0.005/s surplus — net negative |
+
+**`meat-to-tin` is 7.2× more meat-efficient than the jerky route** — 0.833 meat per grade-1-tin against
+6.0, because it multiplies (meat 5 → ore-tin 15, then the grade-2 crush doubles again) where jerky halves
+first (meat 10 → dried-meat 5). That is why the same 0.026 meat/s covers 78 % one way and 10.8 % the
+other, and why the tin route is the one worth keeping in reserve.
 
 `jerky-to-phytoplankton` is the only route that removes `grade-1-tin` entirely, and it is **1.5× faster
 per plankton-farm** (10 s vs 15 s for the same phytoplankton 10) with no mineral input. Importing meat

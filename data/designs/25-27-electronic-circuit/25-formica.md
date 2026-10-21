@@ -1,7 +1,7 @@
-# 25 — Formica — 0.40 formica/s, 166 buildings
+# 25 — Formica — 0.40 formica/s, 148 buildings
 
 The pulp half of the electronic-circuit chain, split out as its own block. Feeds **design 26**
-(`pcb1`) and nothing else. Three imports, one export, no chemistry.
+(`pcb1`) and nothing else. Four imports, one export, no chemistry.
 
 ```
 formica        [U] [pulp, 10 s]  treated-wood 2 + saps 10 + raw-fiber 5 + methanal 50  →  formica 1
@@ -20,10 +20,13 @@ creosote (treated-wood 2 per formica 1, against `formica-2`'s 5-per-craft yield 
 
 | class | items |
 |---|---|
-| **import** | creosote, water, copper-plate |
+| **import** | creosote, water, copper-plate, **ash** |
 | **export** | formica — to design 26 |
 | **made in-block** | wood, log, wood-seedling, wood-seeds, moss, muddy-sludge, soil, saps, raw-fiber, treated-wood, methanal, methane, moondrop, moondrop-seeds, CO₂ |
 | **byproduct-exclude** | none — the block has no byproducts at all |
+
+**Ash is consumed, not produced.** `log3` wants `ash 30` per craft and every building here is electric, so
+there is no `burnt_result` anywhere — see § Why log3, and why the ash is imported.
 
 **Independent apart from the formica handoff.** The tree farm, the sap field, the moondrop plant and
 the moss that feeds the seedlings are all local; nothing crosses except the product.
@@ -49,23 +52,23 @@ multipliers from solver-reference § Bio module system, all reaching effective s
 │ soil           │ soil-extractor-mk01      │     1 │ 5x5   │   0.30 │  84 %  │
 ├────────────────┼──────────────────────────┼───────┼───────┼────────┼────────┤
 │ sap-01         │ sap-extractor-mk01       │  *80  │ 5x5   │   0.15 │ 100 %  │
-│ log2           │ fwf-mk01                 │  *17  │ 15x15 │   0.45 │  95 %  │
-│ Moss-1         │ moss-farm-mk01           │  *17  │ 6x6   │   0.10 │  99 %  │
+│ log3           │ fwf-mk01                 │   *8  │ 15x15 │   0.45 │  89 %  │
+│ Moss-1         │ moss-farm-mk01           │  *12  │ 6x6   │   0.10 │  93 %  │
 │ moondrop-1     │ moondrop-greenhouse-mk01 │  *13  │ 9x9   │   0.45 │  97 %  │
 │ methane-co2    │ moondrop-greenhouse-mk01 │   *9  │ 9x9   │   0.45 │ 100 %  │
 │ moondrop-co2   │ moondrop-greenhouse-mk01 │   *2  │ 9x9   │   0.45 │  96 %  │
 └────────────────┴──────────────────────────┴───────┴───────┴────────┴────────┘
-   * module-corrected. Solver base counts: 240 / 178 / 269 / 213 / 153 / 33
+   * module-corrected. Solver base counts: 240 /  78 / 178 / 213 / 153 / 33
      multipliers:        3x  /  11x /  16x /  17x /  17x / 17x
 ```
 
-**166 buildings · ~9,080 tiles · 42.75 MW electric**
+**148 buildings · ~6,820 tiles · 36.75 MW electric**
 
-**121 of the 166 buildings are the sap field and the tree farm** (80 `sap-extractor` + 17 `fwf` + 17
-`moss-farm` + the nurseries). The FWF bank alone is **3,825 tiles**, the sap field 2,000, the moondrop
-plant 1,944 — this is a farm with a three-building chemical tail, not a factory.
+**100 of the 148 buildings are the sap field and the tree farm** (80 `sap-extractor` + 8 `fwf` + 12
+`moss-farm`). The sap field alone is **2,000 tiles**, the moondrop plant 1,944, the FWF bank 1,800 —
+this is a farm with a three-building chemical tail, not a factory.
 
-**Inputs** (/s): **creosote 40.00** · water 330.61 · copper-plate 2.00
+**Inputs** (/s): **creosote 40.00** · water 241.53 · **ash 5.31** · copper-plate 2.00
 
 **Exports** (/s): **formica 0.40**
 
@@ -82,15 +85,15 @@ plant 1,944 — this is a farm with a three-building chemical tail, not a factor
 │ raw-fiber      │    2.00  │ fiber-01               │ formica 2.00                                   │
 │ methanal       │   20.00  │ methanal               │ formica 20.00                                  │
 │ methane        │   24.00  │ methane-co2            │ methanal 24.00                                 │
-│ wood           │   10.74  │ log-wood-fast          │ fiber-01 10.00, treated-wood 0.40,             │
-│                │          │                        │   wood-seeds 0.34                              │
-│ log            │    1.07  │ log2                   │ log-wood-fast 1.07                             │
-│ wood-seedling  │    0.81  │ wood-seedling          │ log2 0.81                                      │
-│ wood-seeds     │    0.27  │ wood-seeds             │ wood-seedling 0.27                             │
-│ moss           │    1.34  │ Moss-1                 │ wood-seedling 1.34                             │
-│ muddy-sludge   │   16.77  │ muddy-sludge           │ Moss-1 16.77                                   │
-│ soil           │    1.68  │ soil                   │ muddy-sludge 1.68                              │
-│ carbon-dioxide │   76.77  │ moondrop-co2           │ methane-co2 60.00, Moss-1 16.77                │
+│ wood           │   10.62  │ log-wood-fast          │ fiber-01 10.00, treated-wood 0.40,             │
+│                │          │                        │   wood-seeds 0.22                              │
+│ log            │    1.06  │ log3                   │ log-wood-fast 1.06                             │
+│ wood-seedling  │    0.53  │ wood-seedling          │ log3 0.53                                      │
+│ wood-seeds     │    0.18  │ wood-seeds             │ wood-seedling 0.18                             │
+│ moss           │    0.89  │ Moss-1                 │ wood-seedling 0.89                             │
+│ muddy-sludge   │   11.06  │ muddy-sludge           │ Moss-1 11.06                                   │
+│ soil           │    1.11  │ soil                   │ muddy-sludge 1.11                              │
+│ carbon-dioxide │   71.06  │ moondrop-co2           │ methane-co2 60.00, Moss-1 11.06                │
 │ moondrop-seeds │    0.96  │ moondrop-seeds         │ methane-co2 0.60, moondrop-1 0.36              │
 │ moondrop       │    0.36  │ moondrop-1             │ moondrop-seeds 0.36    ← closed loop            │
 └────────────────┴──────────┴────────────────────────┴────────────────────────────────────────────────┘
@@ -106,7 +109,7 @@ them the whole bio side runs on water.
 
 `formica` needs **methanal 20.00/s**, and `methanal` has exactly one unlocked recipe
 (`copper-plate 5 + methane 60`). Methane in turn has one unlocked route — `methane-co2` [moon]
-`moondrop-seeds 1 + water 100 + CO₂ 100 → methane 40`. So **24 of the 166 buildings exist to make
+`moondrop-seeds 1 + water 100 + CO₂ 100 → methane 40`. So **24 of the 148 buildings exist to make
 24.00 methane/s for one ingredient**, and there is no way around it on either formica route.
 
 ## Terminal outputs and their sinks
@@ -127,10 +130,10 @@ self-funding; two are not.
 
 | building | ×count | module | needed | self-funding? |
 |---|--:|---|--:|---|
-| `moss-farm-mk01` | 17 | `moss` 15 | **255** | **yes** — `Moss-1` is its own product |
+| `moss-farm-mk01` | 12 | `moss` 15 | **180** | **yes** — `Moss-1` is its own product |
 | `moondrop-greenhouse-mk01` | 24 | `moondrop` 16 | **384** | **yes** — `moondrop-1` runs here |
 | `sap-extractor-mk01` | 80 | `sap-tree` 2 | **160** | **effectively** — see below |
-| `fwf-mk01` | 17 | `tree-mk01` 10 | **170** | **effectively** |
+| `fwf-mk01` | 8 | `tree-mk01` 10 | **80** | **effectively** |
 
 ```
 sap-tree   [U] [nursery, 45 s]  planter-box 1 + sap-seeds 5   →  sap-tree 1
@@ -174,18 +177,19 @@ import at 0.85** — there is no byproduct in this block that can throttle it.
 ## Build notes
 
 - **Never size the bio buildings without modules.** The solver's 1,114 is meaningless; the multipliers
-  bring it to 166. `sap-extractor-mk01` 3× at 2 slots, `fwf-mk01` 11× at 10, `moss-farm-mk01` 16× at
+  bring it to 148. `sap-extractor-mk01` 3× at 2 slots, `fwf-mk01` 11× at 10, `moss-farm-mk01` 16× at
   15, `moondrop-greenhouse-mk01` 17× at 16 — all reaching effective speed 1.0.
-- **`log3` would halve the FWF bank** (40 s and 6 logs against `log2`'s 60 s and 4) for **ash ~5/s**.
-  At 17 → 8 buildings that is **~2,000 tiles saved**, and the block already wants 990 ash for the
-  planter-boxes, so an ash line may be worth running anyway.
+- **`log3` over `log2`, and the cascade is most of the win.** 40 s and 6 logs against 60 s and 4 is
+  2.25× the logs per building, but log3 also uses **0.50 wood-seedling per log against 0.75** — so the
+  moss bank falls 17 → 12 on its own, and water per log drops 125 → 83.3. Together: **−18 buildings,
+  −2,260 tiles, −6.00 MW, −89 water/s**, for **ash 5.31/s**.
 - **Start this block first.** It carries the module bootstrap, which is wall-clock time rather than
-  throughput, and 121 of its 166 buildings are farms. Design 26 cannot start until formica flows.
+  throughput, and 100 of its 148 buildings are farms. Design 26 cannot start until formica flows.
 - **`sap-01` has no ingredients** — 80 extractors turning water-free, input-free saps at 4.00/s for
   0.15 MW each. It is 2,000 tiles of pure footprint and nothing else.
-- The block is ~9,080 tiles, so it does not fit one 128×128 city block comfortably alongside stations.
-  Split seam if needed: **sap field (2,000 t) · tree farm + moss (4,437 t) · moondrop plant (1,944 t) ·
-  pulp tail (~700 t)**.
+- The block is ~6,820 tiles, which fits one 128×128 city block alongside its four stations. Split seam
+  if it ever needs one: **sap field (2,000 t) · moondrop plant (1,944 t) · tree farm + moss (2,232 t) ·
+  pulp tail (~640 t)**.
 
 ## Solver command
 
@@ -196,7 +200,7 @@ modules.
 
 ```bash
 npx tsx src/cli.ts solve \
-  --recipes "formica,treated-wood,fiber-01,sap-01,methanal,methane-co2,moondrop-co2,moondrop-1,moondrop-seeds,log2,log-wood-fast,wood-seedling,wood-seeds,Moss-1,muddy-sludge,soil" \
+  --recipes "formica,treated-wood,fiber-01,sap-01,methanal,methane-co2,moondrop-co2,moondrop-1,moondrop-seeds,log3,log-wood-fast,wood-seedling,wood-seeds,Moss-1,muddy-sludge,soil" \
   --target "formica:0.40" --time 1 \
   --factory "formica:pulp-mill-mk01" \
   --factory "treated-wood:tar-processing-unit" \
@@ -210,7 +214,7 @@ npx tsx src/cli.ts solve \
   --factory "moondrop-seeds:botanical-nursery" \
   --factory "wood-seedling:botanical-nursery" \
   --factory "wood-seeds:automated-factory-mk01" \
-  --factory "log2:fwf-mk01" \
+  --factory "log3:fwf-mk01" \
   --factory "Moss-1:moss-farm-mk01" \
   --factory "muddy-sludge:washer" \
   --factory "soil:soil-extractor-mk01" \

@@ -168,11 +168,14 @@ that cap is gone. The next two to watch, neither currently binding:
 
 - **native-flora 4.50/s** has no recipe at all; it is map-placed. `flora-collector-mk01` mines it at
   1.0/s, so **5 collectors**, map permitting. This is the complex's only genuinely unmakeable input.
-- **Two imports have no producer anywhere yet** — both consequences of moving work off-site:
-  **`water-saline` 6.00/s** (3 washers plus a stone or gravel feed) and **`auog-food-01` 0.68/s** (the
-  ralesia chain, ~35 buildings). Neither is a throughput cap; both are build-order items. **The food is
-  the harder one**: design 27's paddocks cannot run at all without it, with no partial-rate fallback
-  short of reverting to `auog-pooping-1` and rebuilding nine paddocks into eighteen.
+- **`auog-food-01` 0.68/s now has a supplier: [design 28](../28-auog-food.md)** — 1.50 food/s, 126
+  buildings, 91.28 MW, sized by an aromatics budget of 50/s rather than by this complex's demand, so it
+  covers the 0.68 **2.2×**. It is a **build-order dependency, not a station**: design 27's paddocks
+  cannot run at all without it, with no partial-rate fallback short of reverting to `auog-pooping-1`.
+  Design 28 itself is gated on **aromatics 50/s and a lakeside site** (767.50 water/s).
+- **`water-saline` 6.00/s still has no producer anywhere.** Three washers plus a stone or gravel feed
+  have to exist before design 25 runs. Not a throughput cap — the rate is trivial — but it is now the
+  only import in the complex with nothing behind it.
 
 **No terminal output in any of the three blocks can throttle the complex.** The one remaining
 unresolved byproduct — black-liquor 0.40/s — is buffered on a 17-hour clock per tank, which is slow

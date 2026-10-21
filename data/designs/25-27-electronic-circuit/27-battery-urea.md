@@ -57,11 +57,16 @@ That choice is the whole argument, because the food chain is large and the paddo
 plastic route — at `aromatics 50 + syngas 100 → plastic-bar 1`, i.e. 67 fluid units/s for 0.45
 plastic-bar/s.
 
-> **Importing moves the ralesia chain, it does not delete it.** Those ~35 buildings exist wherever the
-> food is made. The reason that is still the right call: **`auog-food-01` is shared infrastructure.**
-> It feeds `auog-pooping-2/3`, `auog-maturing-2` through `-5`, and `auog-recharge-0` — so one food block
-> serves every auog consumer in the base, where building it here serves exactly one. That is the Tier B
-> boundary argument (rule 16), not a cost being hidden.
+> **Importing moves the ralesia chain, it does not delete it.** The reason it is still the right call:
+> **`auog-food-01` is shared infrastructure.** It feeds `auog-pooping-2/3`, `auog-maturing-2` through
+> `-5`, and `auog-recharge-0` — so one food block serves every auog consumer in the base, where building
+> it here serves exactly one. That is the Tier B boundary argument (rule 16), not a cost being hidden.
+>
+> **The supplier is [design 28](../28-auog-food.md) — 1.50 food/s, 126 buildings, 91.28 MW.** It is
+> sized by an aromatics budget of 50/s rather than by this block's demand, so it covers the 0.68/s here
+> **2.2×** with 0.82/s spare. Sized to this block alone it would be ~57 buildings, which is the number to
+> compare against the 33 that making the food in-block would cost — **the sharing is the entire
+> argument**, and it only pays once a second auog consumer exists.
 
 **`ralesia` is self-funding** — `ralesia-plantation-mk01` takes `ralesia` as its own module (12 slots,
 13×, reaching speed 1.00) and `ralesia-seeds` closes the loop at `ralesia 5 → seeds 8`. Whoever builds
@@ -298,7 +303,7 @@ one-time imports** appearing nowhere in the flows.
 | | risk | why |
 |---|---|---|
 | 1 | **ammonia 6.00/s with no consumer** | both unlocked consumers are in this block and it is not ventable, so it cannot be disposed of. **`t = 0` until a destination exists** — a design-level open item, not an operational one, and it gates designs 25 and 26 too |
-| 2 | **auog-food-01 0.68/s has no producer yet** | the ralesia chain has to exist somewhere before the paddocks run at all. **Variant 2 cannot start without it** — unlike `native-flora`, there is no partial-rate fallback except reverting the paddocks to `auog-pooping-1` |
+| 2 | **auog-food-01 0.68/s — [design 28](../28-auog-food.md) must exist first** | **Variant 2 cannot start without it** — unlike `native-flora`, there is no partial-rate fallback except reverting the paddocks to `auog-pooping-1`. Design 28 is 126 buildings gated on **aromatics 50/s and a lakeside site**, so this is a real build-order dependency, not a station |
 | 3 | **moss 2.31/s** | 2.25 feeds `auog-pooping-2` → manure → urea → cyanic-acid → batteries **and** melamine → design 25's formica. A moss outage stops two blocks, and with 29 farms at 100 s per craft recovery is slow |
 | 4 | **native-flora 4.50/s** | no recipe exists at all — map-placed only. Same cascade as moss, one step earlier. `flora-collector-mk01` mines it at 1.0/s, so **5 collectors**, map permitting |
 | 5 | **the barrel loop** | nets to zero, so nothing refills it. One stray inserter drains it and the paddocks stop with no obvious cause |

@@ -86,6 +86,45 @@ linearly so it looks plausible at any size.
 
 ---
 
+## Recipe availability — a separate check from `recipe-info`
+
+**Authoritative:** `recipes --produces <item> --unlocked` reads `data.force.recipes[name].enabled`, the
+live save state. Prototype `enabled: false` means nothing alone — `log1`/`log2`/`log3` all carry it and
+all work. **`--unlocked` on `solve` does not filter recipes named in `--recipes`**, so naming a locked
+one yields a complete, plausible, unbuildable answer.
+
+Three states for a disabled recipe:
+
+| signature | meaning |
+|---|---|
+| some technology lists it in `unlocks` | **research-gated** — traceable and costable |
+| **no** technology lists it | **ambiguous** — TURD options (`Moss-1-without-sludge-for-real`) mixed with vanilla py disables outright (`loader`, `pumpjack`, `oil-refinery`). Never call these unavailable |
+
+### TURD — one pick from N
+
+`pyalienlife` grants one choice from several sub-techs at a master tech `<thing>-upgrade`. The mechanism
+is **`recipe-replacement`, not `unlock-recipe`** — hence no tech→recipe edge. Option sets:
+`pyalienlife/prototypes/upgrades/<thing>.lua`, `sub_techs[].effects`. Picks flip force state
+(`turd.lua`: `old.enabled = false; if new then new.enabled = true end`), so the export can resolve them:
+
+| master tech | base recipe | options | conclusion |
+|---|---|---|---|
+| not researched | enabled | all disabled | research-gated — cost the master tech |
+| **researched** | **enabled** | **all disabled** | **`NOT_SELECTED` — pick open and free** |
+| researched | disabled | one enabled | that option was taken |
+
+Changing a *taken* pick needs `turd-partial-respec-1` — 700u behind `chemical-science-pack`. Treat taken
+picks as frozen until chemical science.
+
+**Trap: sub-techs carry `module-effects` (speed, consumption, productivity, pollution) applied via hidden
+beacons at runtime — absent from the exported prototypes.** So real speed and draw can differ from
+`crafting_speed`/`energy_usage` with no trace in the JSON. Live case: `moondrop-co2` exists only via the
+`carbon-capture` pick, which also applies `{consumption = 2, speed = 0.5}` to every moondrop greenhouse —
+**every design using `moondrop-greenhouse-mk01` understates power.** Check a bio building's TURD before
+trusting § Bio module system's multipliers.
+
+---
+
 ## Post-solver feasibility check
 
 After running the solver, compute total tile footprint (`count × tile_width × tile_height` per recipe) and count distinct fluid/item types that need separate routing (pipes, belts). If total footprint exceeds ~5,000 tiles or distinct routed types exceed ~6, the block probably won't fit comfortably in a single city block with stations and routing. **Split into 2-3 identical stamps** (design guide rule 25) — divide the total input evenly across stamps, each sized to fit comfortably. The stamp count depends on building footprint and routing complexity, not a fixed ratio. This is cheaper than redesigning for density. The solver doesn't model physical constraints; this check bridges the gap.

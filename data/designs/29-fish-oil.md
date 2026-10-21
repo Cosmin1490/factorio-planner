@@ -1,14 +1,12 @@
-# 29 — Fish oil — 1.00 fish-oil/s, 11 buildings
+# 29 — Fish oil — 1.30 fish-oil/s, 13 buildings
 
-Sized for **gearboxes**. `gearbox-mk01` takes `fish-oil 20`, so 1.00 fish-oil/s is:
+Sized for **gearboxes**, and rated so the three `breed-fish-1` farms run at exactly 100 %.
 
-| | rate |
+| output | rate |
 |---|--:|
-| **gearbox-mk01** | **0.050 /s · 3 /min · 180 /hour** |
-| `py-construction-robot-mk01` (fish-oil 50, also needs a gearbox) | 0.020 /s · 1.2 /min |
-
-That is well past construction demand — it is the smallest rate at which the breeding loop rounds
-cleanly, since one render craft already covers 5 gearboxes.
+| **fish-oil** | **1.30 /s** |
+| **gearbox-mk01** (fish-oil 20 each) | **0.065 /s · 3.9 /min · 234 /hour** |
+| `py-construction-robot-mk01` (fish-oil 50 + a gearbox) | 0.026 /s · 1.6 /min |
 
 ```
 full-render-fish  [U] [slaughterhouse, 30 s]  fish 8  →  bones 2 + meat 2 + skin 3 + guts 5 + fish-oil 100
@@ -18,86 +16,87 @@ breed-fish-egg-1  [U] [fish-farm,     80 s]  fish 12 + phytoplankton 50 + water-
                                              →  fish-egg 25 + waste-water 100
 ```
 
-**Base `breed-fish-1`, no TURD pick.** At tier 1 `a-select` is rate-neutral on fish so it saves no farms,
-and costs **+24 % water-saline and +24 % oxygen** — both of which this block sources itself. The pick is
-held for `breed-fish-2`+, where `fish-food-01` becomes a required ingredient.
+**fish-oil 100 per 8 fish.** One render craft covers 5 gearboxes, so the breeding is the expensive half
+and the slaughterhouse runs at 39 %.
 
-## Three closures, all internal
+**Base `breed-fish-1`, no TURD pick.** At tier 1 `a-select` is rate-neutral on fish so it saves no farms
+and costs +24 % saline and +24 % oxygen. The pick is held for `breed-fish-2`+, where `fish-food-01`
+becomes a required ingredient.
 
-**Biomass from the co-products.** Rendering 8 fish yields 12 solid co-products, each composting to
-`biomass 3`, against breeding's `biomass 10 per 10 fish`. Composting `skin` fully and `guts` partially
-lands on **exactly 0.1538/s against 0.1538 needed** — no import, no surplus.
+## Fuel independent, and nearly closed
 
-**Chlorine from the guts.** `waste-water-void` (`waste-water 50 + chlorine 10 → water 50`) is the only
-enabled sink for waste-water, and `guts-to-chlorine` makes 100 chlorine per 5 guts. The guts therefore
-split three ways and the chlorine balances exactly:
+**Four imports, one product, one vent.** No coke, no ash, no solid exports except a trace.
 
-```
-guts 0.0500/s  →  guts-to-chlorine 0.0215  →  chlorine 0.431/s  =  waste-water-void demand, exact
-               →  biomass-guts     0.0213  →  biomass 0.064/s
-               →  export           0.0072
-```
+| | /s |
+|---|--:|
+| **Imports** | water 20.80 · **water-saline 2.80** · small-lamp 0.060 · grade-1-tin 0.040 |
+| **Exports** | **fish-oil 1.30** · meat 0.0016 *(trickle — see § The 1.3 % surplus)* |
+| **Vented** | hydrogen 2.40 |
 
-**Oxygen from water.** `hydrogen` [electrolyzer-mk01] at 9 % covers `breed-fish-1`'s oxygen 0.923/s,
-venting hydrogen 1.85/s (pre-approved, 0.10 MJ).
-
-## Block boundary
-
-| class | items |
-|---|---|
-| **export** | **fish-oil** 1.00/s → gearboxes |
-| **export — trace** | bones 0.02 · meat 0.02 · guts 0.007 /s |
-| **vented** | hydrogen 1.85/s |
-| **import — whitelisted** | water 16.00/s · small-lamp 0.046/s |
-| **import — asked and approved** | **water-saline** 2.154/s · **grade-1-tin** 0.031/s |
-| **made in-block** | fish, fish-egg, phytoplankton, **biomass**, **oxygen**, chlorine |
-| **byproduct-exclude** | none — skin, guts and waste-water all close internally |
-
-**Four imports, two of them trace.** `water-saline` in mineral terms, since it has no producer anywhere
-in the base:
+**`water-saline` has no producer anywhere in the base.** In mineral terms, at `[washer, 20 s]`:
 
 | route | material | water | washers |
 |---|--:|--:|--:|
-| `saline-water` (`stone 10 + water 100 → 50`) | **stone 0.431 /s** | 4.31 /s | 1 |
-| `gravel-saline-water` (`gravel 15 + water 100 → 50`) | **gravel 0.646 /s** | 4.31 /s | 1 |
+| `saline-water` (`stone 10 + water 100 → 50`) | **stone 0.560 /s** | 5.60 /s | 2 |
+| `gravel-saline-water` (`gravel 15 + water 100 → 50`) | **gravel 0.840 /s** | 5.60 /s | 2 |
 
-Stone 0.431/s is a fifth of design 24's 1.833/s export. **Combined with design 25's 6.00/s saline, the
-base needs stone 1.631/s or gravel 2.446/s across 4 washers** — still inside design 24 alone.
+## Three closures
+
+**Biomass from every co-product.** Rendering yields 12 solid items per 8 fish, each composting to
+`biomass 3`. All four are composted, because the atomizer burns biomass too:
+
+```
+biomass needed   = 0.200 (breeding) + 0.179 (atomizer fuel)   = 0.379 /s
+biomass supplied = 3 × (skin 0.039 + guts 0.037 + bones 0.026 + meat 0.0247) = 0.384 /s
+```
+
+**Chlorine from the guts.** `waste-water-void` (`waste-water 50 + chlorine 10 → water 50`) is the only
+enabled waste-water sink; `guts-to-chlorine` makes 100 chlorine per 5 guts. The guts split and the
+chlorine balances exactly:
+
+```
+guts 0.065/s  →  guts-to-chlorine 0.028  →  chlorine 0.560/s  =  waste-water-void demand, exact
+              →  biomass-guts     0.037  →  biomass 0.111/s
+```
+
+**Oxygen from water.** `hydrogen` [electrolyzer-mk01] at 12 % covers `breed-fish-1`'s oxygen 1.200/s,
+venting hydrogen 2.40/s (pre-approved, 0.10 MJ).
 
 ## Recipe table
 
 Fish farms are **module-corrected**: `fish-farm-mk01` is speed 0.125 with 7 `fish` slots → **8×**,
-reaching effective speed 1.00. Modules are **self-funding**. Everything else is speed 1.
+reaching effective speed 1.00. Modules are self-funding. Everything else is speed 1.
 
 ```
 ┌──────────────────────────┬─────────────────────┬──────┬───────┬───────┬─────────┐
 │ Recipe                   │ Factory             │ Cnt  │ Size  │ Load  │ MW load │
 ├──────────────────────────┼─────────────────────┼──────┼───────┼───────┼─────────┤
-│ breed-fish-1             │ fish-farm-mk01      │  *3  │ 11x11 │  77 % │   2.308 │
-│ breed-fish-egg-1         │ fish-farm-mk01      │  *1  │ 11x11 │  49 % │   0.492 │
-│ phytoplankton            │ plankton-farm       │   1  │ 7x7   │  46 % │   0.162 │
-│ full-render-fish         │ slaughterhouse-mk01 │   1  │ 11x11 │  30 % │   0.090 │
-│ biomass-skin             │ compost-plant-mk01  │   1  │ 11x11 │   9 % │   0.045 │
-│ biomass-guts             │ compost-plant-mk01  │   1  │ 11x11 │   6 % │   0.032 │
-│ guts-to-chlorine         │ atomizer-mk01       │   1  │ 7x7   │   4 % │   0.035 │
-│ waste-water-void         │ quenching-tower     │   1  │ 7x7   │   4 % │   0.022 │
-│ hydrogen  (for oxygen)   │ electrolyzer-mk01   │   1  │ 6x6   │   9 % │   0.930 │
+│ breed-fish-1             │ fish-farm-mk01      │  *3  │ 11x11 │ 100 % │   3.000 │
+│ breed-fish-egg-1         │ fish-farm-mk01      │  *1  │ 11x11 │  64 % │   0.640 │
+│ phytoplankton            │ plankton-farm       │   1  │ 7x7   │  60 % │   0.210 │
+│ full-render-fish         │ slaughterhouse-mk01 │   1  │ 11x11 │  39 % │   0.117 │
+│ hydrogen  (for oxygen)   │ electrolyzer-mk01   │   1  │ 6x6   │  12 % │   1.210 │
+│ biomass-skin             │ compost-plant-mk01  │   1  │ 11x11 │  12 % │   0.059 │
+│ biomass-guts             │ compost-plant-mk01  │   1  │ 11x11 │  11 % │   0.056 │
+│ biomass-bones            │ compost-plant-mk01  │   1  │ 11x11 │   8 % │   0.040 │
+│ biomass-meat             │ compost-plant-mk01  │   1  │ 11x11 │   7 % │   0.037 │
+│ waste-water-void         │ quenching-tower     │   1  │ 7x7   │   6 % │   0.029 │
+│ guts-to-chlorine         │ atomizer-mk01       │   1  │ 7x7   │   6 % │  burner │
 └──────────────────────────┴─────────────────────┴──────┴───────┴───────┴─────────┘
-   * module-corrected. Solver base counts: 18.46 / 3.94, multiplier 8x
-   All nine rows from one solve — see § Solver command.
+   * module-corrected. Solver base counts: 24.00 / 5.12, multiplier 8x
 ```
 
-**11 buildings · ~1,030 tiles · 4.12 MW at load · 16.95 MW rated**
+**13 buildings · ~1,272 tiles · 5.40 MW at load · 17.15 MW rated**
 
-Rated is 4× load almost entirely because of **one `electrolyzer-mk01` at 9 %** (10.00 MW rated, 0.93 at
-load). **Size the substation for 4 MW.**
+> **`atomizer-mk01` is a burner** — its 0.80 MW is **fuel, not electricity**, so it is excluded from both
+> MW columns. At 6 % load it burns **0.046 MJ/s = biomass 0.179/s**, which is 47 % of the block's biomass.
 
-**The four fish farms are 484 of the 1,030 tiles**, three of them feeding one slaughterhouse at 30 %.
-Intrinsic — `breed-fish-1` is a 150-second craft in an 0.125-speed building.
+Rated is 3× load almost entirely because of **one `electrolyzer-mk01` at 12 %** (10.00 MW rated, 1.21 at
+load). **Size the substation for 5.5 MW.**
 
-**Inputs** (/s): water 16.00 · **water-saline 2.154** · small-lamp 0.046 · grade-1-tin 0.031
-
-**Exports** (/s): **fish-oil 1.00** · bones 0.02 · meat 0.02 · guts 0.007 · *(hydrogen 1.85 vented)*
+**The four fish farms are 484 of the 1,272 tiles** and **3.64 of the 5.40 MW** — intrinsic, since
+`breed-fish-1` is a 150-second craft in an 0.125-speed building. **The four compost plants are another
+484 tiles** at 7–12 % load each: the price of closing the biomass loop rather than importing fuel.
 
 ## Intermediate flows
 
@@ -105,57 +104,79 @@ Intrinsic — `breed-fish-1` is a 150-second craft in an 0.125-speed building.
 ┌───────────────┬─────────┬────────────────────────────┬────────────────────────────────────────┐
 │ Item          │ Rate /s │ Producer                   │ Consumer                               │
 ├───────────────┼─────────┼────────────────────────────┼────────────────────────────────────────┤
-│ fish          │  0.154  │ breed-fish-1               │ full-render-fish 0.080,                │
-│               │         │                            │ breed-fish-egg-1 0.074                 │
-│ fish-egg      │  0.154  │ breed-fish-egg-1           │ breed-fish-1        ← closed loop        │
-│ phytoplankton │  0.308  │ phytoplankton              │ breed-fish-egg-1                       │
-│ biomass       │  0.154  │ biomass-skin 0.090         │ breed-fish-1 0.154   ← exact            │
-│               │         │ + biomass-guts 0.064       │                                        │
-│ oxygen        │  0.923  │ hydrogen (electrolyzer)    │ breed-fish-1                           │
-│ skin          │  0.030  │ full-render-fish           │ biomass-skin                           │
-│ guts          │  0.050  │ full-render-fish           │ guts-to-chlorine 0.0215,               │
-│               │         │                            │ biomass-guts 0.0213, export 0.0072     │
-│ chlorine      │  0.431  │ guts-to-chlorine           │ waste-water-void    ← exact             │
-│ waste-water   │  2.154  │ breed 1.538 + egg 0.615    │ waste-water-void                       │
-│ water         │  2.154  │ waste-water-void           │ of phytoplankton 15.385                │
-│               │         │ + import 16.00             │ + hydrogen 2.769                       │
+│ fish          │  0.200  │ breed-fish-1               │ full-render-fish 0.104,                │
+│               │         │                            │ breed-fish-egg-1 0.096                 │
+│ fish-egg      │  0.200  │ breed-fish-egg-1           │ breed-fish-1        ← closed loop        │
+│ phytoplankton │  0.400  │ phytoplankton              │ breed-fish-egg-1                       │
+│ biomass       │  0.379  │ skin 0.117 + guts 0.111    │ breed-fish-1 0.200,                    │
+│               │         │ + bones 0.079 + meat 0.074 │ guts-to-chlorine (fuel) 0.179          │
+│ oxygen        │  1.200  │ hydrogen (electrolyzer)    │ breed-fish-1                           │
+│ guts          │  0.065  │ full-render-fish           │ biomass-guts 0.037,                    │
+│               │         │                            │ guts-to-chlorine 0.028   ← split        │
+│ skin · bones  │  0.039 · 0.026 │ full-render-fish    │ composted in full                      │
+│ meat          │  0.026  │ full-render-fish           │ biomass-meat 0.0247, export 0.0016     │
+│ chlorine      │  0.560  │ guts-to-chlorine           │ waste-water-void    ← exact             │
+│ waste-water   │  2.800  │ breed 2.000 + egg 0.800    │ waste-water-void                       │
+│ water         │  2.800  │ waste-water-void           │ of phytoplankton 20.00                 │
+│               │         │ + import 20.80             │ + hydrogen 3.60                        │
 └───────────────┴─────────┴────────────────────────────┴────────────────────────────────────────┘
 ```
 
-**The fish/egg loop is net zero** — `breed-fish-egg-1` takes fish 12 and returns eggs 25; `breed-fish-1`
-takes eggs 10 and returns fish 10. It needs a starting stock, not resupply.
+**The fish/egg loop is net zero** — eggs 25 per 12 fish, fish 10 per 10 eggs. Starting stock, not
+resupply.
 
-**Water: 18.154/s consumed, 2.154/s recycled, 16.00/s imported.** Phytoplankton is 85 % of the draw
-(water 500 per craft).
+## The 1.3 % surplus
 
-## Terminal outputs and their sinks
+Composting all four co-products gives **0.384 biomass/s against 0.379 needed — net positive by
+0.005/s**, which leaves **0.0016/s of one co-product uncomposted.** The LP parks it on **meat** (running
+`biomass-meat` at 7 % rather than 8 %), so the block's only solid export is **meat ≈ 5.8/hour**.
 
-| output | /s | sink chosen | what it beat |
-|---|--:|---|---|
-| **fish-oil** | 1.00 | **gearboxes** — 20 each, 3/min | the product |
-| **skin** | 0.030 | **`biomass-skin`** → feeds `breed-fish-1` | `skin-to-lead` (skin 7 → ore-lead 5) — an atomizer for 0.021 ore-lead/s, and biomass would then need importing |
-| **guts** | 0.050 | **split** — chlorine 0.0215, biomass 0.0213, export 0.0072 | composting all of it strands the waste-water; converting all of it strands 0.47 chlorine/s |
-| **waste-water** | 2.154 | **`waste-water-void`** → water 2.154/s back | a liquid with no other enabled consumer; a recycle, not a void |
-| **chlorine** | 0.431 | **`waste-water-void`, exactly balanced** | never-vent, so no alternative |
-| **hydrogen** | 1.846 | **vented** — pre-approved, 0.10 MJ is noise | a boiler recovers ~0.37 MJ/s — not worth a building |
-| **bones · meat** | 0.02 · 0.02 | **export, trace** | `bones-to-kerogen` and `meat-to-tin` are enabled but each is an `atomizer-mk01` at ~4 % for 0.032 kerogen/s and 0.06 ore-tin/s |
+> **Give it somewhere to go.** 0.0016/s fills one stack in **17 hours** and the slaughterhouse's own
+> output buffer in roughly a day — at which point `full-render-fish` stalls and takes fish-oil with it. A
+> steel chest is 35 days. **Nothing forces the surplus onto meat**: run `biomass-meat` flat out and
+> throttle `biomass-bones` or `-skin` instead if you would rather the trickle be something else.
 
-> **`meat 0.02/s` is worth remembering for design 27.** `auog-recharge-00` is
-> `[bay, 15 s] meat 10 + used-auog 1 + moss 5 → auog 1`, which would replace the 300 s codex bootstrap.
-> At this rate it supports ~7 auog/hour against design 27's need for 36 — not a shortcut at this scale,
-> but a reason to size this block **up** rather than down. **`used-auog` still needs an in-game check**;
-> it has no recipe anywhere in the export.
+**1.3 % is not operational headroom.** Every co-product is load-bearing — a stall in skin, bones, guts
+*or* meat starves either the breeding or the atomizer within minutes, and both cascade to the product.
+**Buffer biomass in a chest** as the pad; a few hundred units costs nothing and absorbs the whole class.
+
+## Why not the alternatives
+
+| configuration | buildings | fuel | saline | solid exports | verdict |
+|---|--:|---|--:|---|---|
+| **biomass fuel, all composted** | **13** | **independent** | 2.80 | meat trickle | **chosen** |
+| coke fuel | 11 | coke 0.009/s, ash 0.009/s out | 2.80 | skin · bones · meat · guts | 2 buildings cheaper, not independent |
+| electrolysis chlorine | 11 | independent | **5.60** | skin · bones · meat + NaOH 0.06 | doubles saline, 26.15 MW rated |
+
+**Burning biomass is only possible because every co-product is composted.** Leave the meat out and
+biomass goes **0.306 against 0.379 — 19 % short**, and the LP does not report infeasible: it under-runs
+`guts-to-chlorine` until the budget closes, leaving **waste-water 0.78/s with no sink.** That reads as a
+clean solve and is not one.
+
+**Three meat alternatives were priced and all fail on the same thing** — rendering yields meat 2 per 8
+fish, and every downstream use wants an order of magnitude more:
+
+| route | covers | why not |
+|---|--:|---|
+| `meat-to-tin` → `grade-1-tin` | 78 % of tin | breaks biomass by 19 %; the extra `atomizer` is a second burner |
+| `meat → dried-meat-01 → jerky-to-phytoplankton` | **10.8 %** of phytoplankton | needs **meat 0.240/s** against 0.026 produced — fixed ratio, never closes at any scale |
+| trickle (0.0016/s) → tin | 4.8 % | the atomizer's fuel to process it costs **0.0102 biomass/s** against a 0.005/s surplus — net negative |
+
+`jerky-to-phytoplankton` is the only route that removes `grade-1-tin` entirely, and it is **1.5× faster
+per plankton-farm** (10 s vs 15 s for the same phytoplankton 10) with no mineral input. Importing meat
+0.240/s to avoid importing grade-1-tin 0.040/s is six times the tonnage, so it only becomes interesting
+if a cheap meat source turns up.
 
 ## Backpressure and risk order
 
 | | risk | why |
 |---|---|---|
-| 1 | **water-saline 2.154/s has no producer** | = stone 0.431/s or gravel 0.646/s in 1 washer. Same unsourced input as design 25's 6.00/s |
-| 2 | **the fish/egg loop nets to zero** | no external top-up. One stray inserter drains the egg bank and both farms stop; at 150 s and 80 s per craft, recovery is minutes |
-| 3 | **the guts split is a priority, not a ratio** | if the chlorine leg starves, `waste-water-void` stops and waste-water backs up into both fish farms. **Give `guts-to-chlorine` the priority inserter**, `biomass-guts` second, export last |
-| 4 | **biomass is exactly balanced — zero headroom** | 0.1538 supplied against 0.1538 needed. A skin or guts interruption starves `breed-fish-1` within minutes. **The cheapest pad is a second `biomass-skin` plant**, or buffer biomass in a chest |
-| 5 | bones · meat buffers | days, not hours. A clock, not an operational risk |
-| 6 | grade-1-tin 0.031/s | feeds `phytoplankton` only. Design 21 produces it |
+| 1 | **biomass margin is 1.3 %** | all four co-products load-bearing; a stall in any starves breeding or the atomizer. Buffer biomass |
+| 2 | **water-saline 2.80/s has no producer** | = stone 0.560/s or gravel 0.840/s in 2 washers |
+| 3 | **the guts split is a priority, not a ratio** | if the chlorine leg starves, waste-water backs up into both fish farms. **`guts-to-chlorine` gets the priority inserter**, `biomass-guts` second |
+| 4 | **the fish/egg loop nets to zero** | no external top-up; recovery is minutes at 150 s and 80 s crafts |
+| 5 | the meat trickle | ~a day to clog the slaughterhouse buffer. Slowest clock in the block |
+| 6 | grade-1-tin 0.040/s | feeds `phytoplankton` only. Design 21 produces it |
 
 ## Bio modules
 
@@ -163,25 +184,27 @@ takes eggs 10 and returns fish 10. It needs a starting stock, not resupply.
 |---|--:|---|--:|---|
 | `fish-farm-mk01` | 4 | `fish` 7 | **28** | **yes** — the block makes fish |
 
-**28 fish is about 180 seconds of the block's own output** — no codex, no creature chamber, the cheapest
-bio bootstrap in the repo. Seed it with a few manually caught or imported fish.
+**28 fish is ~140 seconds of the block's own output** — no codex, no creature chamber, the cheapest bio
+bootstrap in the repo.
 
 ## Solver command
 
-**All nine recipes and all three cycles in one solve.** The `--max-import "water:100"` is the flag that
-makes it work and is not optional:
+**All eleven recipes and all three cycles in one solve.** Two flags are load-bearing:
 
 ```bash
 npx tsx src/cli.ts solve \
-  --recipes "breed-fish-1,breed-fish-egg-1,phytoplankton,full-render-fish,biomass-skin,biomass-guts,guts-to-chlorine,waste-water-void,hydrogen" \
-  --target "fish-oil:1" --time 1 \
+  --recipes "breed-fish-1,breed-fish-egg-1,phytoplankton,full-render-fish,biomass-skin,biomass-guts,biomass-bones,biomass-meat,guts-to-chlorine,waste-water-void,hydrogen" \
+  --target "fish-oil:1.3" --time 1 \
   --max-import "water:100" \
+  --fuel "guts-to-chlorine:biomass" \
   --factory "breed-fish-1:fish-farm-mk01" \
   --factory "breed-fish-egg-1:fish-farm-mk01" \
   --factory "phytoplankton:plankton-farm" \
   --factory "full-render-fish:slaughterhouse-mk01" \
   --factory "biomass-skin:compost-plant-mk01" \
   --factory "biomass-guts:compost-plant-mk01" \
+  --factory "biomass-bones:compost-plant-mk01" \
+  --factory "biomass-meat:compost-plant-mk01" \
   --factory "guts-to-chlorine:atomizer-mk01" \
   --factory "waste-water-void:quenching-tower" \
   --factory "hydrogen:electrolyzer-mk01" \
@@ -189,24 +212,26 @@ npx tsx src/cli.ts solve \
   --unlocked
 ```
 
-> **Without `--max-import "water:100"` this returns 0 buildings.** `waste-water-void` gives water an
-> internal producer, which reclassifies it from free-import to Intermediate with `net >= 0` — so the LP
-> must balance all 18.15 water/s internally, which is impossible. A positive cap adds an **import
-> variable**, letting water be produced *and* imported. The cap is a ceiling, not a target: 100 is
-> arbitrary and generous against the 16.00/s actually drawn. Solver-reference § *Closed self-sustaining
-> loops*.
+- **`--max-import "water:100"`** — without it the solve returns **0 buildings**. `waste-water-void` gives
+  water an internal producer, reclassifying it from free-import to Intermediate with `net >= 0`, so the
+  LP must balance all 24.40 water/s internally. A positive cap adds an import variable. The cap is a
+  ceiling, not a target; 100 is arbitrary against the 20.80/s drawn.
+- **`--fuel "guts-to-chlorine:biomass"`** — without it the atomizer defaults to **coal**, and the solve
+  comes back with `coal 0.01/s` in, `ash 0.01/s` out, and meat and guts exported instead of composted.
+- `--max-import "biomass:0"` is **not** needed — biomass already has producers, so it is an Intermediate
+  with `net >= 0` and internal by construction. Tested: identical result with and without.
 
 It emits one long cycle warning spanning chlorine → guts → biomass → skin → fish-egg → oxygen →
-phytoplankton → water → waste-water → fish. That is the block working as designed — **do not apply the
-suggested `--constraint "guts-to-chlorine:chlorine:exclude"`**, which breaks the waste-water sink.
+phytoplankton → water → waste-water → fish. **Do not apply the suggested
+`--constraint "guts-to-chlorine:chlorine:exclude"`** — it breaks the waste-water sink.
 
-Fractional counts came from `--target "fish-oil:1000"` ÷ 1000:
-**18.46 / 3.94 / 0.46 / 0.30 / 0.090 / 0.064 / 0.044 / 0.044 / 0.093**. The guts split was read at
-`--target "fish-oil:100"` where the three legs resolve to 2.15 / 2.13 / 0.72 per 100.
+**Flows under ~0.01/s are hidden from the output tables.** The meat trickle (0.0016/s) is invisible at
+this target and only appears at `--target "fish-oil:13"`, where it reads `meat: 0.02/1s`. The same filter
+hid the atomizer's coal before `--fuel` was set. **Re-run any exactly-balanced loop at 10× to check for a
+trace import or surplus.**
 
-**The LP sizes the composts tighter than hand algebra does** — it lands biomass on exactly 0.1538/s with
-no surplus, where hand-sizing `skin + all surplus guts` gives 0.175/s and 0.022/s of waste. Worth
-re-solving rather than hand-splitting whenever a loop has two feed options.
+Fractional counts from `--target "fish-oil:1300"` ÷ 1000: **24.00 / 5.12 / 0.601 / 0.390 / 0.117 / 0.111
+/ 0.079 / 0.074 / 0.057 / 0.057 / 0.121**.
 
 ## Build materials
 
@@ -218,6 +243,5 @@ Distinct construction materials across this block's 7 building types, separate f
 `stone-brick` · `wood`
 
 > **This block needs `gearbox-mk01` to build, and `gearbox-mk01` needs fish-oil.** One-way and small — a
-> handful of gearboxes from existing stock gets the first block up, after which it funds every gearbox
-> thereafter. Flagged because it looks like a blocker and is not. Inferred from the recipe graph, not
-> from save state.
+> handful from existing stock gets the first block up, after which it funds every gearbox thereafter.
+> Flagged because it looks like a blocker and is not. Inferred from the recipe graph, not from save state.

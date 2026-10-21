@@ -18,6 +18,11 @@ auog-pooping-2      [U] [auog,       80 s]  water-barrel 5 + native-flora 20 + m
 ammonia recipes exist; all nine are locked. There is no bypass around
 `urea → liquid-manure → manure → auog paddocks`.
 
+> **Two operating modes, one blueprint.** **Full mode** runs `auog-pooping-2` and needs `auog-food-01`
+> 0.68/s from [design 28](../28-auog-food.md) → **1.0 electronic-circuit/s**. **Interim mode** runs
+> `auog-pooping-1` in the same nine paddocks with no food at all → **0.518 circuit/s**. Build the
+> blueprint once, start in interim, switch the recipe when the food block exists. See § Interim mode.
+
 ## Block boundary
 
 | class | items |
@@ -71,6 +76,64 @@ plastic-bar/s.
 **`ralesia` is self-funding** — `ralesia-plantation-mk01` takes `ralesia` as its own module (12 slots,
 13×, reaching speed 1.00) and `ralesia-seeds` closes the loop at `ralesia 5 → seeds 8`. Whoever builds
 the food block pays soil, hydrogen and plastic, not a module bootstrap.
+
+## Interim mode — `auog-pooping-1` in the `-2` blueprint
+
+**Build the blueprint below as drawn, but run `auog-pooping-1` in the nine paddocks until the food
+exists.** The complex then produces **0.518 electronic-circuit/s** instead of 1.0, and needs no
+`auog-food-01` at all — which takes [design 28](../28-auog-food.md) off the critical path entirely.
+
+| per paddock | avg manure | craft | @ speed 2.0 |
+|---|--:|--:|--:|
+| `auog-pooping-2` | 8.5 | 80 s | **0.2125 /s** |
+| `auog-pooping-1` | 5.5 | 100 s | **0.1100 /s** |
+
+Nine paddocks × 0.11 = **manure 0.99/s** against this design's 1.911/s → **51.8 %**, and that factor
+carries unchanged to the end:
+
+```
+manure 0.99  →  urea 2.97  →  cyanic-acid 4.14  →  battery-mk01 0.104 ┐
+                                 →  melamine 1.04  →  formica 0.207 ┴→  0.518 circuit/s
+```
+
+| | full (`-2` + food) | **interim (`-1`)** |
+|---|--:|--:|
+| electronic-circuit | 1.000 /s | **0.518 /s** |
+| **auog-food-01** | 0.68 /s | **none** |
+| native-flora | 4.50 /s | **3.60 /s** |
+| moss | 2.31 /s | 1.80 /s — **22.5 of 29 farms busy** |
+| **ammonia accumulating** | 6.00 /s | **3.11 /s** |
+| complex MW at load | 73.48 | **~41** *(derived, not solved)* |
+
+### Four things about it that are not obvious
+
+**1. Nothing mismatches, because both of design 26's inputs scale together.** Formica arrives at 0.207
+of 0.40 and battery at 0.104 of 0.20 — both exactly 51.8 %, since both trace to the same manure. Circuits
+come out at 0.518/s rather than being throttled to the lower of two unequal fractions.
+
+**2. The moss bank gains headroom rather than losing it.** `auog-pooping-1` needs **more** moss per
+manure (10/5.5 = 1.82 against `-2`'s 10/8.5 = 1.18), so the instinct is that moss gets tight. It does
+not: you are making 48 % less manure, so demand falls to 1.80/s against the 2.31/s the 29 farms supply —
+**21 % slack**. Nothing in the blueprint is undersized for interim mode.
+
+**3. The four 100 %-load rows are only at 100 % in full mode.** `battery-mk01`, `melamine`, `Moss-1` and
+the paddocks all sit at ~52 % in interim, so **the capacity pads in § Capacity pads can be deferred until
+the switch.** The paddocks are the single exception — they are the deliberate throttle and run flat out,
+which is exactly what a throttle should look like.
+
+**4. The ammonia clock halves.** 3.11/s instead of 6.00/s means the surplus accumulates at half the rate,
+roughly doubling the time before `t = 0` bites. Interim mode is therefore *also* a way to buy time on the
+one unresolved byproduct in the complex.
+
+### Why run it this way rather than building 18 paddocks
+
+Eighteen paddocks on `auog-pooping-1` would give the full 1.0 circuit/s immediately — at **+27
+buildings, 72 `auog` modules instead of 36 (6.0 h of chamber time rather than 3.0), and nine paddocks to
+decommission later.** Interim mode trades 0.482 circuit/s during the bootstrap for none of that.
+
+**The payback is about an hour of runtime.** Design 28 costs **1,695 electronic-circuit** to build; at
+0.518/s that is **~55 minutes**, after which the paddocks switch recipe in place — same buildings, same
+36 modules, no rework — and the complex steps to 1.0/s.
 
 ## Recipe table
 
@@ -466,9 +529,35 @@ npx tsx src/cli.ts solve \
   --unlocked
 ```
 
-**`auog-pooping-2` has variable output** — manure 5–12, averaged to 8.5 per solver-reference
-§ Variable-output recipes. Sizing on `amount_min` instead would need **14 paddocks rather than 9**, so
-if the paddocks turn out to be on a critical path with no manure buffer, re-read this block at 5.
+### Interim mode
+
+The interim configuration is **the same blueprint with one recipe swapped**, so there is no fourth
+sizing run — every building except the paddocks simply runs at ~52 %. What needs verifying is only that
+the nine placed paddocks yield 0.99 manure/s on `auog-pooping-1`:
+
+```bash
+npx tsx src/cli.ts solve \
+  --recipes "auog-pooping-1,water-barrel,Moss-1,muddy-sludge,soil,moondrop-co2" \
+  --target "manure:0.99" --time 1 \
+  --factory "auog-pooping-1:auog-paddock-mk01" \
+  --factory "water-barrel:barrel-machine-mk01" \
+  --factory "Moss-1:moss-farm-mk01" \
+  --factory "muddy-sludge:washer" \
+  --factory "soil:soil-extractor-mk01" \
+  --factory "moondrop-co2:moondrop-greenhouse-mk01" \
+  --solver simplex \
+  --unlocked
+```
+
+It returns **45 paddocks base → 9.000 module-corrected**, exactly the count the `-2` sizing places, and
+**moss 1.80/s** against the 2.31/s the 29 farms supply. That is the whole proof of interim mode;
+circuits 0.518/s then follows from 0.99 ÷ 1.911 by hand.
+
+**Both `auog-pooping` variants have variable output** — manure 3–8 and 5–12, averaged to 5.5 and 8.5 per
+solver-reference § Variable-output recipes. Sizing `-2` on `amount_min` instead would need **14 paddocks
+rather than 9**, so if the paddocks turn out to be on a critical path with no manure buffer, re-read this
+block at 5. **Interim mode is more exposed to this than full mode**, because `-1`'s spread is relatively
+wider (3–8 is ±45 % of its mean, against `-2`'s ±41 %) and there is no food buffering the input side.
 
 Run 2 reports `small-lamp` as a raw input and run 3 reports it as internal — in the merged block it is
 internal. Same for `copper-cable`. The merged fractional count is the sum, still one building each.

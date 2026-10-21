@@ -23,6 +23,17 @@ its own solver command, each can be stamped or resized without touching the othe
 
 Scaled for **1.0 electronic-circuit/s**. Every rate below is linear in that.
 
+> **The complex has an interim mode that needs no new buildings.** Running `auog-pooping-1` in design
+> 27's nine paddocks instead of `-2` drops the whole complex to **0.518 circuit/s** and removes the
+> `auog-food-01` import entirely — which takes [design 28](../28-auog-food.md), 126 buildings and 1,695
+> circuits, off the critical path. **Build the blueprint once and start throttled**; ~55 minutes of
+> interim running funds design 28, then the paddocks switch recipe in place.
+> [27 § Interim mode](27-battery-urea.md) has the behaviour, which is not all intuitive — the moss bank
+> *gains* headroom, and the ammonia clock halves.
+>
+> In interim mode every rate below scales by **0.518** except: `auog-food-01` → **0**, native-flora →
+> **3.60/s**, and the `auog` module bootstrap → unchanged at 36.
+
 **Design 25 switched from `formica` to `formica-2`** — 148 → 26 buildings, and **creosote 40.00 →
 6.00/s**, which was the complex's second cap. The cost is melamine 1.60/s and urea 0.40/s, both made in
 design 27, which grew 79 → 99 to cover them. **Net: −102 buildings, −3,031 tiles, −12.0 MW.**

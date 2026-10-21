@@ -103,9 +103,18 @@ constraint against a base floor near 34/s; **at 6.00 it is no longer a constrain
 
 **`water-saline` 6.00/s is the one import with no producer anywhere in the base.** It was moved out of
 design 25 deliberately — see [25 § The sodium-hydroxide question](25-formica.md) — but **moving it did
-not delete the three washers**, it relocated them. All three recipes that make it are `[washer, 20 s]`
-and the cheapest external source is still stone 1.20/s or gravel 1.80/s into 3 washers at ~0.96 MW. Both
-fluid pipes go to design 25 only, so one mk01 wagon or one pipe run covers creosote and saline together.
+not delete the three washers**, it relocated them. In mineral terms, at `[washer, 20 s]`:
+
+| route | for this complex | **+ design 29** | **base total** |
+|---|--:|--:|--:|
+| `saline-water` → **stone** | 1.200 /s | 0.431 /s | **1.631 /s** |
+| `gravel-saline-water` → **gravel** | 1.800 /s | 0.646 /s | **2.446 /s** |
+| water | 12.00 /s | 4.31 /s | **16.31 /s** |
+| washers | 3 | 1 | **4** |
+
+**Stone 1.631/s still fits inside design 24's 1.833/s export alone**, so one supplier covers both
+consumers. Gravel would need its own source. Both fluid pipes go to design 25 only, so one mk01 wagon or
+one pipe run covers creosote and saline together.
 
 ### Inter-block — not bus traffic
 

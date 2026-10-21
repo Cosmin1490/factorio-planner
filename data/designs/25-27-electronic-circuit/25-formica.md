@@ -44,7 +44,7 @@ Route 1 had no byproducts; route 2 has three, one of which is unresolved — see
 | **export — to design 26** | **formica** 0.40/s |
 | **export — external** | **iron-oxide** 0.02/s |
 | **import — whitelisted** | creosote, copper-plate, iron-plate, water |
-| **import — asked and approved** | **water-saline** 6.00/s |
+| **import — asked and approved** | **water-saline** 6.00/s — *= stone 1.20/s or gravel 1.80/s + water 12.00/s in 3 washers, wherever it is made* |
 | **import — inter-block, design 27** | **melamine** 1.60/s · **urea** 0.40/s |
 | **made in-block** | methanal, methane, CO₂, moondrop, moondrop-seeds, raw-fiber, treated-wood, wood, log, wood-seedling, wood-seeds, moss, muddy-sludge, soil, sodium-hydroxide, steam |
 | **byproduct-exclude** | none — chlorine is forced to a sink by `--max-import chlorine:0` |

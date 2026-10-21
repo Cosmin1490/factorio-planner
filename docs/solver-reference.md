@@ -66,7 +66,20 @@ A product feeding back into its own production, net-positive without external in
 - **Never cap both ends.** `--max-import` on two nodes of one closed cycle over-determines it — the
   loop needs no external input, so simplex settles on an inflated vertex. One breeding loop gave a flat
   **45× overshoot at every target scale** with two caps, and the right answer with one or none.
-- **Target mode can go Phase-1 infeasible** (`stuck artificials: <item>`). Solve in legs: import the
+- **A recycled input needs a positive `--max-import` to stay importable** — the fix for most "cycle
+  returns 0 buildings" cases, and an invocation change rather than a code one. Adding a recycle recipe
+  gives its output an internal producer, reclassifying it from free-import to Intermediate with
+  `net >= 0`, so the LP must balance it internally — usually impossible when the block is a net consumer.
+  A positive cap adds an **import variable** (`solveSimplexLP`, `importVars` branch), letting the item be
+  produced *and* imported; `cap = 0` forces internal balance instead. **Cap generously — it is a ceiling,
+  not a target.** A water recycle in a block drawing net water is the common case: cap water and the
+  whole recipe set, cycles included, solves in one pass.
+- **Read stderr before assuming a solver fault.** `Phase 1 infeasible: Z=…, stuck artificials: <item>`
+  names the item whose constraint cannot be met — either the recycled-input case above, or a loop that is
+  genuinely short. **Check the loop's arithmetic first:** a single byproduct feeding its own input is
+  often infeasible at every scale, and the LP is right to refuse. This prints to stderr, so
+  `2>&1 | grep` on the results table hides it.
+- **Target mode can still go Phase-1 infeasible** where no import is wanted. Solve in legs: import the
   looped item, size the loop's balance by hand (`X = X₀/(1−k)`, design guide rule 7), reconcile.
 - **It will not partially mix two recipes serving one demand under a cap.** Given two moss recipes and
   a stone cap it took the all-stone-free option at nearly double the buildings. Blend by hand: cheap
@@ -117,11 +130,11 @@ Changing a *taken* pick needs `turd-partial-respec-1` — 700u behind `chemical-
 picks as frozen until chemical science.
 
 **Trap: sub-techs carry `module-effects` (speed, consumption, productivity, pollution) applied via hidden
-beacons at runtime — absent from the exported prototypes.** So real speed and draw can differ from
-`crafting_speed`/`energy_usage` with no trace in the JSON. Live case: `moondrop-co2` exists only via the
-`carbon-capture` pick, which also applies `{consumption = 2, speed = 0.5}` to every moondrop greenhouse —
-**every design using `moondrop-greenhouse-mk01` understates power.** Check a bio building's TURD before
-trusting § Bio module system's multipliers.
+beacons at runtime — absent from the exported prototypes.** Real speed and draw can therefore differ from
+`crafting_speed`/`energy_usage` with no trace in the JSON, so any block sized from the dump alone
+understates power on affected entities. `moondrop-greenhouse-mk01` is a live instance: the pick that
+unlocks `moondrop-co2` also applies `{consumption = 2, speed = 0.5}` to it. **Check a bio building's TURD
+before trusting § Bio module system's multipliers.**
 
 ---
 

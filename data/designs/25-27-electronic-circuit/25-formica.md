@@ -281,13 +281,11 @@ producing it locally cheaper than importing it.
 - **`Moss-1`, not `Moss-2`.** Moss-2 doubles yield for `stone 20` per craft. At two farms the saving is
   one building against ~3.4 stone/s — and this block no longer imports stone at all, so it would be a
   new station for one 6×6 building.
-- **`Moss-1-without-sludge-for-real` is TURD-gated, worth asking about.** `[moss, 100 s]
-  carbon-dioxide 100 → moss 8` — same yield as `Moss-1` with no muddy-sludge, which here would delete the
-  `washer` and `soil-extractor` (2 buildings, 85 tiles, 8.8 water/s) for 1.71 more CO₂/s from a
-  greenhouse that has headroom. It reads `enabled: false` with **no normal `unlock-recipe` tech effect**,
-  the signature of a **TURD** pick: the research may not be done, or a different option may have been
-  taken. **Not unreachable — ask.** The same recipe is worth far more to design 27 (40 % of its water),
-  so settle it there first.
+- **Planned upgrade: TURD `remove-muddy-sludge`, applied after build.** `moss-upgrade` is researched with
+  nothing selected, so `Moss-1-without-sludge-for-real` (`carbon-dioxide 100 → moss 8`, same yield, no
+  sludge) is a free pick. Here it deletes the `washer` and `soil-extractor` — **2 buildings, 85 tiles,
+  8.8 water/s** — for 1.71 more CO₂/s from a greenhouse that has headroom. No complication in this block;
+  the ordering constraint lives in [27 § Planned upgrade](27-battery-urea.md), which owns the decision.
 - **The boiler is process steam, not power.** `fiberboard` takes `steam 500` per craft as an
   *ingredient*. There is no generator in this block and nothing to generate from.
 - **`chloride-void-iron-oxide` is a sink, not a product line.** `iron-plate 1 + chlorine 60 →

@@ -436,25 +436,32 @@ that used to pad the moss bank — `Moss-1` went from 44.205 (45 placed, 98 %) t
   before correction; the multipliers bring the block to 72. `moss-farm-mk01` 16× at 15 slots,
   `auog-paddock-mk01` 5× at 4, `seaweed-crop-mk01` 11× at 10, `moondrop-greenhouse-mk01` 17× at 16,
   `fwf-mk01` 11× at 10.
-> **Two recipes worth asking about — both are TURD-class, not dead.**
-> **`Moss-1-without-sludge-for-real`** (`[moss, 100 s] carbon-dioxide 100 → moss 8` — same yield as
-> `Moss-1` with **no muddy-sludge at all**) would delete 1 washer and 2 soil-extractors (**3 buildings,
-> 134 tiles**) and **143.40 water/s, 40 % of this block's water.** **`seaweed-1-dry`**
-> (`[seaweed, 50 s] → seaweed 10`, no water) would remove another 19.11/s.
+> ### Planned upgrade — TURD `remove-muddy-sludge` (decided, applied after build)
 >
-> Both read `enabled: false` in `data.force.recipes`, and **neither has a normal `unlock-recipe` tech
-> effect** — which is the signature of a **TURD** choice rather than of a dead recipe. TURD hands out one
-> pick from three or more options at certain researches, so `enabled: false` here means *the research
-> isn't done*, *or a different option was taken* — **not that the recipe is unreachable.** The export
-> cannot tell those apart. **Ask before writing either off**; the moss one is the single largest water
-> saving available to this block.
+> `moss-upgrade` is **researched with no option selected**, so `Moss-1-without-sludge-for-real`
+> (`[moss, 100 s] carbon-dioxide 100 → moss 8`, same yield, **no sludge**) is a free pick. **Decision:
+> build as drawn, take the pick afterwards.** Across designs 25/27/28 it removes **9 washers and soil
+> extractors** and **~341 water/s** (10.3 in 25, 143.3 here, 187.5 in 28), against **+2 buildings and
+> 3.08 MW** for the sludge loop below — net **−7 buildings, ~−346 water/s, +3.08 MW**. With
+> `moondrop-co2` making CO₂ from nothing, moss then needs **no material input at all**.
 >
-> If `Moss-1-without-sludge-for-real` is pickable, the catch is still real: `melamine`'s muddy-sludge
-> 5.00/s loses its only sink, and `moondrop-co2` must cover the 3.00 CO₂/s melamine contributes.
+> **Ordering constraint — the one that bites:** picking it stops moss consuming sludge, so
+> **`melamine`'s 5.00/s needs its sink live before or at the pick.** Otherwise melamine stalls,
+> cyanic-acid strands at 2.00/s with only the battery to take it, and the batteries starve. Everything
+> else just idles.
 >
-> **Method note:** `recipes --produces <item> --unlocked` reads the save's live force state and is the
-> authoritative "can I use this now" check. The solver's `--unlocked` does **not** filter recipes named
-> in `--recipes`. Neither tells you *why* something is disabled.
+> **The sink is a cycle and must be hand-sized** (the solver zeroes it, as with the barrel loop).
+> `muddy-sludge-void-electrolyzer` (`muddy-sludge 100 → soil 5 + water 100 + oxygen 10`) returns soil
+> that has no other consumer once the washer is gone, so looping it back doubles throughput:
+> `S = 5.00 + 0.5S → S = 10.00 sludge/s`. That is **1 electrolyzer at 30 % (3.00 MW) + 1 washer at 20 %
+> (0.08 MW)**, converting sludge 5.00/s into **oxygen 1.00/s vented + water 5.00/s returned**, soil
+> circulating. Alternative: skip the washer and ship soil 0.25/s to design 28 (which makes soil from
+> water at 50:1) — 1 building and 1.58 MW cheaper, at the cost of a station pair for a trickle.
+>
+> Retrofit is in-place: `recipe_replacement` calls `set_recipe` on running farms and handles the ejected
+> sludge, so no rebuild and no downtime. **Not reversible** — `turd-partial-respec-1` is behind chemical
+> science. Full option comparison and the Moss-3 counter-argument: solver-reference § Recipe
+> availability.
 - **`Moss-1`, not `Moss-2`.** Moss-2 gives 16 moss per craft against 8 but needs **stone 20**, which at
   28.88 sludge/s means **~2.9 stone/s**. It would cut the bank **29 → 15 farms (~500 tiles)**. Design 24
   exports 1.833 stone/s, so this still needs a second stone supplier — but **the gap is much smaller now

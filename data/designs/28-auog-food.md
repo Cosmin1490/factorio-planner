@@ -213,6 +213,22 @@ soil 3 + limestone 2`, net 1 soil per 1 limestone, `[secondary-crusher, 0.5 s]`)
 limestone 10.63/s** in exchange for all 531.30 water/s. Worth taking **only if the block cannot sit on
 water** — otherwise it trades a free input for a mined one.
 
+## Planned upgrade — TURD `remove-muddy-sludge`, applied after build
+
+`moss-upgrade` is **researched with no option selected**, so `Moss-1-without-sludge-for-real`
+(`[moss, 100 s] carbon-dioxide 100 → moss 8` — same yield, **no sludge**) is a free pick. **Decision:
+build as drawn, take the pick afterwards.**
+
+**This block gains the most of the three.** Its 32 farms stop drawing muddy-sludge 31.25/s, which deletes
+**2 washers and 2 of the 6 soil-extractors** — the other 4 serve `ralesia-1` — and **187.5 water/s,
+taking the block from 767.50 to 580.0/s.** The 29 % water share in § Where the water goes that is
+*not* ralesia disappears entirely.
+
+**No complication here** — this block runs no `melamine`, so nothing else wants the sludge. Design 27
+owns the decision and the sludge sink that has to exist before the pick
+([27 § Planned upgrade](25-27-electronic-circuit/27-battery-urea.md)). Full option comparison and the
+Moss-3 counter-argument: solver-reference § Recipe availability.
+
 ## Terminal outputs and their sinks
 
 | output | /s | sink chosen | cost | what it beat |

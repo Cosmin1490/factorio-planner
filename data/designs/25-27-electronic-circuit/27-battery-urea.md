@@ -18,10 +18,12 @@ auog-pooping-2      [U] [auog,       80 s]  water-barrel 5 + native-flora 20 + m
 ammonia recipes exist; all nine are locked. There is no bypass around
 `urea → liquid-manure → manure → auog paddocks`.
 
-> **Two operating modes, one blueprint.** **Full mode** runs `auog-pooping-2` and needs `auog-food-01`
-> 0.68/s from [design 28](../28-auog-food.md) → **1.0 electronic-circuit/s**. **Interim mode** runs
-> `auog-pooping-1` in the same nine paddocks with no food at all → **0.518 circuit/s**. Build the
-> blueprint once, start in interim, switch the recipe when the food block exists. See § Interim mode.
+> **Two operating modes, one blueprint, switchable at runtime.** **Full mode** runs `auog-pooping-2` and
+> needs `auog-food-01` 0.68/s from [design 28](../28-auog-food.md) → **1.0 electronic-circuit/s**.
+> **Throttled mode** runs `auog-pooping-1` in the same nine paddocks with no food at all → **0.518
+> circuit/s**. Both are the same machine and the same recipe category, so **a circuit-controlled recipe
+> swap picks the mode from food and ammonia buffer levels** — the block degrades to 52 % instead of
+> stalling, and halves its ammonia rate while it does. See § Interim mode and § Control scheme.
 
 ## Block boundary
 
@@ -124,6 +126,39 @@ which is exactly what a throttle should look like.
 **4. The ammonia clock halves.** 3.11/s instead of 6.00/s means the surplus accumulates at half the rate,
 roughly doubling the time before `t = 0` bites. Interim mode is therefore *also* a way to buy time on the
 one unresolved byproduct in the complex.
+
+### Control scheme — the modes are switchable, not sequential
+
+**Do not treat interim as a phase you leave.** Both recipes run in the same machine, so the mode can be
+a *control decision* rather than a build decision, and the block becomes self-adapting:
+
+| condition | recipe | circuits | **ammonia** |
+|---|---|--:|--:|
+| food buffer high **and** ammonia buffer has room | **`auog-pooping-2`** | 1.000 /s | 6.00 /s |
+| otherwise | **`auog-pooping-1`** | 0.518 /s | **3.11 /s** |
+
+**This is mechanically available**, not a wish: `auog-paddock-mk01` is `type: assembling-machine` with
+**no `fixed_recipe`**, both variants are category **`auog`**, and the prototype dump carries `qualities`
+(normal…legendary) — so this is Factorio 2.0, where *Set recipe* is a circuit control behaviour on
+assembling machines. One decider, one signal, nine paddocks. *(Version inferred from the dump, not
+verified in-save.)*
+
+**Switching on ammonia as well as food is the part that earns its keep.** It makes the block govern the
+complex's one unresolved byproduct: **`-1` halves the ammonia sink you need**, and roughly doubles
+time-to-full. That does not solve the surplus — 3.11/s still accumulates — but it converts `t = 0` from
+a hard gate into *"the complex runs at 52 % when ammonia backs up."* Same discipline as design 23's COG
+buffer: the **producer throttles** rather than the byproduct being dumped.
+
+**The deadband is a sizing calculation, not a tuning hunt.** The trap is real — swapping recipe **ejects
+in-progress ingredients**, and at 80–100 s craft times a paddock thrashing across the threshold produces
+almost nothing. But `auog-food-01` is **stack 100**, so one wagon is 4,000 units = **98 minutes** at
+0.68/s. Switch up at ~80 % of a wagon-scale chest bank and down at ~20 % and the band is **~59 minutes
+against an 80–100 s craft** — oscillation is not physically reachable at that ratio. A one-craft dwell
+timer is belt-and-braces, not a requirement.
+
+**Nothing downstream needs tuning.** The entire chain below the paddocks follows whatever manure rate
+arrives — no thresholds, no second loop, no rebalancing. The switched paddocks are the only controlled
+element in the block.
 
 ### Why run it this way rather than building 18 paddocks
 
@@ -366,7 +401,7 @@ one-time imports** appearing nowhere in the flows.
 | | risk | why |
 |---|---|---|
 | 1 | **ammonia 6.00/s with no consumer** | both unlocked consumers are in this block and it is not ventable, so it cannot be disposed of. **`t = 0` until a destination exists** — a design-level open item, not an operational one, and it gates designs 25 and 26 too |
-| 2 | **auog-food-01 0.68/s — [design 28](../28-auog-food.md) must exist first** | **Variant 2 cannot start without it** — unlike `native-flora`, there is no partial-rate fallback except reverting the paddocks to `auog-pooping-1`. Design 28 is 126 buildings gated on **aromatics 50/s and a lakeside site**, so this is a real build-order dependency, not a station |
+| 2 | **auog-food-01 0.68/s — supplied by [design 28](../28-auog-food.md)** | **Mitigated by the control scheme**: a food outage drops the paddocks to `auog-pooping-1` and the complex to 52 % rather than stopping. Without the recipe swap this would be the block's only no-fallback import, since design 28 is 126 buildings gated on **aromatics 50/s and a lakeside site**. **Wire the switch before relying on the food** |
 | 3 | **moss 2.31/s** | 2.25 feeds `auog-pooping-2` → manure → urea → cyanic-acid → batteries **and** melamine → design 25's formica. A moss outage stops two blocks, and with 29 farms at 100 s per craft recovery is slow |
 | 4 | **native-flora 4.50/s** | no recipe exists at all — map-placed only. Same cascade as moss, one step earlier. `flora-collector-mk01` mines it at 1.0/s, so **5 collectors**, map permitting |
 | 5 | **the barrel loop** | nets to zero, so nothing refills it. One stray inserter drains it and the paddocks stop with no obvious cause |

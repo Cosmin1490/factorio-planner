@@ -436,14 +436,25 @@ that used to pad the moss bank — `Moss-1` went from 44.205 (45 placed, 98 %) t
   before correction; the multipliers bring the block to 72. `moss-farm-mk01` 16× at 15 slots,
   `auog-paddock-mk01` 5× at 4, `seaweed-crop-mk01` 11× at 10, `moondrop-greenhouse-mk01` 17× at 16,
   `fwf-mk01` 11× at 10.
-- **Unexamined, and still the largest lever: `Moss-1-without-sludge-for-real`** — `[moss, 100 s]
-  carbon-dioxide 100 → moss 8`, **identical yield to `Moss-1` with no muddy-sludge at all.** That
-  deletes 1 washer and 2 soil-extractors (**3 buildings, 134 tiles**) and **143.40 water/s — 40 % of
-  this block's water.** The catch: `melamine`'s muddy-sludge 5.00/s would lose its only sink, and
-  `moondrop-co2` would have to cover the 3.00 CO₂/s melamine currently contributes. Not applied — a
-  recipe swap outside this revision's scope, but it should be the next thing examined.
-- **Unexamined: `seaweed-1-dry`** — `[seaweed, 50 s] → seaweed 10`, same yield as `seaweed-1` with **no
-  water**. Removes 19.11 water/s for zero cost if the dry variant has no hidden requirement. Check it.
+> **Two recipes worth asking about — both are TURD-class, not dead.**
+> **`Moss-1-without-sludge-for-real`** (`[moss, 100 s] carbon-dioxide 100 → moss 8` — same yield as
+> `Moss-1` with **no muddy-sludge at all**) would delete 1 washer and 2 soil-extractors (**3 buildings,
+> 134 tiles**) and **143.40 water/s, 40 % of this block's water.** **`seaweed-1-dry`**
+> (`[seaweed, 50 s] → seaweed 10`, no water) would remove another 19.11/s.
+>
+> Both read `enabled: false` in `data.force.recipes`, and **neither has a normal `unlock-recipe` tech
+> effect** — which is the signature of a **TURD** choice rather than of a dead recipe. TURD hands out one
+> pick from three or more options at certain researches, so `enabled: false` here means *the research
+> isn't done*, *or a different option was taken* — **not that the recipe is unreachable.** The export
+> cannot tell those apart. **Ask before writing either off**; the moss one is the single largest water
+> saving available to this block.
+>
+> If `Moss-1-without-sludge-for-real` is pickable, the catch is still real: `melamine`'s muddy-sludge
+> 5.00/s loses its only sink, and `moondrop-co2` must cover the 3.00 CO₂/s melamine contributes.
+>
+> **Method note:** `recipes --produces <item> --unlocked` reads the save's live force state and is the
+> authoritative "can I use this now" check. The solver's `--unlocked` does **not** filter recipes named
+> in `--recipes`. Neither tells you *why* something is disabled.
 - **`Moss-1`, not `Moss-2`.** Moss-2 gives 16 moss per craft against 8 but needs **stone 20**, which at
   28.88 sludge/s means **~2.9 stone/s**. It would cut the bank **29 → 15 farms (~500 tiles)**. Design 24
   exports 1.833 stone/s, so this still needs a second stone supplier — but **the gap is much smaller now
@@ -455,8 +466,18 @@ that used to pad the moss bank — `Moss-1` went from 44.205 (45 placed, 98 %) t
 - **`battery-mk01` is the only unlocked battery route**, at 0.100 bat/s per building — 10× worse than
   `nas-battery` (1.200), `battery-2` (1.000), `battery-1` (0.750) and `battery` (0.250). All four need
   **rayon**, which needs `fiber` + `sulfuric-acid` + `sodium-carbonate` + `carbon-sulfide`, none of
-  which has an unlocked producer. **Revisit the moment sulfuric-acid lands** — it would collapse this
-  entire block.
+  which has an unlocked producer.
+
+  **`sulfur-processing` is 22 unresearched techs and 4,870 units** (14,610 automation-science-pack ·
+  9,740 py-science-pack-1 · 4,870 logistic-science-pack). **When it lands this block collapses**: the
+  30:1 cyanic-acid ratio is the only reason the 45-building bio annex exists, and **the ammonia surplus
+  goes with it** — § The ammonia decision shows the surplus equals the battery's cyanic draw exactly, so
+  a 10× better battery is also the answer to `t = 0`. **Do not solve the ammonia problem separately
+  before checking how far this research is.**
+
+  It is also on the way to **`plastics-mk02`** (38 techs, 11,635 units), which unlocks
+  `plastic-from-melamine` and would let [design 28](../28-auog-food.md) escape its aromatics ceiling —
+  so both rewrites share one research spine, and **this one arrives first**.
 
 ## Solver command
 

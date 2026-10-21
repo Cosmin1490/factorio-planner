@@ -281,11 +281,13 @@ producing it locally cheaper than importing it.
 - **`Moss-1`, not `Moss-2`.** Moss-2 doubles yield for `stone 20` per craft. At two farms the saving is
   one building against ~3.4 stone/s — and this block no longer imports stone at all, so it would be a
   new station for one 6×6 building.
-- **Unexamined: `Moss-1-without-sludge-for-real`** — `[moss, 100 s] carbon-dioxide 100 → moss 8`, the
-  same yield as `Moss-1` with **no muddy-sludge at all**. That would delete the `washer` and
-  `soil-extractor` (2 buildings, 85 tiles, 8.8 water/s) and cost 1.71 more CO₂/s from a greenhouse that
-  has headroom. Not applied — it is a recipe swap outside this revision's scope, and design 27 relies on
-  sludge as a `melamine` byproduct sink.
+- **`Moss-1-without-sludge-for-real` is TURD-gated, worth asking about.** `[moss, 100 s]
+  carbon-dioxide 100 → moss 8` — same yield as `Moss-1` with no muddy-sludge, which here would delete the
+  `washer` and `soil-extractor` (2 buildings, 85 tiles, 8.8 water/s) for 1.71 more CO₂/s from a
+  greenhouse that has headroom. It reads `enabled: false` with **no normal `unlock-recipe` tech effect**,
+  the signature of a **TURD** pick: the research may not be done, or a different option may have been
+  taken. **Not unreachable — ask.** The same recipe is worth far more to design 27 (40 % of its water),
+  so settle it there first.
 - **The boiler is process steam, not power.** `fiberboard` takes `steam 500` per craft as an
   *ingredient*. There is no generator in this block and nothing to generate from.
 - **`chloride-void-iron-oxide` is a sink, not a product line.** `iron-plate 1 + chlorine 60 →

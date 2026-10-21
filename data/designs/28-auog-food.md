@@ -43,6 +43,55 @@ food variants need `plastic-bar 2`.
 **1.50/s is the largest rate that fits 50 aromatics/s**, and it lands on round numbers for both fluids.
 Design 27 needs **0.68/s**, so this covers it **2.2×** with 0.82/s spare for the next auog consumer.
 
+## Thinking ahead — `plastic-from-melamine` lifts the ceiling
+
+```
+plastic-from-melamine  [L] [crafting, 10 s]  melamine 10  →  plastic-bar 5
+```
+
+**This is the recipe that removes the aromatics constraint**, and with it the 1.5/s cap. Plastic-bar
+1.00/s would come from **melamine 2.00/s** in 2 `automated-factory-mk01` (+3.4 MW against the
+biofactories) — **no aromatics, no syngas at all.** The block's rate would then be bounded by how large a
+bio annex you want rather than by a fluid budget.
+
+**It is not free.** Melamine 2.00/s means expanding design 27's manure chain by roughly **+20 buildings**
+(≈ +10 per melamine/s — see [27 § leeching melamine](25-27-electronic-circuit/27-battery-urea.md)). So
+the trade is **~20 buildings to escape a 50/s aromatics budget**, which only pays if you actually want
+more than 1.5 food/s.
+
+### The loop closes, with room
+
+Food enables `auog-pooping-2` → manure → urea → cyanic-acid → melamine → plastic → food. That is a real
+cycle across two blocks, and it is comfortably net-positive:
+
+```
+food 1.50/s  →  plastic 1.00  →  melamine 2.00  →  cyanic 2.00  →  urea 1.333
+             →  manure 0.444  →  (pooping-2, 3 food per craft)  →  food 0.157/s
+```
+
+**10.5 % recirculation** — the loop consumes about a tenth of its own output, so it is not chasing its
+tail. **But it is a cold-start deadlock**: no food → no melamine → no plastic → no food. Keep at least
+one `biofactory-mk01` on the aromatics route as a floor, or hold a food buffer big enough to restart the
+chain. Same shape as design 27's paddock switch — two routes to the same item, one of which always works.
+
+### The gate, and what arrives before it
+
+| milestone | unresearched techs | units |
+|---|--:|--:|
+| **`sulfur-processing`** | 22 | **4,870** |
+| **`plastics-mk02`** (← `korlex` ← `biotech-mk02` ← … ← `sulfur-processing`) | 38 | **11,635** |
+
+**All 22 of `sulfur-processing`'s chain are inside `plastics-mk02`'s** — you pass through it at 42 % of
+the way, and **it is the bigger event.** `sulfur-processing` → `sulfuric-acid` → `rayon` → batteries at
+**1.200 bat/s per building against `battery-mk01`'s 0.100**, which collapses design 27's 30:1
+cyanic-acid ratio, its 45-building bio annex, **and the ammonia surplus** (the surplus equals the
+battery's cyanic draw exactly, so a better battery dissolves `t = 0`).
+
+> **Expect design 27 to be rebuilt before this recipe arrives**, which changes the premise: with a better
+> battery the urea chain shrinks, so melamine stops being abundant alongside it and becomes something
+> you expand the bio annex deliberately to get. **Re-price this swap when `plastics-mk02` actually
+> lands** rather than assuming today's +20 buildings still holds.
+
 ## Block boundary
 
 | class | items |
@@ -130,11 +179,13 @@ Eight seeds cost **five ralesia**, and ten ralesia cost eight seeds. **Net yield
 grown — the plantation is sized at exactly 2× what the food consumes.** 5.00/s is grown so that 2.50/s
 reaches `auog-food-01`; the other 2.50/s goes straight back into the nursery.
 
-**`ralesia-seeds-paper-towel` would halve it** — `paper-towel 1 + ralesia 5 → ralesia-seeds 16`, double
-the seeds for the same ralesia, which takes net yield from 50 % to 67 % and the plantation from **63 to
-~42**. **`paper-towel` has no unlocked producer**, so this is not available; it is the first thing to
-re-check when one appears, because 21 buildings and ~1,030 tiles is the largest single saving on the
-table.
+**`ralesia-seeds-paper-towel` would halve it — and whether it is reachable is an open question.**
+`paper-towel 1 + ralesia 5 → ralesia-seeds 16` takes net yield from 50 % to 67 % and the plantation from
+**63 to ~42 — 21 buildings and ~1,030 tiles, the largest single saving on the table.** Both it and
+`paper-towel` read `enabled: false` with **no normal `unlock-recipe` tech effect**, which is the
+signature of a **TURD** pick rather than of a dead recipe: the research may not be done, or a different
+option may have been taken. **Ask before writing it off.** The research-gated plantation upgrade is
+separate — see § Thinking ahead.
 
 **`ralesia` is self-funding** — `ralesia-plantation-mk01` takes `ralesia` as its own module, 12 slots.
 So the seed loop that costs half the output is also what pays for the 756 modules.

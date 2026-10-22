@@ -1,4 +1,16 @@
-import { loadPrototypes, buildProducerIndex, isRecipeUnlocked, findFactories, findTechForRecipe, type PrototypeData } from '../data/PrototypeLoader.js';
+import { loadPrototypes, buildProducerIndex, isRecipeUnlocked, findFactories, findTechForRecipe, type RecipeElement, type PrototypeData } from '../data/PrototypeLoader.js';
+
+/**
+ * Format a product for the compact listing.
+ * The face `amount` is not the yield: `probability` scales it (the solver uses
+ * amount x probability), and variable-output recipes carry amount_min/amount_max
+ * instead. Printing the bare amount hides both.
+ */
+function formatProduct(p: RecipeElement): string {
+  const qty = p.amount ?? (p.amount_min != null && p.amount_max != null ? `${p.amount_min}-${p.amount_max}` : '?');
+  const prob = p.probability != null && p.probability < 1 ? ` (${p.probability * 100}%)` : '';
+  return `${qty}x ${p.name}${prob}`;
+}
 
 export function recipesCommand(protoPath: string, options: { produces?: string; consumes?: string; unlocked?: boolean }) {
   const data = loadPrototypes(protoPath);
@@ -18,7 +30,7 @@ export function recipesCommand(protoPath: string, options: { produces?: string; 
     console.log(`Recipes that produce "${options.produces}" (${recipes.length})${label}:\n`);
     for (const r of recipes) {
       const ingredients = (Array.isArray(r.ingredients) ? r.ingredients : []).map(i => `${i.amount ?? '?'}x ${i.name}`).join(', ');
-      const products = (Array.isArray(r.products) ? r.products : []).map(p => `${p.amount ?? '?'}x ${p.name}`).join(', ');
+      const products = (Array.isArray(r.products) ? r.products : []).map(formatProduct).join(', ');
       console.log(`  ${r.name}  [${r.category}]  (${r.energy}s)`);
       console.log(`    in:  ${ingredients || '(none)'}`);
       console.log(`    out: ${products}`);
@@ -42,7 +54,7 @@ export function recipesCommand(protoPath: string, options: { produces?: string; 
     console.log(`Recipes that consume "${options.consumes}" (${results.length})${label}:\n`);
     for (const r of results) {
       const ingredients = (Array.isArray(r.ingredients) ? r.ingredients : []).map(i => `${i.amount ?? '?'}x ${i.name}`).join(', ');
-      const products = (Array.isArray(r.products) ? r.products : []).map(p => `${p.amount ?? '?'}x ${p.name}`).join(', ');
+      const products = (Array.isArray(r.products) ? r.products : []).map(formatProduct).join(', ');
       console.log(`  ${r.name}  [${r.category}]  (${r.energy}s)`);
       console.log(`    in:  ${ingredients || '(none)'}`);
       console.log(`    out: ${products}`);
@@ -89,7 +101,8 @@ export function recipeInfoCommand(protoPath: string, recipeName: string) {
   for (const p of products) {
     const prob = p.probability != null && p.probability < 1 ? ` (${p.probability * 100}%)` : '';
     const temp = p.temperature != null ? ` @ ${p.temperature}°C` : '';
-    console.log(`  ${p.amount ?? '?'}x ${p.name} (${p.type})${prob}${temp}`);
+    const qty = p.amount ?? (p.amount_min != null && p.amount_max != null ? `${p.amount_min}-${p.amount_max}` : '?');
+    console.log(`  ${qty}x ${p.name} (${p.type})${prob}${temp}`);
   }
 
   // Compatible factories

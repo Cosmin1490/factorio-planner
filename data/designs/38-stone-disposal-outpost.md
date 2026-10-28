@@ -66,6 +66,26 @@ while the crush chain sheds only ~0.3 MW; acetylene falls because less sand mean
 less glass. Idle washers draw Factorio's ~1 % drain (~0.016 MW for all four), so parking them is free
 beyond their build cost.
 
+### At the real supply
+
+Designs 30 + 31 give **12.00 stone/s**, not 15. **Priority goes to the washers** — they are the only
+branch with a fixed external commitment, and at 2.00 stone/s they stay at 100 % duty:
+
+| | @ 15.00 stone/s | **@ 12.00 stone/s** |
+|---|--:|--:|
+| stone → washers | 2.00 | **2.00** — unchanged |
+| **water-saline** | 10.00 /s | **10.00 /s** — unchanged |
+| stone → glass | 13.00 | **10.00** |
+| crushers *running* | 4 / 4 | **3 / 3** of the 4/4 built |
+| iron-plate | 0.108 /s (387/h) | **0.083 /s (298/h)** |
+| petri (all-dish) | 0.387 /min | **0.298 /min** |
+| glass (all-glass) | 1.94 /min | **1.49 /min** |
+| electric | 8.09 MW | **6.59 MW** |
+| acetylene | 0.62 /s | **0.48 /s** — 40,000 L = 23.1 h |
+
+**The crush branch absorbs the entire shortfall and saline is untouched.** Two of the eight crushers
+idle until a third stone source lands. Everything downstream scales by 10/13 = 0.77.
+
 ## The 4th gravel-to-sand crusher is what makes the dial free
 
 Sized for 13.00 stone/s the crush branch solves to **4/3** crushers — and 3 `gravel-to-sand` caps at
@@ -105,11 +125,30 @@ never remotely capacity-bound — the third machine buys a **circuit-switchable 
 all three glassworks in one solve it zeroes one and returns a clean-looking answer with an unmade
 decision inside it. Both endpoints are solved separately; intermediate points are linear.
 
-Leaning: `glass` is Tier A with 50+ consumers but 2.23/min is not a contribution to a glass bus, while
-**`empty-petri-dish` has exactly one unlocked consumer** (`petri-dish` = 1 empty + 1 agar) and
-**design 36 imports `petri-dish` at 0.83/min** — so all-dish covers **47–54 % of a real import** and
-all-glass covers nothing in particular. The dish side is the better buy unless another glass source is
-wanted.
+**Design 36 is the only consumer either output can meaningfully serve.** Both are trace against the
+circuit complex, which is the obvious-looking destination and is not one:
+
+| consumer | wants | 38 @ 15/s | 38 @ 12/s | coverage |
+|---|--:|--:|--:|--:|
+| **design 36 `petri-dish`** | **0.83 /min** | 0.447 | 0.298 | **36–54 %** |
+| design 27 `empty-petri-dish` | **11.40 /min** (0.19/s) | 0.447 | 0.298 | **2.6–3.9 %** |
+| designs 26 + 27 `glass` | **81.60 /min** (1.36/s) | 2.23 | 1.49 | **1.8–2.7 %** |
+
+**These supplement an existing import, they do not replace one.** Petri dishes are already imported for
+design 27, so the question is never "can 38 supply 0.19/s" — it cannot; that would need roughly
+**383 stone/s**, 25× the base's stone output. The question is how much of a standing import it shaves,
+and the answer is **2.4 % of the combined 12.23/min** (design 27's 11.40 + design 36's 0.83), or
+**36–54 % if routed to design 36 alone.**
+
+That is the right way to price the whole block: **every output here is a byproduct of disposing of
+stone the base must dispose of anyway.** The iron, copper and saline were being made regardless; the
+dishes and glass cost nothing beyond the glassworks that were already needed to keep `crushed-quartz`
+from stalling the classifier. A 2.4 % import reduction is not worth building anything *for* — it is
+worth taking for free.
+
+Dial leaning: **all-dish**, because 0.30–0.45/min against a 12.23/min demand is a visible dent while
+2.23 glass/min against the complex's 81.60/min is not. The third glassworks keeps the choice open for
+~50 build materials.
 
 ## The saline correction
 
@@ -161,7 +200,7 @@ whole 15 stone/s.
 
 | | risk | why |
 |---|---|---|
-| 1 | **stone supply is 12.00/s, intake is 15.00/s** | designs 30 (6.00) + 31 (6.00). Fed 12/s the block runs at **80 % duty** — washers drop to 8.00 saline/s, still above the 7.103 demand. **Degrades gracefully, never stalls.** Filling it needs 3.00/s more: design 24 exports 1.833/s and design 32 1.309/s, which together do it |
+| 1 | **stone supply is 12.00/s, intake is 15.00/s** | designs 30 (6.00) + 31 (6.00). **Saline does not degrade** — give the washers priority and they take 2.00/s at 100 % duty for the full 10.00 saline/s, leaving 10.00/s for the crush branch, which absorbs the whole shortfall. See § At the real supply. Filling the block needs 3.00/s more: design 24 exports 1.833/s and design 32 1.309/s, which together do it |
 | 2 | **the glass/petri sink must drain** | if both back up, `glass-2` stalls → crushed-quartz backs up → **`sand-classification` stops and all 15 stone/s stops.** A 0.025/s byproduct gates the entire block. Buffers are generous — molten-glass in a 40,000 L tank is **29.9 h**, crushed-quartz in one iron chest is **35.8 h** — but it has to go somewhere eventually |
 | 3 | **acetylene 0.62–0.72/s is a single thread** | three glassworks on one fluid; if it runs dry the glass chain stops and risk 2 follows. 40,000 L = 17.8 h |
 | 4 | saline consumers may not exist yet | **this one is benign** — a saline backup simply stalls the washers, stone re-routes to the crush branch, and the block keeps disposing. The dial degrades in the safe direction |

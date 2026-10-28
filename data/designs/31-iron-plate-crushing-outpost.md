@@ -108,21 +108,29 @@ on a small one it is not.
 | output | /s | sink |
 |---|--:|---|
 | **iron-plate** | 6.00 | the product — Tier A. Circuit complex takes 1.90 |
-| **stone** | 6.00 | saline, `Moss-2`, stone-brick — **but see the risk below** |
+| **stone** | 6.00 | **[design 38](38-stone-disposal-outpost.md)** — absorbs 12.00/s base-wide at 80 % duty. Also saline, `Moss-2`, stone-brick |
 
 ## Backpressure and risk order
 
 | | risk | why |
 |---|---|---|
 | 1 | **stone backs up and stops the block** | `grade-1-iron-crush` is **multi-output** (`processed-iron-ore 3 + stone 1`), so a full stone belt stalls every crusher → total stop. **Not optional to route** |
-| 2 | **stone 6.00/s here + 6.00/s from design 30 = 12.00/s base-wide** | against **1.42/s** for all saline. **10.6/s of surplus stone** with no named consumer — the single largest unresolved stream in the base once both outposts run. See below |
+| 2 | ~~**stone 6.00/s here + 6.00/s from design 30 = 12.00/s base-wide**~~ **resolved** | **[design 38](38-stone-disposal-outpost.md) takes the whole 12.00/s** via `stone-to-gravel → gravel-to-sand → sand-classification`, which destroys 20 sand into 4.55 units. 17 buildings, and it degrades gracefully on undersupply |
 | 3 | **both rows at 100 %** | zero headroom on either. A crusher outage drops plate proportionally; 49 tiles and 1.00 MW each is the cheap pad |
 | 4 | acetylene 54.00/s | stops all smelting, but ore and processed-ore back up gracefully — no cascade |
 
-> **The stone problem is real and arrives with the second outpost.** 12.00/s combined, against
-> saline's 1.42. Known sinks: `Moss-2` would take ~3–4/s in each of designs 27 and 28 if that swap is
-> taken, and `stone-brick` absorbs any amount but needs a consumer of its own. **Decide where 10/s of
-> stone goes before building both outposts**, because a backed-up stone belt stops both of them dead.
+> **The stone problem is real and arrives with the second outpost** — a backed-up stone belt stops both
+> outposts dead, because `grade-1-iron-crush` is multi-output. **[Design 38](38-stone-disposal-outpost.md)
+> is the answer**: 17 buildings sized for 15.00 stone/s, so the combined 12.00/s runs it at 80 % duty with
+> room for design 24's 1.833/s and design 32's 1.309/s on top.
+>
+> **Correction to the 1.42 figure above: that is the stone, not the saline.** Base-wide saline demand is
+> **7.103/s** — design 25 6.000 + design 29 1.103, with designs 26, 27 and 36 needing none — and 1.421/s
+> is the stone that makes it. Design 30's table has both columns; this one compressed them. Saline was
+> never going to absorb more than ~1.4 stone/s either way, so the shape of the problem is unchanged.
+>
+> Alternative sinks still stand if 38 is not built: `Moss-2` would take ~3–4/s in each of designs 27 and
+> 28 if that swap is taken, and `stone-brick` absorbs any amount but needs a consumer of its own.
 
 ## Scaling
 

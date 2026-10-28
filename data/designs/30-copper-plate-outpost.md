@@ -125,7 +125,7 @@ corner of the copper lane.
 | output | /s | sink |
 |---|--:|---|
 | **copper-plate** | 6.00 | the product — Tier A, 50+ consumers. Circuit complex takes 3.39 |
-| **stone** | 6.00 | **saline (1.42 base-wide), `Moss-2` if adopted, brick.** Real product, not waste |
+| **stone** | 6.00 | **[design 38](38-stone-disposal-outpost.md) takes it with design 31's 6.00** (see note below); saline needs only 1.42/s of it, then `Moss-2` if adopted, brick. Real product, not waste |
 
 **No byproducts to resolve.** Everything this block emits has a consumer, which is unusual for a py block
 and is the reason it stays at three recipes.

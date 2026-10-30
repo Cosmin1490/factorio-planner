@@ -1,11 +1,14 @@
-# 36 — Logistic science, cottongut legs — 0.1 pack/s, 85 buildings
+# 36 — Logistic science, cottongut legs — 0.1 pack/s, 100 buildings
 
-> **One decision is open.** At **6,524 tiles** this is past the ~5,000 single-stamp threshold, and
-> **37 of the 85 buildings grow flowers** to feed the breeding loop. Dropping `ralesia` and `moondrop`
-> to imports takes it to ~48 buildings and ~3,800 tiles for two extra belts — see § Where to stop.
-> Everything below is solver-validated at the 85-building configuration.
+> **Two decisions are open.** At **~7,440 tiles** this is well past the ~5,000 single-stamp threshold,
+> and **40 of the 100 buildings grow flowers** to feed the breeding loop — dropping `ralesia` and
+> `moondrop` to imports takes it to ~60 buildings for two extra belts (§ Where to stop). Separately,
+> **`agar` is 81.5 % of the acetylene draw** for 4.34 items/min; reverting it to an import takes
+> acetylene 133.6 → 47/min (§ Plasmids). Everything below is solver-validated at the 100-building
+> configuration.
 
 Covers the **two cottongut legs** of `logistic-science-pack`. `battery-mk01` is an import (design 27).
+**`plasmids` and `petri-dish` are made on site** — see § Plasmids.
 
 ```
 logistic-science-pack  [U] [research, 90 s]  battery-mk01 3 + animal-sample-01 2
@@ -46,74 +49,105 @@ because of the meat ratio in step 1.
 ┌─────────────────────────────┬──────────────────────────┬────────┬───────┬────────┬────────────────────┐
 │ Recipe                      │ Factory                  │  frac  │ Count │  util  │ Modules            │
 ├─────────────────────────────┼──────────────────────────┼────────┼───────┼────────┼────────────────────┤
-│ moondrop-1                  │ moondrop-greenhouse-mk01 │ 20.943 │  21   │  99.7% │ 16x moondrop       │
-│ ralesia-1                   │ ralesia-plantation-mk01  │ 15.819 │  16   │  98.9% │ 12x ralesia        │
-│ caged-cottongut-1           │ prandium-lab-mk01        │ 10.416 │  11   │  94.7% │ 20x cottongut-mk01 │
+│ moondrop-1                  │ moondrop-greenhouse-mk01 │ 20.945 │  21   │  99.7% │ 16x moondrop       │
+│ ralesia-1                   │ ralesia-plantation-mk01  │ 15.821 │  16   │  98.9% │ 12x ralesia        │
+│ caged-cottongut-1           │ prandium-lab-mk01        │ 10.417 │  11   │  94.7% │ 20x cottongut-mk01 │
+│ full-render-cottongut       │ slaughterhouse-mk01      │  1.001 │   1   │ 100.1% │ **pinned**         │
+│ Moss-1                      │ moss-farm-mk01           │  0.985 │   1   │  98.5% │ 15x moss           │
 │ cottongut-cub-1             │ rc-mk01                  │  0.973 │   1   │  97.3% │  2x cottongut-mk01 │
-│ Moss-1                      │ moss-farm-mk01           │  0.828 │   1   │  82.8% │ 15x moss           │
+│ seaweed-1                   │ seaweed-crop-mk01        │  1.806 │   2   │  90.3% │ 10x seaweed        │
+│ log2                        │ fwf-mk01                 │  0.779 │   1   │  77.9% │ 10x tree-mk01      │
 │ logistic-science-pack       │ research-center-mk01     │  0.750 │   1   │  75.0% │                    │
 │ ralesia-seeds               │ botanical-nursery        │  1.393 │   2   │  69.7% │                    │
+│ petri-dish-bacteria         │ micro-mine-mk01          │  0.667 │   1   │  66.7% │                    │
 │ hydrogen                    │ electrolyzer-mk01        │  0.633 │   1   │  63.3% │                    │
-│ log2                        │ fwf-mk01                 │  0.628 │   1   │  62.8% │ 10x tree-mk01      │
-│ soil                        │ soil-extractor-mk01      │  1.022 │   2   │  51.1% │                    │
-│ full-render-cottongut       │ slaughterhouse-mk01      │  1.001 │   2   │  50.1% │                    │
+│ soil                        │ soil-extractor-mk01      │  1.030 │   2   │  51.5% │                    │
 │ subcritical-water-01        │ py-heat-exchanger        │  0.417 │   1   │  41.7% │                    │
 │ moondrop-seeds              │ botanical-nursery        │  0.399 │   1   │  39.9% │                    │
+│ petri-dish                  │ automated-factory-mk01   │  0.362 │   1   │  36.2% │ **plasmid chain**  │
 │ biomass-blood               │ compost-plant-mk01       │  0.351 │   1   │  35.1% │                    │
-│ petri-dish-bacteria         │ micro-mine-mk01          │  0.278 │   1   │  27.8% │                    │
+│ agar                        │ hpf                      │  0.362 │   1   │  36.2% │ **plasmid chain**  │
+│ wood-seedling               │ botanical-nursery        │  0.260 │   1   │  26.0% │                    │
 │ biomass-guts                │ compost-plant-mk01       │  0.250 │   1   │  25.0% │                    │
-│ wood-seedling               │ botanical-nursery        │  0.210 │   1   │  21.0% │                    │
-│ wood-seeds                  │ assembling-machine-2     │  0.181 │   1   │  18.1% │ tall-oil/acetylene │
+│ wood-seeds                  │ assembling-machine-2     │  0.182 │   1   │  18.2% │ tall-oil/acetylene │
 │ animal-sample-01            │ genlab-mk01              │  0.167 │   1   │  16.7% │                    │
+│ plasmids                    │ biofactory-mk01          │  0.156 │   1   │  15.6% │ **plasmid chain**  │
 │ water-barrel                │ barrel-machine-mk01      │  0.114 │   1   │  11.4% │                    │
+│ zogna-bacteria              │ incubator-mk01           │  0.098 │   1   │   9.8% │ **plasmid chain**  │
+│ fenxsb-alloy-2              │ smelter-mk01             │  0.098 │   1   │   9.8% │ **plasmid chain**  │
 │ cellulose-00                │ hpf                      │  0.084 │   1   │   8.4% │                    │
 │ extract-limestone-01        │ soil-extractor-mk01      │  0.084 │   1   │   8.4% │                    │
+│ lab-instrument              │ automated-factory-mk01   │  0.069 │   1   │   6.9% │ **plasmid chain**  │
+│ equipment-chassi            │ automated-factory-mk01   │  0.069 │   1   │   6.9% │ **plasmid chain**  │
 │ cottongut-science-red-seeds │ incubator-mk01           │  0.042 │   1   │   4.2% │                    │
 │ bone-to-bonemeal-2          │ fbreactor-mk01           │  0.042 │   1   │   4.2% │                    │
-│ muddy-sludge                │ washer                   │  0.034 │   1   │   3.4% │                    │
+│ muddy-sludge                │ washer                   │  0.040 │   1   │   4.0% │                    │
+│ nexelit-plate-2             │ advanced-foundry-mk01    │  0.033 │   1   │   3.3% │ **plasmid chain**  │
+│ copper-cable                │ automated-factory-mk01   │  0.033 │   1   │   3.3% │                    │
+│ moondrop-co2                │ moondrop-greenhouse-mk01 │  0.025 │   1   │   2.5% │ 16x moondrop       │
 │ pressured-water             │ vacuum-pump-mk01         │  0.023 │   1   │   2.3% │                    │
 │ alien-sample01              │ assembling-machine-2     │  0.021 │   1   │   2.1% │                    │
-│ moondrop-co2                │ moondrop-greenhouse-mk01 │  0.021 │   1   │   2.1% │ 16x moondrop       │
+│ iron-stick                  │ automated-factory-mk01   │  0.019 │   1   │   1.9% │                    │
 │ ground-sample01             │ assembling-machine-2     │  0.016 │   1   │   1.6% │                    │
 │ depolymerized-organics      │ reformer-mk01            │  0.014 │   1   │   1.4% │                    │
 │ bio-sample01                │ assembling-machine-2     │  0.013 │   1   │   1.3% │                    │
+│ log-wood-fast               │ wpu-mk01                 │  0.013 │   1   │   1.3% │                    │
+│ iron-gear-wheel             │ automated-factory-mk01   │  0.013 │   1   │   1.3% │                    │
 │ liquid-manure               │ bio-reactor-mk01         │  0.012 │   1   │   1.2% │                    │
-│ log-wood-fast               │ wpu-mk01                 │  0.011 │   1   │   1.1% │                    │
-│ rich-clay                   │ assembling-machine-2     │  0.010 │   1   │   1.0% │                    │
+│ small-lamp                  │ automated-factory-mk01   │  0.010 │   1   │   1.0% │ **plasmid chain**  │
+│ bolts                       │ automated-factory-mk01   │  0.008 │   1   │   0.8% │                    │
 │ fawogae-substrate           │ assembling-machine-2     │  0.005 │   1   │   0.5% │                    │
+│ small-parts-01              │ automated-factory-mk01   │  0.005 │   1   │   0.5% │                    │
+│ pressured-air               │ vacuum-pump-mk01         │  0.005 │   1   │   0.5% │ no ingredients     │
 ├─────────────────────────────┼──────────────────────────┼────────┼───────┼────────┼────────────────────┤
-│ (steam 100/min)             │ oil-boiler-mk01          │  0.028 │   1   │   2.8% │ hand-sized         │
-│ fill-acetylene-canister     │ barrel-machine-mk01      │   ~0   │   1   │  ~0 %  │ hand-sized         │
+│ (steam 533/min)             │ oil-boiler-mk01          │  0.148 │   1   │  14.8% │ hand-sized         │
+│ fill-acetylene-canister     │ barrel-machine-mk01      │   ~0   │   1   │  ~0 %  │                    │
 └─────────────────────────────┴──────────────────────────┴────────┴───────┴────────┴────────────────────┘
 ```
 
-**85 buildings · 6,524 tiles · 35.9 MW at load (52.70 rated) · 57.2 machines of work = 69 % average**
+**100 buildings · ~7,440 tiles · 39.87 MW at load**
+
+`seaweed-1` is 2 at 90.3 %, `soil` 2 at 51.5 %, `full-render-cottongut` **1 at 100.1 %** — the fractional
+count now exceeds 1.0, so it has **zero headroom**; one more plasmid needs a second slaughterhouse.
+`biomass-bones`, `-skin` and `-brain` all solve to **0** — the plasmid chain rebalanced which render
+co-products get composted, and three compost plants fell out.
 
 Unlike design 35 at 28 %, this block is **genuinely loaded** — and three rows sit at 95–100 % with no
 slack: `moondrop-1`, `ralesia-1`, `caged-cottongut-1`. `cottongut-cub-1` at 97.3 % is one 22×22
 machine with no redundancy.
 
-## Imports — 9
+## Imports — 18
 
 | | /min | note |
 |---|--:|---|
-| **water** | **10,875.49** | one pipe. Soil + limestone extraction is most of it |
-| **acetylene** | **26.88** | 24.68 to the boiler + 2.20 to the canister filler |
-| ash | 4.69 | → `rich-clay` → `ground-sample01`. Design 24 emits 6.00/**s** |
+| **water** | **11,261.19** | one pipe. Soil + limestone extraction is most of it |
+| **acetylene** | **133.6** | 131.5 steam + 2.12 canisters. **81.5 % of the steam is `agar`** |
+| iron-plate | 8.31 | plasmid chain + sub-assemblies |
+| rubber · tin-plate | 5.83 each | `lab-instrument` · `equipment-chassi` |
+| copper-plate | 5.10 | → `copper-cable` on site |
+| empty-petri-dish | 4.33 | design 38 all-dish makes 0.45/min |
 | native-flora | 3.83 | **no recipe exists** — map-placed only |
+| glass | 2.33 | `small-lamp` |
+| rich-clay | 1.87 | → `ground-sample01`. Replaces the old ash 4.69 import |
+| lens | 1.75 | `lab-instrument` — needs molten-glass + boron-trioxide |
 | battery-mk01 | 1.50 | design 27 |
 | urea | 1.25 | design 27 |
-| plasmids | 1.17 | both science legs — see § Plasmids |
-| petri-dish | 0.83 | → `petri-dish-bacteria` |
+| flask | 1.17 | needs a glassworks + `stopper` (coal + latex) |
 | manure | 0.83 | design 37 frees 40/min |
+| clean-nexelit · electronic-circuit | 0.58 each | |
+| sb-oxide | 0.29 | design 32 makes 24/min |
 
 **Exports** (/min): **logistic-science-pack 6.00** · oxygen 379.65 · **mukmoux-fat 9.00** · skin 5.00 ·
 guts 2.00 · brain 1.00 · meat 1.00
 
-**Steam and acetylene-canister are both internal.** One `oil-boiler-mk01` at 2.8 % makes the 100
-steam/min `bone-to-bonemeal-2` needs — `100 × 0.4935 ÷ 2 = 24.68 acetylene/min`, hand-derived since
-boilers are entities not recipes — and a `barrel-machine-mk01` closes the canister loop so acetylene
-arrives as one fluid rather than a fluid plus a solid.
+**Acetylene is the single energy import.** One `oil-boiler-mk01` at 14.8 % makes all 533 steam/min —
+`533 × 0.4935 ÷ 2 = 131.5 acetylene/min`, hand-derived since boilers are entities not recipes — and a
+`barrel-machine-mk01` closes the canister loop, so the burned canisters return empty to be refilled
+instead of leaving as an export. **Only two recipes consume steam**: `bone-to-bonemeal-2` at 100.8/min
+and **`agar` at 434.4/min**.
+
+**`pressured-air` is free** — `[vacuum, 1 s]` has an empty ingredient list and yields 200, so one 3×3
+pump at 0.5 % replaced a 58.28/min import outright.
 
 ## Where to stop — the inlining ladder
 
@@ -122,7 +156,14 @@ arrives as one fluid rather than a fluid plus a solid.
 | cottongut loop only | 16 | 10.86 | 774 | 10 |
 | **+ alien-sample, ralesia, moondrop, wood** | **68** | 34.66 | 9,626 | 12 |
 | + log chain, fawogae-substrate, depolymerized-organics | 81 | 35.85 | 10,676 | 11 |
-| + limestone, steam-from-acetylene | **85** | 35.88 | 10,875 | **9** |
+| + limestone, steam-from-acetylene | 85 | 35.88 | 10,875 | 9 |
+| **+ plasmid chain, agar/seaweed, sub-assemblies** | **100** | 39.87 | 11,261 | **18** |
+
+**The last row is the only one that added imports.** Every earlier rung removed more than it added;
+this one deletes 2 (`plasmids`, `petri-dish`) and adds 11, because the plasmid chain reaches sideways
+into the bus — `tin-plate`, `glass`, `copper-plate`, `iron-plate` and `electronic-circuit` are Tier A
+items now wanted at a flower farm. Whether that is the right call depends on whether this block sits
+on the bus or out at a native-flora patch.
 
 **Row 2 is the mistake.** By subsystem:
 
@@ -207,9 +248,14 @@ manure is a trickle and the biomass is the real input — site it wherever somet
 slaughtered. `subcritical-water` is 10× the volume of the liquid-manure and cannot be shipped, so the
 `py-heat-exchanger` has to sit next to the `reformer-mk01`.
 
-## Ash — checked for an alternative, there isn't one
+## Ash — checked for an alternative, then sidestepped
 
-`ash 4.69/min` feeds `rich-clay` → `ground-sample01` → `alien-sample01`. Reproduces the solver exactly:
+**`rich-clay` is now imported at 1.87/min and the ash import is gone.** Buying the clay instead of
+the ash is strictly lighter — 1.87 solid/min against 4.69 plus 500 water per craft — and it removes
+the `assembling-machine-2` whose coal default caused trap 1 below. The analysis that follows is why
+ash was the input in the first place, and still applies if you ever want to reverse it.
+
+`ash 4.69/min` fed `rich-clay` → `ground-sample01` → `alien-sample01`. Reproduces the solver exactly:
 
 ```
 6 packs/min -> alien-sample01 1.00 -> ground-sample01 3.75 -> rich-clay 1.88 -> ash 4.69
@@ -230,19 +276,43 @@ waste stream for +125 steam/min, +18.8 muddy-sludge/min and a `clay-pit-mk01`.
 > `log2` needs no ash in its **flow** — but its 10 `tree-mk01` modules need 10 planter-boxes =
 > **30 ash + 50 soil + 40 stone-brick, one-time at build.**
 
-## Plasmids — priced, left imported
+## Plasmids — now inlined
 
 ```
 plasmids [biofactory, 8 s]  1 flask + 1 lab-instrument + 1 petri-dish-bacteria + 20 zogna-bacteria -> 1
 ```
 
-`zogna-bacteria` is the bulk at 20 per craft and is **cheap and local** — `1 small-lamp + 5 wood +
-2 petri-dish + 50 pressured-air → 20`, and wood, pressured-air and petri-dish-bacteria are all already
-in this block. 23.4 zogna/min is one incubator at a few percent; design 27 makes 114.6/min.
+**The earlier verdict here was wrong.** It said "`flask` and `lab-instrument` are what stop it" —
+both are unlocked, and so is every input beneath them, including `nexelit-plate-2`, `boric-acid` and
+`fenxsb-alloy-2`. What actually stops the *full* chain is cost, not availability, and the two deepest
+legs are the ones worth buying rather than building.
 
-**`flask` and `lab-instrument` are what stop it.** `flask` needs a glassworks and `stopper`;
-`lab-instrument` needs `equipment-chassi`, `lens` and `rubber`, none of which appears in any current
-design. At 1.17 plasmids/min — one every 51 seconds — that is clearly the wrong trade.
+**Bought: `flask`, `lens`, `rubber`, `clean-nexelit`.**
+
+| leg | why imported |
+|---|---|
+| **rubber** | `rubber-01` wants 50 polybutadiene each → **4.875 polybutadiene/s → aromatics 9.75/s**, on a bus already carrying design 17's 25 and design 32's 20. Buying 5.83 rubber/min deletes all of it |
+| **lens + flask** | both want 100 molten-glass per craft — 1.95/s combined, **5× what design 38 produces**. Importing the lens alone dropped 5 buildings: `lens`, `boron-trioxide`, `boric-acid`, `diborane` **and `hydrogen`**, which existed only to feed diborane |
+| **clean-nexelit** | `[washer] 3 nexelit-ore + 100 water → 1 + 100 muddy-sludge`. Keeps the sludge out of the block |
+
+**Built: `zogna-bacteria`, `petri-dish`, `agar`, `seaweed-1`, `small-lamp`, `equipment-chassi`,
+`lab-instrument`, `fenxsb-alloy-2`, `nexelit-plate-2`, plus `copper-cable`/`small-parts-01` and their
+`iron-gear-wheel`/`bolts`/`iron-stick`.**
+
+Two notes on what that cost:
+
+**`agar` is the expensive one.** 2 `seaweed-crop-mk01` (338 tiles), 1 hpf, and **434.4 of the 533
+steam/min = 107 acetylene/min**, to avoid importing 4.34 agar/min. **Reverting it takes acetylene
+133.6 → 47/min and drops ~4 buildings** — the single biggest lever left in this design.
+
+**`copper-cable` + `small-parts-01` are the cheap ones.** Five machines at 0.5–3.3 % turning
+`copper-plate 5.10` and `iron-plate 8.31` into local crafts — the sub-assembly split the MAM analysis
+argued for, at essentially no cost.
+
+**`nexelit-ore` has a pretty source nobody has built.** `digosaurus` dig sites take `1 guts →
+1 nexelit-ore`, and this block exports **guts 2.00/min** while design 17 emits 27/min. The 1.76/min
+needed is a rounding error against either. Not modelled — dig rates are script-driven and absent from
+the export; the measured figure is ~4 trips/min per digosaurus.
 
 ## Three invocation traps hit while building this
 
@@ -262,16 +332,21 @@ four steps from the cause.
 
 ## Open
 
-- **6,524 tiles needs the ralesia/moondrop pushback**, not a split.
-- **Three rows at 95–100 % with no slack** — `moondrop-1`, `ralesia-1`, `caged-cottongut-1` — plus
-  `cottongut-cub-1` at 97.3 % in a single 22×22 building.
+- **`agar` is the biggest lever left.** 434.4 of 533 steam/min, = 107 of the 133.6 acetylene. Revert
+  it to an import: **~96 buildings, acetylene 47/min**, one more item on the belt.
+- **~7,440 tiles needs the ralesia/moondrop pushback**, not a split.
+- **`full-render-cottongut` is pinned at 100.1 %** — the fractional count exceeds 1.0, so there is
+  literally zero headroom. Any increase needs a second `slaughterhouse-mk01`.
+- **Four rows at 95–100 %** — `moondrop-1`, `ralesia-1`, `caged-cottongut-1`, `Moss-1` — plus
+  `cottongut-cub-1` at 97.3 % in a single 22×22 building and `seaweed-1` at 90.3 %.
 - **`mukmoux-fat` 9.00/min has no compost recipe.** Only unlocked consumers are `animal-sample-01`
   (counted) and `workers-food`. Accumulates.
 - **`oxygen` 379.65/min** surplus from the hydrogen electrolyzer serving ralesia. Vent-approved;
   design 24's BOF wants 90/s.
 - **`native-flora` 3.83/min has no recipe at all** — map-placed, `flora-collector-mk01` mines it.
 - **222 `cottongut-mk01` modules** (11 labs × 20 + rc × 2) = **3.5 h of design 35's output**, and the
-  labs run at 1/21 speed until they are in. Plus 352 moondrop, 192 ralesia, 15 moss, 10 `tree-mk01`.
+  labs run at 1/21 speed until they are in. Plus 352 moondrop, 192 ralesia, 20 seaweed, 15 moss,
+  10 `tree-mk01`.
 - **`py-heat-exchanger`** needs the drivetrain cluster to build (fenxsb-alloy, fish-oil, vitreloy,
   ore-quartz, rubber, ceramic). The one nontrivial construction gate.
 - **Build materials not computed.**
@@ -284,12 +359,19 @@ for the utilisation table come from the same command at `--target "logistic-scie
 
 ```bash
 npx tsx src/cli.ts solve \
-  --recipes "logistic-science-pack,cottongut-science-red-seeds,animal-sample-01,full-render-cottongut,cottongut-cub-1,caged-cottongut-1,water-barrel,alien-sample01,bio-sample01,ground-sample01,bone-to-bonemeal-2,petri-dish-bacteria,rich-clay,ralesia-1,ralesia-seeds,moondrop-1,moondrop-seeds,moondrop-co2,log-wood-fast,wood-seeds,soil,hydrogen,log2,wood-seedling,Moss-1,muddy-sludge,fawogae-substrate,cellulose-00,depolymerized-organics,liquid-manure,subcritical-water-01,pressured-water,biomass-bones,biomass-guts,biomass-skin,biomass-brain,biomass-blood,extract-limestone-01" \
+  --recipes "logistic-science-pack,cottongut-science-red-seeds,animal-sample-01,full-render-cottongut,cottongut-cub-1,caged-cottongut-1,water-barrel,alien-sample01,bio-sample01,ground-sample01,bone-to-bonemeal-2,petri-dish-bacteria,ralesia-1,ralesia-seeds,moondrop-1,moondrop-seeds,moondrop-co2,log-wood-fast,wood-seeds,soil,hydrogen,log2,wood-seedling,Moss-1,muddy-sludge,fawogae-substrate,cellulose-00,depolymerized-organics,liquid-manure,subcritical-water-01,pressured-water,biomass-bones,biomass-guts,biomass-skin,biomass-brain,biomass-blood,extract-limestone-01,plasmids,lab-instrument,equipment-chassi,zogna-bacteria,petri-dish,agar,seaweed-1,small-lamp,fenxsb-alloy-2,nexelit-plate-2,copper-cable,small-parts-01,iron-gear-wheel,bolts,iron-stick,pressured-air,fill-acetylene-canister" \
   --target "logistic-science-pack:6" --time 60 \
   --max-import "cottongut:0.001" --max-import "barrel:0.001" \
   --max-import "ralesia-seeds:0.001" --max-import "moondrop-seeds:0.001" \
   --max-import "wood:0.001" --max-import "soil:0.001" --max-import "water:200000" \
   --max-import "moss:0.001" --max-import "biomass:0.001" --max-import "limestone:0.001" \
+  --max-import "plasmids:0.001" --max-import "agar:0.001" --max-import "petri-dish:0.001" \
+  --max-import "zogna-bacteria:0.001" --max-import "seaweed:0.001" --max-import "small-lamp:0.001" \
+  --max-import "copper-cable:0.001" --max-import "small-parts-01:0.001" --max-import "iron-gear-wheel:0.001" \
+  --max-import "bolts:0.001" --max-import "iron-stick:0.001" --max-import "equipment-chassi:0.001" \
+  --max-import "lab-instrument:0.001" --max-import "fenxsb-alloy:0.001" --max-import "nexelit-plate:0.001" \
+  --max-import "pressured-air:0.001" --max-import "acetylene-canister:0.001" \
+  --max-import "empty-fuel-canister:0.001" \
   --modules "caged-cottongut-1:cottongut-mk01:20" \
   --modules "cottongut-cub-1:cottongut-mk01:2" \
   --modules "ralesia-1:ralesia:12" \
@@ -297,8 +379,9 @@ npx tsx src/cli.ts solve \
   --modules "moondrop-co2:moondrop:16" \
   --modules "Moss-1:moss:15" \
   --modules "log2:tree-mk01:10" \
+  --modules "seaweed-1:seaweed:10" \
   --fuel "alien-sample01:acetylene-canister" --fuel "bio-sample01:acetylene-canister" \
-  --fuel "ground-sample01:acetylene-canister" --fuel "rich-clay:acetylene-canister" \
+  --fuel "ground-sample01:acetylene-canister" \
   --fuel "wood-seeds:acetylene-canister" --fuel "fawogae-substrate:acetylene-canister" \
   --factory "logistic-science-pack:research-center-mk01" \
   --factory "cottongut-science-red-seeds:incubator-mk01" \
@@ -307,10 +390,10 @@ npx tsx src/cli.ts solve \
   --factory "cottongut-cub-1:rc-mk01" \
   --factory "caged-cottongut-1:prandium-lab-mk01" \
   --factory "water-barrel:barrel-machine-mk01" \
+  --factory "fill-acetylene-canister:barrel-machine-mk01" \
   --factory "alien-sample01:assembling-machine-2" \
   --factory "bio-sample01:assembling-machine-2" \
   --factory "ground-sample01:assembling-machine-2" \
-  --factory "rich-clay:assembling-machine-2" \
   --factory "wood-seeds:assembling-machine-2" \
   --factory "fawogae-substrate:assembling-machine-2" \
   --factory "cellulose-00:hpf" \
@@ -333,17 +416,43 @@ npx tsx src/cli.ts solve \
   --factory "liquid-manure:bio-reactor-mk01" \
   --factory "subcritical-water-01:py-heat-exchanger" \
   --factory "pressured-water:vacuum-pump-mk01" \
+  --factory "pressured-air:vacuum-pump-mk01" \
   --factory "biomass-bones:compost-plant-mk01" \
   --factory "biomass-guts:compost-plant-mk01" \
   --factory "biomass-skin:compost-plant-mk01" \
   --factory "biomass-brain:compost-plant-mk01" \
   --factory "biomass-blood:compost-plant-mk01" \
+  --factory "plasmids:biofactory-mk01" \
+  --factory "lab-instrument:automated-factory-mk01" \
+  --factory "equipment-chassi:automated-factory-mk01" \
+  --factory "petri-dish:automated-factory-mk01" \
+  --factory "small-lamp:automated-factory-mk01" \
+  --factory "copper-cable:automated-factory-mk01" \
+  --factory "small-parts-01:automated-factory-mk01" \
+  --factory "iron-gear-wheel:automated-factory-mk01" \
+  --factory "bolts:automated-factory-mk01" \
+  --factory "iron-stick:automated-factory-mk01" \
+  --factory "agar:hpf" \
+  --factory "seaweed-1:seaweed-crop-mk01" \
+  --factory "zogna-bacteria:incubator-mk01" \
+  --factory "fenxsb-alloy-2:smelter-mk01" \
+  --factory "nexelit-plate-2:advanced-foundry-mk01" \
   --solver simplex \
   --unlocked
 ```
 
-Returns **83 buildings**; the `oil-boiler-mk01` and `fill-acetylene-canister` barreler are added by
-hand for 85. The boiler is `steam/min × 0.4935 ÷ 2 = acetylene/min`.
+Returns **99 buildings**; the `oil-boiler-mk01` is added by hand for 100. The boiler is
+`steam/min × 0.4935 ÷ 2 = acetylene/min` — at 533 steam/min that is **131.5 acetylene/min**, plus
+2.12 for the canister filler.
+
+**`rich-clay` is deliberately absent** from `--recipes`: it is imported now, which also removes the
+sixth `--fuel` flag the old command needed. **`--max-import "empty-fuel-canister"` is load-bearing** —
+without it the LP takes free empties instead of closing the canister loop, and acetylene reads low.
+The nine new `--max-import` caps on the plasmid intermediates are what force them internal; drop any
+one and the LP buys it.
+
+The **×1000 trick still works** for fractional counts, but raise `water` to `200000000` — the absolute
+caps do not scale with the target.
 
 **The 16-building import-everything version** is the other end and may be the better base for the next
 pass: drop every recipe after `water-barrel`, drop the matching `--factory`/`--fuel` flags, and import

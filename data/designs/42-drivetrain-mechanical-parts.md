@@ -1,15 +1,14 @@
-# 42 — Drivetrain (mechanical-parts / gearbox / shaft) — 1.20 mechanical-parts-01/min, 18 buildings
+# 42 — Drivetrain (mechanical-parts / gearbox / shaft) — 0.75 mechanical-parts-01/min, 16 buildings
 
 **The block is `shaft-mk01`.** Everything else is a thin assembler bolted on top of a shaft supply —
 `gearbox-mk01` solved standalone at 3/min is 24 buildings, and *six of them are shaft factories*; the
-gearbox assembler itself is one 3×3. `brake-mk01` at 3/min is 6 buildings and 3.25 MW. So the sizing
-question is not "how many mechanical parts" but "how many shafts per minute", and the answer is
-priced in acetylene, not buildings.
+gearbox assembler itself is one 3×3. `brake-mk01` at 3/min is 6 buildings. So the sizing question is
+not "how many mechanical parts" but "how many shafts per minute", and the answer is priced in
+acetylene, not buildings.
 
-**1.20/min is the smallest clean stop, and every row is one machine.** `shaft-mk01` and
-`fenxsb-alloy-2` both land at frac **1.000** — the binding pair, saturated, with nothing else above
-60 %. Because those two scale together, doubling to 2.40/min is also clean (21 buildings: a second
-shaft factory, a second smelter, a second solder) — so this is a stamp, not a compromise.
+**0.75/min is where both collapse thresholds clear at once** — the thirteen assembler rows sum to
+**0.924** (under one machine) and the two smelters to **0.667** (also under one). Above ~0.82 the
+assemblers need a second machine; above ~0.90 the smelters do.
 
 ```
 mechanical-parts-01 [U] [adv-crafting, 12 s]  brake 1 + controler 1 + gearbox 1 + shaft 1
@@ -26,58 +25,56 @@ controler-mk01      [U] [crafting,     15 s]  battery-mk01 3 + e-circuit 4 + gla
 utility-box-mk01    [U] [crafting,     30 s]  e-circuit 3 + plastic-bar 5 + copper-plate 25
                                               + iron-plate 10 + tinned-cable 50             →  1
 fenxsb-alloy-2      [U] [rawores-smelt, 20 s] nexelit-plate 2 + sb-oxide 1 + iron-plate 7   →  2
-ceramic             [U] [hpf,            5 s] coke 1 + clay 10                              →  5
-clay                [U] [clay,           4 s] steam 100                                     →  3
-steam for clay      [U] [oil-boiler-mk01, effectivity 2]  acetylene 1.09/s  ->  4.43 steam@250/s
+vitreloy            [U] [rawores-smelt, 10 s] sb-oxide 3 + duralumin 3 + nickel-plate 3
+                                              + titanium-plate 3 + copper-plate 3           →  2
 ```
 
 ## Recipe table
 
 ```
-┌────────────────────────────────┬────────────────────────┬───────┬────────┬────────┬───────┐
-│ Recipe                         │ Factory                │ Count │  frac  │  Util  │ Size  │
-├────────────────────────────────┼────────────────────────┼───────┼────────┼────────┼───────┤
-│ shaft-mk01                     │ automated-factory-mk01 │   1   │  1.000 │ 100.0% │ 7x7   │
-│ fenxsb-alloy-2                 │ smelter-mk01           │   1   │  1.000 │ 100.0% │ 13x13 │
-│ solder-0                       │ automated-factory-mk01 │   1   │  0.600 │  60.0% │ 7x7   │
-│ nexelit-plate-2                │ advanced-foundry-mk01  │   1   │  0.334 │  33.4% │ 6x6   │
-│ copper-cable                   │ automated-factory-mk01 │   1   │  0.292 │  29.2% │ 7x7   │
-│ utility-box-mk01               │ automated-factory-mk01 │   1   │  0.200 │  20.0% │ 7x7   │
-│ clay                           │ clay-pit-mk01          │   1   │  0.178 │  17.8% │ 7x7   │
-│ tinned-cable                   │ automated-factory-mk01 │   1   │  0.167 │  16.7% │ 7x7   │
-│ brake-mk01                     │ automated-factory-mk01 │   1   │  0.134 │  13.4% │ 7x7   │
-│ iron-stick                     │ automated-factory-mk01 │   1   │  0.125 │  12.5% │ 7x7   │
-│ controler-mk01                 │ automated-factory-mk01 │   1   │  0.100 │  10.0% │ 7x7   │
-│ iron-gear-wheel                │ automated-factory-mk01 │   1   │  0.084 │   8.4% │ 7x7   │
-│ (steam for clay)               │ oil-boiler-mk01        │   1   │  0.037 │   3.7% │ 5x5   │
-│ ceramic                        │ hpf                    │   1   │  0.067 │   6.7% │ 7x7   │
-│ bolts                          │ automated-factory-mk01 │   1   │  0.050 │   5.0% │ 7x7   │
-│ mechanical-parts-01            │ assembling-machine-2   │   1   │  0.040 │   4.0% │ 3x3   │
-│ small-parts-01                 │ automated-factory-mk01 │   1   │  0.034 │   3.4% │ 7x7   │
-│ gearbox-mk01                   │ assembling-machine-2   │   1   │  0.034 │   3.4% │ 3x3   │
-└────────────────────────────────┴────────────────────────┴───────┴────────┴────────┴───────┘
+┌─────────────────────┬───────────────────────┬────────┬───────┬────────┬───────┐
+│ Recipe              │ Factory               │  frac  │ Count │  Util  │ Size  │
+├─────────────────────┼───────────────────────┼────────┼───────┼────────┼───────┤
+│ fenxsb-alloy-2      │ smelter-mk01          │  0.625 │   1   │  62.5% │ 13x13 │
+│ shaft-mk01          │ assembling-machine-2  │  0.313 │   1   │  31.3% │ 3x3   │
+│ nexelit-plate-2     │ advanced-foundry-mk01 │  0.209 │   1   │  20.9% │ 6x6   │
+│ solder-0            │ assembling-machine-2  │  0.188 │   1   │  18.8% │ 3x3   │
+│ copper-cable        │ assembling-machine-2  │  0.092 │   1   │   9.2% │ 3x3   │
+│ utility-box-mk01    │ assembling-machine-2  │  0.063 │   1   │   6.3% │ 3x3   │
+│ tinned-cable        │ assembling-machine-2  │  0.053 │   1   │   5.3% │ 3x3   │
+│ brake-mk01          │ assembling-machine-2  │  0.042 │   1   │   4.2% │ 3x3   │
+│ vitreloy            │ smelter-mk01          │  0.042 │   1   │   4.2% │ 13x13 │
+│ iron-stick          │ assembling-machine-2  │  0.040 │   1   │   4.0% │ 3x3   │
+│ controler-mk01      │ assembling-machine-2  │  0.032 │   1   │   3.2% │ 3x3   │
+│ iron-gear-wheel     │ assembling-machine-2  │  0.027 │   1   │   2.7% │ 3x3   │
+│ mechanical-parts-01 │ assembling-machine-2  │  0.026 │   1   │   2.6% │ 3x3   │
+│ gearbox-mk01        │ assembling-machine-2  │  0.021 │   1   │   2.1% │ 3x3   │
+│ bolts               │ assembling-machine-2  │  0.016 │   1   │   1.6% │ 3x3   │
+│ small-parts-01      │ assembling-machine-2  │  0.011 │   1   │   1.1% │ 3x3   │
+└─────────────────────┴───────────────────────┴────────┴───────┴────────┴───────┘
 ```
 
-**18 buildings · 885 tiles · 6.14 MW electric + 11.09 acetylene/s (665.6/min)**
+**16 buildings · 491 tiles · 0.25 MW electric · 400 acetylene/min · 138 kW jerry**
 
-| | MW | source |
-|---|--:|---|
-| `smelter-mk01` ×1 @100 % | **10.00** | **acetylene — 10.00/s, 600/min** |
-| `automated-factory-mk01` ×11 (Σfrac 2.786) | 5.57 | electric |
-| `advanced-foundry-mk01` ×1 @33.4 % | 0.40 | electric |
-| `hpf` ×1 @6.7 % | 0.13 | electric |
-| `clay-pit-mk01` ×1 @17.8 % | 0.04 | electric |
-| `oil-boiler-mk01` ×1 @3.7 % | 1.09 | **acetylene — 1.09/s, 65.6/min** |
-| `assembling-machine-2` ×2 (Σfrac 0.074) | 0.01 | jerry — 0.07 acetylene-canister/min |
+The 0.25 MW electric is *only* the `advanced-foundry-mk01`. Every assembler runs on canisters and
+both smelters on acetylene, so the block barely touches the grid.
 
-The solver reports **17.98 MW** and that figure is for the `py-electric-boiler` configuration it can
-model — see § Solver command. The build swaps that row for `oil-boiler-mk01`, which moves 1.87 MW
-off the electrical bus and adds 65.6 acetylene/min; the other seventeen rows are untouched.
+## This block is a MAM — everything fits in three machines
 
-*Fracs are solver output, read off a ×1000 target solve — that probe needs `water` raised to 1e9, or
-the default cap starves it and every row returns zero. It also reports `shaft-mk01` at 1.001 from
-accumulated float; at the real 1.2/min target the solve returns one machine, so the frac is 1.000.
-The seven power rows sum to 18.02 against the reported 17.98.*
+| | Σ frac | as tabled | if circuit-switched |
+|---|--:|--:|--:|
+| `assembling-machine-2` (13 rows) | **0.924** | 13 | **1** |
+| `smelter-mk01` (fenxsb + vitreloy) | 0.667 | 2 | **1** |
+| `advanced-foundry-mk01` | 0.209 | 1 | 1 |
+| | | **16** | **3** |
+
+`shaft-mk01` alone is a third of the assembler sum (0.313) and `solder-0` another fifth (0.188) —
+those two are 54 % of all the crafting in the block.
+
+What stops a literal 3-building collapse is delivery, not rates: the one assembler would need
+**26 distinct ingredients**, twelve of which it makes itself, so every intermediate round-trips
+through its own buffer. At 1.2 items/s per inserter the input side is the wall. That is an inserter
+and buffer-layout decision, unpriced here.
 
 ## The real price of a shaft is 8.33 acetylene/s
 
@@ -90,8 +87,7 @@ The seven power rows sum to 18.02 against the reported 17.98.*
 1 shaft/min  =  5 fenxsb/min  =  0.833 smelter  =  8.33 acetylene/s  =  500 acetylene/min
 ```
 
-Scaling is linear past this size — 6 shaft/min solves to 20 buildings / 69.25 MW and 12 shaft/min to
-35 / 138.50, exactly double. So the marginal cost of **exported** shaft, on top of this block:
+Scaling is linear. The marginal cost of **exported** shaft, on top of this block:
 
 | per +1 shaft-mk01/min | |
 |---|--:|
@@ -99,303 +95,234 @@ Scaling is linear past this size — 6 shaft/min solves to 20 buildings / 69.25 
 | acetylene | +8.33/s |
 | electric | +3.21 MW |
 
-For scale: one smelter here is 600 acetylene/min, where design 39's *entire* block is 95.5/min.
-Design 41 already runs 11 `smelter-mk01` ≈ 98 MW of acetylene for the same reason — it makes
-`shaft-mk01` ×3 internally. **Both blocks are paying for the same fenxsb smelters separately**, and
-`shaft-mk01` has 18 consumers base-wide against `fenxsb-alloy`'s 9. If 41 gets built, hoisting shaft
-into one shared supply and exporting it is the structural move; the acetylene does not go away, but
-it stops being bought twice at partial utilisation.
+Design 41 makes `shaft-mk01` internally too and pays for its own fenxsb smelter. `shaft-mk01` has
+18 consumers base-wide against `fenxsb-alloy`'s 9 — if both blocks get built, hoisting shaft into
+one shared supply is the structural move. The acetylene does not go away, but it stops being bought
+twice at partial utilisation. Same argument for `vitreloy`: **one smelter at 0.173 could serve 41
+and 42 together** rather than one each at 0.131 and 0.042.
 
-## Boundary — why fenxsb is in and duralumin is out
+## Boundary
 
 Consumer counts over **all** recipes (the lens rule 16 asks for, since boundaries must survive
 unlocks):
 
 | item | all | unlocked | call |
 |---|--:|--:|---|
-| `small-parts-01` | 250 | 6 | **inline** — 1 building at 3.4 %, a station would cost more than the machine |
-| `nexelit-plate` | 195 | 2 | inline — sole use here is fenxsb; foundry is 1.2 MW |
+| `small-parts-01` | 250 | 6 | **inline** — 1.1 % of one machine; a station costs more |
+| `nexelit-plate` | 195 | 2 | inline — sole use here is fenxsb |
 | `mechanical-parts-01` | 182 | 2 | **the product** |
 | `duralumin` | 175 | 2 | **import** — Tier A bus item |
 | `titanium-plate` | 190 | 2 | import |
-| `solder` | 29 | 2 | inline — the one row with real load at 60 % |
+| `solder` | 29 | 2 | inline |
 | `tinned-cable` | 40 | 2 | inline |
-| `shaft-mk01` | 18 | 2 | inline *(see above — export candidate)* |
-| `ceramic` | 18 | 2 | **inline** — costs 3 buildings; carries clay + a boiler with it |
+| `shaft-mk01` | 18 | 2 | inline *(export candidate — see above)* |
+| `ceramic` | 18 | 2 | **import** — see below |
 | `gearbox-mk01` | 15 | 2 | inline |
 | `brake-mk01` | 11 | 2 | inline |
-| `fenxsb-alloy` | **9** | 2 | **inline** — Tier D, and its only unlocked consumer is `shaft-mk01` |
+| `fenxsb-alloy` | **9** | 2 | **inline** — Tier D, only unlocked consumer is `shaft-mk01` |
+| `vitreloy` | 7 | 2 | **inline** — 1 smelter at 4.2 % |
 
-Boundaries priced at 1.20/min:
+Importing fenxsb would take the smelter and foundry with it, but a dedicated fenxsb block would have
+`shaft-mk01` as its only unlocked customer — it would be this smelter with a station bolted on.
+`duralumin` is the opposite case: 175 consumers, genuinely a bus item, smelters amortised elsewhere.
 
-| config | buildings | reported MW | |
-|---|--:|--:|---|
-| + `duralumin-1` also inline | 19 | 24.37 | 2 smelters |
-| **fenxsb + ceramic inline, duralumin imported** | **18** | **17.98** | **chosen** |
-| fenxsb imported, ceramic inline | 16 | 2.12 | 0 smelters |
-| fenxsb inline, ceramic imported | 15 | 15.97 | 1 smelter |
-| all alloys imported | 14 | 5.57 | 0 smelters |
+**Ceramic is imported, and that is a reversal.** Inlining it costs 3 buildings — `ceramic` (hpf),
+`clay` (clay-pit) and a boiler — because `clay` is **100 steam → 3**, so 2.50 ceramic/min pulls
+~166 steam/min. Three machines and a water lane for 2.50/min of something with 18 consumers is the
+wrong trade in a block this small; it was inlined in an earlier revision and taken back out.
 
-Importing fenxsb looks like the bargain of the table — 2 buildings and **15.86 MW**, because it takes
-the smelter and the foundry with it. It is not: a dedicated fenxsb block would have `shaft-mk01` as
-its only unlocked customer, so it is this block's smelter with a station bolted on. `duralumin` is the opposite case — 175 consumers, genuinely a bus item, and its smelters
-get amortised across everything else that wants it.
+> **Kept from that revision, because it is not recorded anywhere else:** `clay-pit-mk01`'s steam
+> fluidbox has no filter and no `minimum_temperature`, so **clay counts steam by volume and is
+> indifferent to temperature**. `cool-steam-250-to-150` (200 steam@250 + 150 water → 340 steam@150)
+> is therefore a real **1.70× on steam volume** into clay — 49.35 MJ of boiler energy per clay craft
+> direct against 29.03 MJ via the exchanger, −41.2 %. Energy is conserved (98.7 → 96.4 MJ); the gain
+> is that cooling spreads it over 1.7× the volume. **The solver cannot see this** — it does not model
+> fluid temperature, so `200 steam → 340 steam` reads as an unbounded free multiplier and collapses
+> the solve to 0 buildings. Hand arithmetic. Matters to whichever block ends up making clay at scale.
+>
+> The same revision also settled the boiler choice, if clay ever comes back: **`oil-boiler-mk01` at
+> effectivity 2 beats `py-electric-boiler`** — 1.09 MW of acetylene against 1.87 MW electric for the
+> same steam, because every plain-steam generator in Py is effectivity 0.5, so electric costs ~3.7 MW
+> of fuel upstream. Flips only once molten-salt power is online.
 
-Ceramic sits between them at 18 consumers. Inlining trades one import lane (4.00 ceramic/min) for
-three (0.80 coke + 265.90 water + 65.6 acetylene) and **+0.17 MW electric + 1.09 MW acetylene**,
-nearly all of it the boiler — see below. It also closes a construction loop: the `smelter-mk01`
-needs 50 ceramic to build, which is 12.5 minutes of the block's own output.
-
-## The clay steam — `oil-boiler-mk01`
-
-`clay` is **100 steam → 3**, so 4.00 ceramic/min pulls 7.98 clay/min and **265.90 steam/min
-(4.43/s)**. That single number is the whole cost of inlining ceramic — the `hpf` and the clay pit
-together are 0.17 MW.
-
-```
-4.43 steam@250/s  x  0.4935 MJ  =  2.19 MJ/s of steam energy
-  oil-boiler-mk01, effectivity 2  ->  1.09 MW acetylene  =  65.6/min   <- chosen
-  py-electric-boiler, 25 MW @7.5% ->  1.87 MW electric
-```
-
-Acetylene and electricity come out of the same fuel pool, and every plain-steam generator in Py is
-effectivity 0.5 — so 1.87 MW electric costs roughly 3.7 MW of fuel upstream, against 1.09 MW burned
-directly. That is ~3.4× in the boiler's favour, it adds no new import type (the block already moves
-600 acetylene/min for the smelter, so this is +11 % on an existing lane), and it takes a 25 MW-rated
-machine off the electrical peak of an otherwise 6 MW block. It costs 16 tiles — 5×5 against 3×3.
-
-The one condition that flips this is molten-salt power at 7.39 MJe/MJ, which makes electricity the
-cheap input. That is parked until rail reaches a salt mine; revisit the row then, it is a one-machine
-swap either way.
-
-**The heat exchanger is not worth it here.** `clay-pit-mk01`'s steam fluidbox has no filter and no
-`minimum_temperature`, so clay counts steam **by volume** and is indifferent to temperature.
-`cool-steam-250-to-150` (`py-heat-exchanger`, 0.5 MW, speed 2) is 200 steam@250 + 150 water →
-340 steam@150, which is a real 1.70× on volume:
-
-```
-per clay craft (100 steam, temperature-blind)
-  direct :  100 steam@250                 =  49.35 MJ of boiler energy
-  via HX :  58.8 steam@250 + 44.1 water   =  29.03 MJ          -41.2 %
-block     :  2.19 MW of steam  ->  1.29 MW
-```
-
-Energy is conserved across the exchanger (98.7 → 96.4 MJ); the gain is purely that cooling spreads it
-over 1.7× the volume, and volume is what clay is billed in — the cooling-tower mechanic from
-CLAUDE.md running in your favour instead of against you. But it saves 0.45 MW of acetylene against a
-7×7 machine whose own build cost includes a `mechanical-parts-01`, i.e. the block would spend most of
-a day's output buying it. Excluded. Revisit only if clay demand scales by an order of magnitude.
-
-Note the recipe must also stay out of `--recipes`: the solver does not model fluid temperature, so
-`200 steam → 340 steam` reads as an unbounded free multiplier and collapses the solve to 0 buildings.
-The 41.2 % above is hand arithmetic.
-
-## Imports — 20 + acetylene
+## Imports — 20
 
 | | /min | note |
 |---|--:|---|
-| **acetylene** | **665.60** | 11.09/s — 600.0 smelter + 65.6 boiler; *not in solver output* |
-| **water** | **265.90** | → clay, via the boiler |
-| iron-plate | 61.98 | |
-| copper-plate | 48.98 | |
-| tin-plate | 32.00 | → solder |
-| lead-plate | 24.00 | → solder |
-| steel-plate | 9.99 | |
-| duralumin | 9.58 | brake 20/craft is most of it |
-| fish-oil | 8.00 | design 29 |
-| clean-nexelit | 6.00 | → nexelit-plate → fenxsb |
-| glass | 5.59 | |
-| sb-oxide | 3.00 | |
-| electronic-circuit | 2.80 | |
-| **ore-quartz** | **2.00** | **no producer in any current design — see risk 1** |
-| plastic-bar | 2.00 | |
-| titanium-plate | 1.60 | |
-| battery-mk01 | 1.20 | |
-| rubber | 1.20 | design 40 makes 15/min |
-| coke | 0.80 | → ceramic |
-| vitreloy | 0.80 | |
-| acetylene-canister | 0.07 | `assembling-machine-2` fuel |
+| **acetylene** | **400** | 6.67/s, the two smelters. *Not in solver output* |
+| iron-plate | 38.75 | |
+| copper-plate | 31.38 | |
+| tin-plate | 20.00 | → solder |
+| lead-plate | 15.00 | → solder |
+| duralumin | 6.75 | brake 20/craft + vitreloy |
+| steel-plate | 6.25 | |
+| fish-oil | 5.00 | → gearbox. Design 29 makes 78/min |
+| clean-nexelit | 3.75 | → nexelit-plate → fenxsb |
+| glass | 3.50 | |
+| sb-oxide | 2.63 | fenxsb + vitreloy |
+| ceramic | 2.50 | → brake |
+| electronic-circuit | 1.75 | |
+| titanium-plate | 1.75 | gearbox + vitreloy |
+| **ore-quartz** | **1.25** | **no producer in any current design — see risks** |
+| plastic-bar | 1.25 | |
+| acetylene-canister | 0.82 | **net zero** — the empties come back |
+| battery-mk01 | 0.75 | |
+| rubber | 0.75 | design 40 makes 15/min |
+| nickel-plate | 0.75 | vitreloy only |
 
-**Exports** (/min): **mechanical-parts-01 1.20** · empty-fuel-canister 0.07 *(return to the filler)*
+**Exports** (/min): **mechanical-parts-01 0.75** · empty-fuel-canister 0.82 *(return to the filler)*
 
-Twenty import lanes on an 18-building block is the headline cost of a MAM-shaped design — the station
-count exceeds the machine count outright, and every row below `steel-plate` is under 10/min. The
-four plate lanes (iron, copper, tin, lead = 167/min combined) are 80 % of the solid mass.
+`fill-acetylene-canister` is `1 empty-fuel-canister + 10 acetylene → 1`, unlocked under `plastics`,
+so canisters cycle and the only real consumption is 8.2 acetylene/min folded into the top row — 2 %
+of what the smelters burn.
 
-## What 1.20 mechanical-parts/min actually buys
+## What 0.75 mechanical-parts/min buys
 
-Shaft is the common currency, so price the consumers in shaft-equivalents
-(`gearbox-mk01` = 2 shaft). The block runs **3.60 shaft-eq/min**:
+Shaft is the common currency, so price consumers in shaft-equivalents (`gearbox-mk01` = 2 shaft).
+The block runs **2.25 shaft-eq/min**:
 
 | build | shaft-eq each | per min at this size |
 |---|--:|--:|
-| `mechanical-parts-01` | 3 | **1.20** ← as configured |
-| `automated-factory-mk01` (2 gearbox + 2 shaft) | 6 | 0.60 |
-| `locomotive` (1 gearbox + 4 shaft + 4 brake) | 6 | 0.60 |
-| `cargo-wagon` / `fluid-wagon` (2 shaft + 2 brake) | 2 | 1.80 |
-| `py-construction-robot-mk01` (1 gearbox) | 2 | 1.80 |
-| `tidal-mk01` (10 mech-parts + 3 gearbox + 3 shaft) | 39 | 0.09 |
+| `mechanical-parts-01` | 3 | **0.75** ← as configured |
+| `automated-factory-mk01` (2 gearbox + 2 shaft) | 6 | 0.375 |
+| `locomotive` (1 gearbox + 4 shaft + 4 brake) | 6 | 0.375 |
+| `cargo-wagon` / `fluid-wagon` (2 shaft + 2 brake) | 2 | 1.125 |
+| `steam-turbine-mk01` (3 gearbox + 1 shaft) | 7 | 0.321 |
+| `tidal-mk01` (10 mech-parts + 3 gearbox + 3 shaft) | 39 | 0.058 |
 
-All 3.60 currently goes to `mechanical-parts-01`. Any export of raw shaft, gearbox or brake comes
-out of that budget or off the marginal table above — `brake-mk01` is the cheap one, 2 buildings and
-no smelter per 3/min.
-
-For the molten-salt plan: `py-coal-powerplant-mk01` is 3 `mechanical-parts-01` and
-`py-heat-exchanger` is 1, so 1.20/min is 0.40 powerplants/min — a full 6.4-powerplant turbine set
-every 16 minutes.
+For the molten-salt plan: a 472.8 MW set is 6.4 `py-coal-powerplant-mk01` (3 mech-parts each) +
+1 `py-heat-exchanger` (1) + 1 `steam-turbine-mk01` = **20.2 mechanical-parts + 7 shaft-eq**, so
+**one turbine set every 27 minutes**. Note the turbine is a drivetrain consumer *directly*, not only
+through mechanical-parts.
 
 ## Solver command
 
-**The `--factory` overrides are the load-bearing flags.** Drop them and the LP answers with
+**The `--factory` overrides are load-bearing.** Drop them and the LP answers with
 `assembling-machine-3`, `smelter-mk04` and `electric-furnace` — a block that cannot be built, since
 `--unlocked` filters recipes but not the machines `--factory` would have pinned.
 
-The boundary is set by **membership in `--recipes`**, not by the caps: `duralumin-1` is deliberately
-absent, which is what makes `duralumin` an import. Removing *all* `--max-import` flags leaves every
-rate and the MW unchanged and only moves a ceiling by one machine. The caps are kept to pin that
-rounding, not to force anything internal.
-
-`--fuel ...:acetylene-canister` on the two `assembling-machine-2` rows avoids the coal default and
-its phantom ash. **`cool-steam-250-to-150` must stay out of `--recipes`** — it degenerates the solve
-to 0 buildings (see the steam section). `--max-import "water:100000"` is a plain allowance, but note
-it does not scale: a ×1000 frac probe overflows it and returns all zeros.
-
-**The command models the steam with `py-electric-boiler`; the build uses `oil-boiler-mk01`.** The
-latter is a boiler entity rather than a crafting machine, so there is no recipe for the LP to place
-— keeping the electric route in the command is what makes the other seventeen rows reproducible.
-The substitution is one row and is computed in § The clay steam: −1.87 MW electric, +65.6
-acetylene/min, 3×3 → 5×5, every other rate unchanged.
+The boundary is set by **membership in `--recipes`**: `duralumin-1` and the `ceramic`/`clay`/boiler
+chain are deliberately absent, which is what makes those imports.
 
 ```bash
 npx tsx src/cli.ts solve \
-  --recipes "mechanical-parts-01,controler-mk01,utility-box-mk01,gearbox-mk01,shaft-mk01,brake-mk01,tinned-cable,small-parts-01,iron-gear-wheel,copper-cable,bolts,iron-stick,solder-0,fenxsb-alloy-2,nexelit-plate-2,ceramic,clay,electric-boiler-water-to-steam" \
-  --target "mechanical-parts-01:1.2" --time 60 \
+  --recipes "mechanical-parts-01,controler-mk01,utility-box-mk01,gearbox-mk01,shaft-mk01,brake-mk01,tinned-cable,small-parts-01,iron-gear-wheel,copper-cable,bolts,iron-stick,solder-0,fenxsb-alloy-2,nexelit-plate-2,vitreloy" \
+  --target "mechanical-parts-01:0.75" --time 60 \
   --max-import "controler-mk01:0.001" --max-import "utility-box-mk01:0.001" \
   --max-import "gearbox-mk01:0.001" --max-import "shaft-mk01:0.001" --max-import "brake-mk01:0.001" \
   --max-import "tinned-cable:0.001" --max-import "small-parts-01:0.001" \
   --max-import "iron-gear-wheel:0.001" --max-import "copper-cable:0.001" --max-import "bolts:0.001" \
   --max-import "iron-stick:0.001" --max-import "solder:0.001" \
   --max-import "fenxsb-alloy:0.001" --max-import "nexelit-plate:0.001" \
+  --max-import "vitreloy:0.001" \
   --factory "mechanical-parts-01:assembling-machine-2" \
   --factory "gearbox-mk01:assembling-machine-2" \
-  --fuel "mechanical-parts-01:acetylene-canister" --fuel "gearbox-mk01:acetylene-canister" \
-  --factory "controler-mk01:automated-factory-mk01" \
-  --factory "utility-box-mk01:automated-factory-mk01" \
-  --factory "shaft-mk01:automated-factory-mk01" \
-  --factory "brake-mk01:automated-factory-mk01" \
-  --factory "tinned-cable:automated-factory-mk01" \
-  --factory "small-parts-01:automated-factory-mk01" \
-  --factory "iron-gear-wheel:automated-factory-mk01" \
-  --factory "copper-cable:automated-factory-mk01" \
-  --factory "bolts:automated-factory-mk01" \
-  --factory "iron-stick:automated-factory-mk01" \
-  --factory "solder-0:automated-factory-mk01" \
+  --factory "controler-mk01:assembling-machine-2" \
+  --factory "utility-box-mk01:assembling-machine-2" \
+  --factory "shaft-mk01:assembling-machine-2" \
+  --factory "brake-mk01:assembling-machine-2" \
+  --factory "tinned-cable:assembling-machine-2" \
+  --factory "small-parts-01:assembling-machine-2" \
+  --factory "iron-gear-wheel:assembling-machine-2" \
+  --factory "copper-cable:assembling-machine-2" \
+  --factory "bolts:assembling-machine-2" \
+  --factory "iron-stick:assembling-machine-2" \
+  --factory "solder-0:assembling-machine-2" \
   --factory "fenxsb-alloy-2:smelter-mk01" \
+  --factory "vitreloy:smelter-mk01" \
   --factory "nexelit-plate-2:advanced-foundry-mk01" \
-  --factory "ceramic:hpf" \
-  --factory "clay:clay-pit-mk01" \
-  --factory "electric-boiler-water-to-steam:py-electric-boiler" \
-  --max-import "ceramic:0.001" --max-import "clay:0.001" --max-import "steam:0.001" \
-  --max-import "water:100000" \
+  --fuel "mechanical-parts-01:acetylene-canister" \
+  --fuel "gearbox-mk01:acetylene-canister" \
+  --fuel "controler-mk01:acetylene-canister" \
+  --fuel "utility-box-mk01:acetylene-canister" \
+  --fuel "shaft-mk01:acetylene-canister" \
+  --fuel "brake-mk01:acetylene-canister" \
+  --fuel "tinned-cable:acetylene-canister" \
+  --fuel "small-parts-01:acetylene-canister" \
+  --fuel "iron-gear-wheel:acetylene-canister" \
+  --fuel "copper-cable:acetylene-canister" \
+  --fuel "bolts:acetylene-canister" \
+  --fuel "iron-stick:acetylene-canister" \
+  --fuel "solder-0:acetylene-canister" \
   --solver simplex --unlocked
 ```
 
-Change `--target` to `mechanical-parts-01:2.4` for the double stamp — 21 buildings, 35.97 MW, adding
-only a second `shaft-mk01`, a second `smelter-mk01` and a second `solder-0`.
+Run at `--target mechanical-parts-01:750` and divide counts by 1000 for the fractional values.
 
-## Intermediates
+### Invocation notes
 
-```
-┌──────────────────┬────────────┬────────────────────────────────┬───────────────────────────────────────────────────┐
-│ Item             │ Rate       │ Producer                       │ Consumer                                          │
-├──────────────────┼────────────┼────────────────────────────────┼───────────────────────────────────────────────────┤
-│ steam            │ 265.90/min │ oil-boiler-mk01 (4.43/s @250C) │ clay 265.90                                       │
-│ copper-cable     │  69.98/min │ copper-cable                   │ tinned-cable 40.00, small-parts-01 29.99          │
-│ bolts            │  29.99/min │ bolts                          │ small-parts-01 29.99                              │
-│ iron-stick       │  29.99/min │ iron-stick                     │ bolts 29.99                                       │
-│ tinned-cable     │  20.00/min │ tinned-cable                   │ utility-box-mk01 20.00                            │
-│ small-parts-01   │  19.99/min │ small-parts-01                 │ mech-parts 10.00, shaft 6.00, brake 3.99          │
-│ iron-gear-wheel  │  10.00/min │ iron-gear-wheel                │ small-parts-01 10.00                              │
-│ clay             │   7.98/min │ clay                           │ ceramic 7.98                                      │
-│ fenxsb-alloy     │   6.00/min │ fenxsb-alloy-2                 │ shaft-mk01 6.00                                   │
-│ solder           │   6.00/min │ solder-0                       │ shaft-mk01 6.00                                   │
-│ nexelit-plate    │   6.00/min │ nexelit-plate-2                │ fenxsb-alloy-2 6.00                               │
-│ ceramic          │   3.99/min │ ceramic                        │ brake-mk01 3.99                                   │
-│ shaft-mk01       │   1.20/min │ shaft-mk01                     │ mech-parts 0.40, gearbox-mk01 0.80                │
-│ brake-mk01       │   0.40/min │ brake-mk01                     │ mechanical-parts-01 0.40                          │
-│ controler-mk01   │   0.40/min │ controler-mk01                 │ mechanical-parts-01 0.40                          │
-│ gearbox-mk01     │   0.40/min │ gearbox-mk01                   │ mechanical-parts-01 0.40                          │
-│ utility-box-mk01 │   0.40/min │ utility-box-mk01               │ mechanical-parts-01 0.40                          │
-└──────────────────┴────────────┴────────────────────────────────┴───────────────────────────────────────────────────┘
-```
+- **Thirteen `--fuel` flags, not one.** Every row is on `assembling-machine-2`, which burns
+  chemical/biomass/jerry and **defaults to coal**. Miss any flag and the solve returns `coal` in and
+  `ash` out from nowhere. The tell is a coal line in a block with no coal input.
+- **`--fuel "...:acetylene"` throws** — `"acetylene" is not a valid fuel item`. It is a fluid; only
+  `acetylene-canister` works as a solid fuel, and only on jerry-capable machines.
+- **`smelter-mk01` is a fluid burner and the solve does not say so.** Its fuel lands in
+  `totalPowerMW` under an electric heading — of the reported 6.92 MW, 6.67 is acetylene.
+- **`automated-factory-mk01` also handles `advanced-crafting`** and is electric, so `gearbox-mk01`
+  and `mechanical-parts-01` never *needed* a burner. The swap to `assembling-machine-2` is worth it
+  anyway — see below.
+
+## Why `assembling-machine-2` over `automated-factory-mk01`
+
+Speed 2 halves every assembler frac and 3×3 against 7×7 saves most of the footprint:
+
+| | automated-factory-mk01 @1.2 | assembling-machine-2 @0.75 |
+|---|--:|--:|
+| buildings | 18 | **16** |
+| tiles | 1,136 | **491** |
+| electric | 16.01 MW | **0.25 MW** |
+| acetylene | 665/min | **400/min** |
+| switched floor | 7 | **3** |
+
+It also **removes the self-building loop**: `automated-factory-mk01` costs 2 gearbox + 2 shaft each,
+so the old 13-machine version needed 26 gearbox + 26 shaft + 26 intermetallics to construct itself.
+`assembling-machine-2` costs an `assembling-machine-1` instead.
 
 ## Risks
 
 1. **`ore-quartz` has no producer in any current design.** `controler-mk01` needs 5 per craft =
-   2.00/min here, and design 39 hit the same wall. It is mined, not crafted: the `ore-quartz`
-   resource takes no fluid, `quartz-rock` requires acetylene. A quartz outpost is a prerequisite for
-   `mechanical-parts-01` at any rate — `gearbox-mk01`, `shaft-mk01` and `brake-mk01` are unaffected.
-2. **`sb-oxide` and `clean-nexelit` (3.00 and 6.00/min) feed the only fenxsb route.** Both are
-   single-route imports with no alternative, so a gap on either stops all shaft production and
-   therefore the whole block.
-3. **Acetylene supply is the scaling limit, not buildings.** One smelter is 10.00/s; the 2.40/min
-   stamp wants 20/s before any shaft is exported.
-4. **Water is a block input at 265.90/min**, and the whole ceramic branch stalls without it —
-   `brake-mk01` is the only ceramic consumer, and `mechanical-parts-01` needs a brake per craft, so
-   a dry boiler stops the product. `shaft-mk01` and `gearbox-mk01` keep running.
-5. **Everything except shaft and fenxsb is idle capacity.** Sixteen of eighteen rows are below 60 %,
-   nine below 15 %. That is the floor for a block with this many distinct recipes, not slack to
-   reclaim — but it does mean the 2.40/min stamp is only +3 buildings, which is the better buy if
-   demand supports it.
+   1.25/min here, and design 39 hit the same wall at 19.50/min. It is mined, not crafted: the
+   `ore-quartz` resource takes no fluid, `quartz-rock` requires acetylene. A quartz outpost is a
+   prerequisite for `mechanical-parts-01` at any rate — `gearbox-mk01`, `shaft-mk01` and
+   `brake-mk01` are unaffected, so a quartz-free variant still delivers the drivetrain parts. One
+   outpost covers this 1.25 plus design 39's 19.50.
+2. **`sb-oxide`, `clean-nexelit` and `nickel-plate` are single-route imports** with no alternative.
+   A gap on sb-oxide or clean-nexelit stops all shaft production and therefore the block; a gap on
+   nickel-plate stops only `vitreloy` → `brake`.
+3. **Acetylene is the scaling limit, not buildings.** Two smelters at 6.67/s here; the assembler
+   side has headroom to ~0.82/min and the smelters to ~0.90 before anything doubles.
 
 ## Lever: efficiency modules
 
-`smelter-mk01` allows `consumption` and has 1 module slot, as do `automated-factory-mk01`, `hpf` and
-`clay-pit-mk01`. `oil-boiler-mk01` has **0 slots**, so the 1.09 MW boiler row is not reachable this
-way. One `efficiency-module` (−30 % consumption, no speed penalty) in every slot that has one takes
-the equivalent pre-ceramic block from **31.93 → 22.35 MW** at double this rate (solver-verified);
-applied here it drops the smelter to 7.00 acetylene/s and the electric side to ~4.3 MW, for zero
-extra buildings. `efficiency-module` is **not researched**; this is priced as an upgrade, not the
-baseline. `productivity-module` is the wrong pick
-here: ×1.2 consumption against ×0.825 throughput is 1.45× the fuel per fenxsb.
+`smelter-mk01` allows `consumption` with 1 slot. `assembling-machine-2` has **0 module slots**, so
+the thirteen assembler rows are not reachable this way — but they are only 138 kW between them.
+One `efficiency-module` (−30 % consumption, no speed penalty) in each smelter takes acetylene from
+**400 → 280/min** for zero extra buildings. `efficiency-module` is **not researched**; priced as an
+upgrade, not the baseline. `productivity-module` is the wrong pick: ×1.2 consumption against ×0.825
+throughput is 1.45× the fuel per fenxsb.
 
 ## Construction materials
 
-Distinct items needed to build the 18 machines (none appear in the flow imports except
-`electronic-circuit`, `steel-plate`, `iron-plate`, `copper-plate`, `titanium-plate` and `duralumin`):
+Distinct items needed to build the 16 machines:
 
 | item | qty | for |
 |---|--:|---|
-| small-parts-01 | 315 | every machine type |
-| steel-plate | 264 | |
-| iron-plate | 220 | smelter, foundry, clay pit, boiler |
-| stone-brick | 80 | smelter, foundry, hpf, clay pit |
-| electronic-circuit | 66 | |
-| ceramic | 50 | smelter-mk01 — *now made on site* |
-| inserter | 33 | automated-factory ×11 |
+| small-parts-01 | 175 | all three machine types |
+| iron-plate | 110 | smelters + foundry |
+| steel-plate | 106 | |
+| ceramic | 100 | smelter-mk01 ×2 |
+| duralumin | 65 | assembling-machine-2 ×13 |
+| stone-brick | 60 | smelters + foundry |
+| electronic-circuit | 49 | |
+| titanium-plate | 30 | smelter-mk01 ×2 |
 | copper-cable | 30 | advanced-foundry |
-| intermetallics | 32 | automated-factory ×11, oil-boiler-mk01 |
-| **gearbox-mk01** | **22** | automated-factory ×11 |
-| **shaft-mk01** | **22** | automated-factory ×11 |
-| copper-plate | 20 | hpf |
-| titanium-plate | 15 | smelter-mk01 |
-| steam-engine | 13 | smelter, hpf, clay pit |
+| steam-engine | 20 | smelter-mk01 ×2 |
+| assembling-machine-1 | 13 | |
 | stone-furnace | 10 | advanced-foundry |
-| pipe | 10 | clay-pit-mk01 |
-| duralumin | 10 | assembling-machine-2 ×2 |
-| electric-mining-drill | 3 | oil-boiler-mk01 |
-| inductor1 | 3 | hpf |
-| burner-mining-drill | 2 | clay-pit-mk01 |
-| assembling-machine-1 | 2 | |
-| lab | 1 | oil-boiler-mk01 |
-| gasifier | 1 | oil-boiler-mk01 |
 
-**The block builds itself.** Its 11 `automated-factory-mk01` need 22 gearbox + 22 shaft = 66
-shaft-equivalents, which is **18.3 minutes of its own 3.60 shaft-eq/min output**; the 50 ceramic for
-the smelter is **12.5 minutes** of its own 4.00 ceramic/min. So the second stamp is nearly free and
-the first is the one that has to come from somewhere else.
-Construction-feasibility note, inferred: `intermetallics` (32), `inductor1` (3) and `vitreloy` (flow
-import, 0.80/min) are the items here with no recorded producing design; design 41 runs
-`intermetallics` internally via `advanced-foundry-mk01`, so that recipe is reachable, but none has a
-standing supply. Build or confirm those three plus the `ore-quartz` outpost before committing the
-stamp.
+**No `gearbox-mk01`, `shaft-mk01` or `intermetallics` in the build cost** — that is the
+`assembling-machine-2` swap paying off twice, since the previous `automated-factory-mk01` version
+needed 26 of each of the first two to construct itself.
+Construction-feasibility note, inferred: `ceramic` (100, also a flow import) and
+`assembling-machine-1` (13) are the two items with no recorded producing design, though both are
+early recipes. Confirm those plus the `ore-quartz` outpost before committing the stamp.

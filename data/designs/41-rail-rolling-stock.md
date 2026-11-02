@@ -183,6 +183,87 @@ worth building.
 18 buildings covers everything to 3.27 trains/h. The block is nearly all fixed cost — doubling to
 6/h costs 2 buildings — so if 3/hour reads thin, going higher is cheap.
 
+## Batch cycle — one whole train, flattened
+
+The rate view above says *how fast*; this says *what to make in one pass*. It is the input for a
+batch controller that runs each recipe once per train rather than switching on buffer dips — which
+is what a quick-and-dirty prototype gets wrong, because switching cost is paid per visit and most
+recipes here produce almost nothing per visit.
+
+**Integer crafts, rounding cascaded.** Each level rounds up to whole crafts and the rounded figure
+is what the level below has to supply — so these are not the fractional machine-counts from the
+rate table. `needs + spare = makes` on every row.
+`*` = dedicated machine, never switches. `per` = output per craft.
+
+```
+                                    CARGO train                 FLUID train
+ tier  recipe             needs crafts makes spare    needs crafts makes spare  per
+───── tier 0 ───────────────────────────────────────────────────────────────────────
+   *  duralumin-1           257    257   257     0      297    297   297     0    1
+      iron-stick            280    140   280     0      280    140   280     0    2
+      copper-cable          279    140   280     1      279    140   280     1    2
+      iron-gear-wheel        93     93    93     0       93     93    93     0    1
+      solder-0               50     50    50     0       50     50    50     0    1
+      pipe                   30     30    30     0       46     46    46     0    1
+   *  nexelit-plate-2        66      4    72     6       66      4    72     6   18
+───── tier 1 ───────────────────────────────────────────────────────────────────────
+      bolts                 279    140   280     1      279    140   280     1    2
+   *  fenxsb-alloy-2         65     33    66     1       65     33    66     1    2
+   *  vitreloy               31     16    32     1       31     16    32     1    2
+      storage-tank            —      —     —     —        2      2     2     0    1
+───── tier 2 ───────────────────────────────────────────────────────────────────────
+      small-parts-01        186     93   186     0      186     93   186     0    2
+   *  intermetallics         15     15    15     0       15     15    15     0    1
+───── tier 3 ───────────────────────────────────────────────────────────────────────
+      shaft-mk01             10     10    10     0       10     10    10     0    1
+      brake-mk01              8      8     8     0        8      8     8     0    1
+      steam-engine            2      2     2     0        2      2     2     0    1
+───── tier 4 ───────────────────────────────────────────────────────────────────────
+      cargo-wagon             2      2     2     0        —      —     —     —    1
+      fluid-wagon             —      —     —     —        2      2     2     0    1
+      gearbox-mk01            1      1     1     0        1      1     1     0    1
+───── tier 5 ───────────────────────────────────────────────────────────────────────
+      locomotive              1      1     1     0        1      1     1     0    1
+────────────────────────────────────────────────────────────────────────────────────
+      TOTAL crafts                1,035                        1,093
+```
+
+### Raw imports per train
+
+| | cargo | fluid | delta | | | cargo | fluid |
+|---|--:|--:|--:|---|---|--:|--:|
+| **aluminium-plate** | 1,028 | **1,188** | +160 | | tin-plate | 100 | 100 |
+| copper-plate | 782 | 862 | +80 | | sb-oxide | 81 | 81 |
+| **iron-plate** | 647 | **623** | −24 | | ceramic | 80 | 80 |
+| lead-plate | 200 | 220 | +20 | | glass | 80 | 80 |
+| titanium-plate | 152 | 152 | 0 | | clean-nexelit | 72 | 72 |
+| steel-plate | 115 | 117 | +2 | | nickel-plate | 48 | 48 |
+| | | | | | fish-oil | 20 | 20 |
+| | | | | | electronic-circuit | 10 | 10 |
+
+### What the batch view shows that the rate view does not
+
+**The two cycles are one program with four parameters.** Eleven recipes have identical craft counts;
+only `duralumin-1` (257 → 297), `pipe` (30 → 46), `storage-tank` (0 → 2) and the wagon swap differ.
+Nine of fourteen import lanes are byte-identical. Build one controller, not two.
+
+**Pull the five dedicated machines out and the rotation is 13–14 recipes**, of which `iron-stick` →
+`bolts` → `small-parts-01` plus `copper-cable` and `iron-gear-wheel` is **606 of ~730 crafts — 83 %
+of the switching work in five recipes that all converge on `small-parts-01`.** The remaining eight
+or nine recipes are 24 crafts combined. That asymmetry is where a naive switcher bleeds: it pays
+full overhead on a tail that produces almost nothing.
+
+**`duralumin-1` is 257 of 1,035 crafts — 25 % of the cycle in one recipe** — and it is a dedicated
+smelter that never switches, so it should start first and run continuously through the whole cycle
+rather than being part of any rotation. It is also the row at 92 % in the rate table, so it is
+simultaneously the longest batch and the tightest machine: it can only lose to input starvation, not
+to switching. Size its aluminium buffer for 1,028–1,188 plate.
+
+**Spare accumulates on five rows**, ten items per cycle: `nexelit-plate-2` +6, then `copper-cable`,
+`bolts`, `fenxsb-alloy-2`, `vitreloy` +1 each. Only nexelit matters — 6 banked per cycle means
+**after 11 cycles you have 66 and can skip that batch entirely**, so it wants a stock check rather
+than an unconditional craft. The other four just sit.
+
 ## Solver command
 
 **No single command produces this.** The solver takes one target and this is three circuit-switched

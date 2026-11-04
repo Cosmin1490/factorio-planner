@@ -318,23 +318,51 @@ Beyond design 13's tar-tree bill, the 32-building island needs:
 | iron-plate | 120 | | | |
 | **mechanical-parts-01** | **63** | | | |
 
-### Mechanical parts: 63
+### Drivetrain — everything design 42 has to supply
 
-**60 from the twenty powerplants** (3 each) and **3 from the exchangers** (1 each). The turbines
-carry none directly but want **9 `gearbox-mk01` + 3 `shaft-mk01` + 12 `brake-mk01` + 6
-`utility-box-mk01`** of their own.
+Including the **salt mine**, which is temporary but has to exist before the island starts.
 
-Priced in design 42's currency — 63 mechanical-parts is **210 shaft-equivalents** including the
-turbines' drivetrain:
+```
+┌─────────────────────┬─────┬────────────────────────────────────────────────────────────┐
+│        item         │ qty │                           where                            │
+├─────────────────────┼─────┼────────────────────────────────────────────────────────────┤
+│ mechanical-parts-01 │  73 │ 60 powerplants (3 ea) + 3 exchangers (1 ea) + 10 salt mine │
+├─────────────────────┼─────┼────────────────────────────────────────────────────────────┤
+│ gearbox-mk01        │  15 │ 9 turbines (3 ea) + 6 automated-factory (2 ea)             │
+├─────────────────────┼─────┼────────────────────────────────────────────────────────────┤
+│ shaft-mk01          │   9 │ 3 turbines (1 ea) + 6 automated-factory (2 ea)             │
+├─────────────────────┼─────┼────────────────────────────────────────────────────────────┤
+│ brake-mk01          │  12 │ turbines, 4 ea                                             │
+├─────────────────────┼─────┼────────────────────────────────────────────────────────────┤
+│ utility-box-mk01    │   6 │ turbines, 2 ea                                             │
+└─────────────────────┴─────┴────────────────────────────────────────────────────────────┘
+```
 
-| at design 42's rate | |
+**The 6 gearbox + 6 shaft are easy to miss.** They are not turbine parts — `py-heat-exchanger` takes
+one `automated-factory-mk01` each, and *that* recipe is 2 gearbox + 2 shaft. Three exchangers
+quietly cost six of each.
+
+**These are all additional to what is inside the mechanical-parts.** Each `mechanical-parts-01`
+already contains 1 gearbox + 1 shaft, consumed making it; the 15 and 9 above are standalone units
+needed in hand on top of the 73.
+
+Priced in design 42's currency:
+
+| | |
 |---|--:|
-| 0.75 mechanical-parts/min | **84 minutes** for the 63 |
-| 2.25 shaft-eq/min | **93 minutes** for all 210 |
+| 73 mech-parts × 3 shaft-eq | 219 |
+| 15 gearbox × 2 | 30 |
+| 9 shaft | 9 |
+| **total** | **258 shaft-eq** |
+| at 0.75 mechanical-parts/min | **97 min** for the 73 |
+| at 2.25 shaft-eq/min | **115 min** for all 258 |
 
-So the drivetrain is roughly **an hour and a half of design 42's entire output** — and it is not the
-binding item. **`small-parts-01` at 7,010** is, and that is a MAM-throughput problem rather than a
-design one. Inferred from the recipe graph, not from save state.
+So roughly **two hours of design 42's entire output**, with nothing left for anyone else. The 10 in
+the salt mine come back when it is removed, taking the steady-state bill to 63.
+
+**It is still not the binding item.** `small-parts-01` at **7,010** is — at design 42's internal
+12.50/min that one row is nine hours, so it comes off the MAM or a dedicated block, not out of 42.
+Inferred from the recipe graph, not from save state.
 
 ## Risks
 

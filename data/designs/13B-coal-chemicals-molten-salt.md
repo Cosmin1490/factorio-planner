@@ -81,8 +81,9 @@ That is why the threshold is sharp. 38,000 ÷ 20 is **1,900 per machine — 100 
 box plus one in-flight craft. The deficit is identical across all twenty, so they do not fail one
 at a time and there is no gradual region; the whole island is under by the same amount at once.
 
-**Seed 42,000 molten-salt (126,000 salt).** Over-seeding costs nothing and you cannot top up once
-the loop is sealed, so take the margin.
+**Seed 42,000 molten-salt (126,000 salt).** Over-seeding costs nothing — surplus just circulates.
+Topping up a short loop works too, but a dead loop gives you nothing to size the top-up from, so
+seeding over is the cheaper path.
 
 ### Making it
 

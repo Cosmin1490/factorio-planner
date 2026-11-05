@@ -47,17 +47,42 @@ The loop consumes no salt once charged, but it will not start until the system i
 proportionally, so an underfilled system gives you twenty powerplants each short, all stalled, with
 the total looking adequate.
 
-**Seed 40,000 molten-salt = 120,000 salt.** Measured, not derived:
+**Seed 42,000 molten-salt = 126,000 salt.** The threshold is measured and sharp:
 
-| seed | molten-salt | salt | result |
-|---|--:|--:|---|
-| | 32,000 | 96,000 | **does not start** |
-| **build to this** | **40,000** | **120,000** | **runs** |
+| molten-salt | salt | result |
+|--:|--:|---|
+| 32,000 | 96,000 | does not start |
+| 36,000 | 108,000 | does not start |
+| 38,000 | 114,000 | does not start |
+| 39,000 | 117,000 | marginal |
+| **40,000** | **120,000** | **runs** |
+| **42,000** | **126,000** | **build to this** |
 
-**The recipe floor is only a quarter of it.** Machine input boxes need
-`20 × 500 + 3 × 200 = 10,600 molten-salt`, which is **26 %** of the working seed — the other 74 % is
-fluidbox headroom and pipe volume. Per powerplant the working figure is **2,000 molten-salt against
-a 500 recipe amount, 4×**. Do not size this from the recipe; it will be short by a factor of four.
+**Fail to work is 5 %** — see below for why there is no gradual region.
+
+**Do not size this from the recipe — it will be short by 4×.** The recipe amount is 500; the
+machine holds four times that. Per powerplant, **measured in game**:
+
+```
+  1,500   molten-salt box capacity = 3 x the 500 recipe amount   (observed)
++   500   locked in the running craft — consumed from the box but not yet
+          output, so it is invisible to the box and must still be seeded
+= 2,000   per powerplant
+
+20 x 2,000 = 40,000     <- the working seed for this design's bank
+21 x 2,000 = 42,000     <- what the lab build needed, and the number to use
+```
+
+> **The lab build is 21 powerplants, this design is 20.** The coke bank was rounded to 20 machines
+> for a flat 40 coke/s rather than the 19 that 36.70/s needs, plus 1 for the dust. Seed to the bank
+> you actually place: **`(machines + 1) × 2,000`**.
+
+That is why the threshold is sharp. 38,000 ÷ 20 is **1,900 per machine — 100 short** of one full
+box plus one in-flight craft. The deficit is identical across all twenty, so they do not fail one
+at a time and there is no gradual region; the whole island is under by the same amount at once.
+
+**Seed 42,000 molten-salt (126,000 salt).** Over-seeding costs nothing and you cannot top up once
+the loop is sealed, so take the margin.
 
 ### Making it
 
@@ -66,34 +91,34 @@ a 500 recipe amount, 4×**. Do not size this from the recipe; it will be short b
 has `mining_time 1` and **no required fluid**, and `salt-mine` is speed 10, which is 10 salt/s,
 matching the bof's draw to the digit.
 
-| rig | time for 120,000 salt |
+| rig | time for 126,000 salt |
 |---|--:|
-| 1 `salt-mine` + 1 `bof-mk01` | **200 min — 3 h 20 m** |
-| 2 + 2 | 100 min |
-| 4 + 4 | 50 min |
+| 1 `salt-mine` + 1 `bof-mk01` | **210 min — 3 h 30 m** |
+| 2 + 2 | 105 min |
+| 4 + 4 | 53 min |
 
-### Fuel for the seeding rig — 84 GJ
+### Fuel for the seeding rig — 88 GJ
 
-**Both machines are burners, and they burn different things.** The totals are fixed by the 120,000
+**Both machines are burners, and they burn different things.** The totals are fixed by the 126,000
 salt; adding rigs shortens the wall-clock but changes neither.
 
-| | fuel | rate | **total for 120,000 salt** |
+| | fuel | rate | **total for 126,000 salt** |
 |---|---|--:|--:|
-| `bof-mk01` | **coke** (chemical burner, 5.00 MW, eff 1) | 1.00 coke/s | **12,000 coke** = 60 GJ |
-| `salt-mine` | **acetylene** (`fluid_energy_source`, 2.00 MW, eff 1) | 2.00 acetylene/s | **24,000 acetylene** = 24 GJ |
+| `bof-mk01` | **coke** (chemical burner, 5.00 MW, eff 1) | 1.00 coke/s | **12,600 coke** = 63 GJ |
+| `salt-mine` | **acetylene** (`fluid_energy_source`, 2.00 MW, eff 1) | 2.00 acetylene/s | **25,200 acetylene** = 25 GJ |
 
 `salt-rock` itself needs **no mining fluid** — `mineable_properties` carries no `required_fluid`,
 unlike borax's syngas. The acetylene is the mine's fuel, not a mining input.
 
-The 12,000 coke is **5.4 minutes of the plant's own 36.70 coke/s**, which is sitting as a terminal
-output anyway while the island is uncommissioned. It also produces **12,000 ash** (coke's
+The 12,600 coke is **5.7 minutes of the plant's own 36.70 coke/s**, which is sitting as a terminal
+output anyway while the island is uncommissioned. It also produces **12,600 ash** (coke's
 `burnt_result`) at 10 ash/s — give the bof a chest rather than discovering it backed up, since the
 `ash-separation` bank will not be running yet.
 
 > **The acetylene dictates the changeover order.** 13B exists to delete the acetylene branch, and
 > its seeding rig runs on acetylene — so you cannot convert first and seed after. **Seed the loop
 > while design 13's acetylene block is still running**, then tear it out and commission the island.
-> The alternative is importing 24,000 acetylene from elsewhere.
+> The alternative is importing 25,200 acetylene from elsewhere.
 
 The mine is 11×11 and the bof 7×7; both come out once the loop is charged, which also returns the
 mine's 10 `mechanical-parts-01`.
@@ -398,9 +423,10 @@ Inferred from the recipe graph, not from save state.
    and the acetylene branch would have to be rebuilt.
 2. **`steam-turbine-mk01` accepts only `pressured-steam` ≥500 °C.** It cannot be fed from the
    oil-boilers, and the two generation banks are not interchangeable in either direction.
-3. **The salt seed is a prerequisite, not a flow** — **40,000 molten-salt = 120,000 salt**, which is
-   3 h 20 m on one mine and one bof, before the island produces anything. The recipe floor is only
-   26 % of that, so sizing it from `20 × 500` will be short by 4×. See § Seeding.
+3. **The salt seed is a prerequisite, not a flow** — **42,000 molten-salt = 126,000 salt**, which is
+   3 h 30 m on one mine and one bof, plus 25,200 acetylene, before the island produces anything.
+   Sizing from the 500 recipe amount is short by 4× — a powerplant's box holds 1,000 and another
+   500 is locked in the running craft. See § Seeding.
 4. **The island is 3,856 tiles**, of which 3,380 is twenty 13×13 powerplants. It is larger in area
    than the entire tar tree.
 5. **The dust bank cannot borrow from the coke bank.** Fuel affinity means its 42 % idle capacity is

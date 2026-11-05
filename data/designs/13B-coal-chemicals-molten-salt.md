@@ -42,37 +42,64 @@ is a **one-time fill**, not a standing input. Only `pressured-water` is consumed
 
 ## Seeding the salt loop
 
-The loop consumes no salt once charged, but it will not start until **every machine's input box
-holds a full craft at the same time**. A pipe network fills proportionally, so an underfilled system
-gives you twenty powerplants each holding 400-odd units, all stalled, with the total looking
-adequate.
+The loop consumes no salt once charged, but it will not start until the system is full enough that
+**every machine's input box holds a working craft at the same time**. A pipe network fills
+proportionally, so an underfilled system gives you twenty powerplants each short, all stalled, with
+the total looking adequate.
 
-```
-machine floor   20 py-coal-powerplant x 500 molten-salt   = 10,000
-                 3 py-heat-exchanger  x 200 hot-molten-salt =  600
-                                                             ------
-                                                            10,600 molten-salt  =  31,800 salt
-```
+**Seed 40,000 molten-salt = 120,000 salt.** Measured, not derived:
 
-**32,000 salt should work; seed 40,000.** The floor is the machine boxes with nothing anywhere else
-in the system, which never happens — the margin covers whatever the pipe network holds. Over-seeding
-is harmless: surplus sits in the loop and is never consumed.
+| seed | molten-salt | salt | result |
+|---|--:|--:|---|
+| | 32,000 | 96,000 | **does not start** |
+| **build to this** | **40,000** | **120,000** | **runs** |
 
-| seed | molten-salt | `bof-mk01` crafts | time on one bof | energy |
-|--:|--:|--:|--:|--:|
-| **32,000 salt** *(floor)* | 10,667 | 106.7 | **53 min** | 16 GJ |
-| **40,000 salt** *(build to this)* | 13,333 | 133.3 | **67 min** | 20 GJ |
+**The recipe floor is only a quarter of it.** Machine input boxes need
+`20 × 500 + 3 × 200 = 10,600 molten-salt`, which is **26 %** of the working seed — the other 74 % is
+fluidbox headroom and pipe volume. Per powerplant the working figure is **2,000 molten-salt against
+a 500 recipe amount, 4×**. Do not size this from the recipe; it will be short by a factor of four.
+
+### Making it
 
 `molten-salt` [bof, 30 s] is `salt 300 → 100`, and `bof-mk01` is speed 1 — so one bof turns
-**10 salt/s** into 3.33 molten-salt/s.
+**10 salt/s** into 3.33 molten-salt/s. **One `salt-mine` feeds exactly one `bof-mk01`**: `salt-rock`
+has `mining_time 1` and **no required fluid**, and `salt-mine` is speed 10, which is 10 salt/s,
+matching the bof's draw to the digit.
 
-**One `salt-mine` feeds exactly one `bof-mk01`.** `salt-rock` has `mining_time 1` and **no required
-fluid**, and `salt-mine` is speed 10 — so 10 salt/s, matching the bof's draw to the digit. The whole
-seeding rig is **one 11×11 mine at 2.00 MW plus one bof at 5.00 MW, run for about an hour**, then
-removed.
+| rig | time for 120,000 salt |
+|---|--:|
+| 1 `salt-mine` + 1 `bof-mk01` | **200 min — 3 h 20 m** |
+| 2 + 2 | 100 min |
+| 4 + 4 | 50 min |
 
-*(Scaling note: a build at 8 powerplants was seeded at 15,000–20,000 salt against its 4,250-unit
-floor — 1.18–1.57×. The 40,000 here is the same ratio at 2.5× the machines.)*
+### Fuel for the seeding rig — 84 GJ
+
+**Both machines are burners, and they burn different things.** The totals are fixed by the 120,000
+salt; adding rigs shortens the wall-clock but changes neither.
+
+| | fuel | rate | **total for 120,000 salt** |
+|---|---|--:|--:|
+| `bof-mk01` | **coke** (chemical burner, 5.00 MW, eff 1) | 1.00 coke/s | **12,000 coke** = 60 GJ |
+| `salt-mine` | **acetylene** (`fluid_energy_source`, 2.00 MW, eff 1) | 2.00 acetylene/s | **24,000 acetylene** = 24 GJ |
+
+`salt-rock` itself needs **no mining fluid** — `mineable_properties` carries no `required_fluid`,
+unlike borax's syngas. The acetylene is the mine's fuel, not a mining input.
+
+The 12,000 coke is **5.4 minutes of the plant's own 36.70 coke/s**, which is sitting as a terminal
+output anyway while the island is uncommissioned. It also produces **12,000 ash** (coke's
+`burnt_result`) at 10 ash/s — give the bof a chest rather than discovering it backed up, since the
+`ash-separation` bank will not be running yet.
+
+> **The acetylene dictates the changeover order.** 13B exists to delete the acetylene branch, and
+> its seeding rig runs on acetylene — so you cannot convert first and seed after. **Seed the loop
+> while design 13's acetylene block is still running**, then tear it out and commission the island.
+> The alternative is importing 24,000 acetylene from elsewhere.
+
+The mine is 11×11 and the bof 7×7; both come out once the loop is charged, which also returns the
+mine's 10 `mechanical-parts-01`.
+
+Over-seeding is harmless — surplus sits in the loop and is never consumed — so if in doubt, go
+higher. Underfilling does not degrade output gracefully; it stalls all twenty powerplants at once.
 
 ## The power island — fuel affinity, two banks
 
@@ -348,16 +375,16 @@ needed in hand on top of the 73.
 
 Priced in design 42's currency:
 
-| | |
-|---|--:|
-| 73 mech-parts × 3 shaft-eq | 219 |
-| 15 gearbox × 2 | 30 |
-| 9 shaft | 9 |
-| **total** | **258 shaft-eq** |
-| at 0.75 mechanical-parts/min | **97 min** for the 73 |
-| at 2.25 shaft-eq/min | **115 min** for all 258 |
+Design 42's 0.75 mechanical-parts/min **is** 2.25 shaft-eq/min — same rate, two units, since each
+mechanical-part is 3 shaft-eq. The times below are cumulative, not additive:
 
-So roughly **two hours of design 42's entire output**, with nothing left for anyone else. The 10 in
+| | shaft-eq | running time |
+|---|--:|--:|
+| 73 mechanical-parts-01 | 219 | 97 min |
+| + 15 gearbox (×2) and 9 shaft | 39 | +17 min |
+| **total** | **258** | **115 min** |
+
+So **just under two hours of design 42's entire output**, with nothing left for anyone else. The 10 in
 the salt mine come back when it is removed, taking the steady-state bill to 63.
 
 **It is still not the binding item.** `small-parts-01` at **7,010** is — at design 42's internal
@@ -371,9 +398,9 @@ Inferred from the recipe graph, not from save state.
    and the acetylene branch would have to be rebuilt.
 2. **`steam-turbine-mk01` accepts only `pressured-steam` ≥500 °C.** It cannot be fed from the
    oil-boilers, and the two generation banks are not interchangeable in either direction.
-3. **The salt seed is a prerequisite, not a flow** — 40,000 salt, about an hour on one mine and one
-   bof, before the island produces anything. See § Seeding. Underfilling does not degrade output
-   gracefully; it stalls every powerplant at once.
+3. **The salt seed is a prerequisite, not a flow** — **40,000 molten-salt = 120,000 salt**, which is
+   3 h 20 m on one mine and one bof, before the island produces anything. The recipe floor is only
+   26 % of that, so sizing it from `20 × 500` will be short by 4×. See § Seeding.
 4. **The island is 3,856 tiles**, of which 3,380 is twenty 13×13 powerplants. It is larger in area
    than the entire tar tree.
 5. **The dust bank cannot borrow from the coke bank.** Fuel affinity means its 42 % idle capacity is

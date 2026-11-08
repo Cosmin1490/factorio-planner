@@ -1,10 +1,10 @@
-# 39 — Lab instrument — 1.17/min, 14 buildings
+# 39 — Lab instrument — 1.17/min, 9 buildings
 
 Sized to **design 36's exact draw**. `lab-instrument` is the deeper of the two things design 36 buys
 to make plasmids, and buying it there was the right call precisely because the chain beneath it is
 nine stages deep — this block is that depth made explicit.
 
-**Nothing here is above 13 % utilisation.** Rated power is 67 MW; actual draw is **1.33 MW**. It is a
+**Nothing here is above 13 % utilisation.** Rated power is 51 MW; actual draw is **1.00 MW**. It is a
 chain-length block, not a throughput one.
 
 ```
@@ -26,41 +26,42 @@ diborane          [U] [electrolyzer, 7 s]  borax 10 + hydrogen 250       →  15
 ┌──────────────────┬────────────────────────┬────────┬───────┬────────┬───────────┐
 │ Recipe           │ Factory                │  frac  │ Count │  Util  │ Power     │
 ├──────────────────┼────────────────────────┼────────┼───────┼────────┼───────────┤
-│ glass-2          │ glassworks-mk01        │  0.130 │   1   │  13.0% │ acetylene │
+│ glass-2          │ glassworks-mk01        │  0.131 │   1   │  13.1% │ acetylene │
 │ lab-instrument   │ automated-factory-mk01 │  0.069 │   1   │   6.9% │ electric  │
 │ equipment-chassi │ automated-factory-mk01 │  0.069 │   1   │   6.9% │ electric  │
+│ crushing-quartz  │ jaw-crusher            │  0.066 │   1   │   6.6% │ electric  │
 │ hydrogen         │ electrolyzer-mk01      │  0.033 │   1   │   3.3% │ electric  │
 │ boron-trioxide   │ hpf                    │  0.030 │   1   │   3.0% │ electric  │
-│ lens             │ glassworks-mk01        │  0.029 │   1   │   2.9% │ acetylene │
+│ lens             │ glassworks-mk01        │  0.030 │   1   │   3.0% │ acetylene │
 │ diborane         │ electrolyzer-mk01      │  0.019 │   1   │   1.9% │ electric  │
-│ iron-stick       │ automated-factory-mk01 │  0.019 │   1   │   1.9% │ electric  │
-│ copper-cable     │ automated-factory-mk01 │  0.019 │   1   │   1.9% │ electric  │
-│ crushing-quartz  │ jaw-crusher            │  0.013 │   1   │   1.3% │ electric  │
-│ iron-gear-wheel  │ automated-factory-mk01 │  0.013 │   1   │   1.3% │ electric  │
-│ bolts            │ automated-factory-mk01 │  0.008 │   1   │   0.8% │ electric  │
 │ boric-acid       │ electrolyzer-mk01      │  0.008 │   1   │   0.8% │ electric  │
-│ small-parts-01   │ automated-factory-mk01 │  0.005 │   1   │   0.5% │ electric  │
 └──────────────────┴────────────────────────┴────────┴───────┴────────┴───────────┘
 ```
 
-**14 buildings · 647 tiles · 1.33 MW electric + 95.5 acetylene/min**
+**9 buildings · 402 tiles · 1.00 MW electric + 96.6 acetylene/min**
 
 ```
-automated-factory-mk01  x7   343 tiles      glassworks-mk01  x2    98 tiles
+automated-factory-mk01  x2    98 tiles      glassworks-mk01  x2    98 tiles
 electrolyzer-mk01       x3   108 tiles      jaw-crusher      x1    49 tiles
 hpf                     x1    49 tiles
 ```
 
-## Imports — 10
+> **`small-parts-01` is bought, not built.** Five rows — `small-parts-01`, `iron-gear-wheel`,
+> `bolts`, `iron-stick`, `copper-cable` — came out, all of which ran at 0.5–1.9 %. That is
+> **14 → 9 buildings for one import lane**: `small-parts-01` 2.92/min in, `iron-plate` 5.12 and
+> `copper-plate` 2.19 out. Per design-guide rule, small-parts is one of the three mall intermediates
+> worth a dedicated block rather than inlining, and at 0.5 % utilisation this was the clearest case
+> of it anywhere in the catalogue.
+
+## Imports — 9
 
 | | /min | note |
 |---|--:|---|
 | water | 175.50 | `boric-acid` 117 + `hydrogen` 58.5 |
-| **acetylene** | **95.5** | both glassworks — `glass-2` 78.0 + `lens` 17.5 |
+| **acetylene** | **96.6** | both glassworks — `glass-2` 78.6 + `lens` 18.0 |
 | **ore-quartz** | **19.50** | **no producer in any current design** — see § Risks |
 | rubber · tin-plate | 5.85 each | |
-| iron-plate | 5.12 | `iron-gear-wheel` + `iron-stick` |
-| copper-plate | 2.19 | → `copper-cable` |
+| **small-parts-01** | **2.92** | bought — see § Recipe table |
 | borax | 1.56 | → `diborane` |
 | fenxsb-alloy | 0.59 | see § What importing the alloy bought |
 | coke · electronic-circuit | 0.58 each | |
@@ -164,28 +165,22 @@ for that too.
 
 ## Solver command
 
-The eleven `--max-import` caps are what force the chain internal — drop any one and the LP buys that
-step instead of building it. `--fuel` on the two glassworks is recorded for intent but is a **no-op**;
+The six `--max-import` caps are what force the chain internal — drop any one and the LP buys that
+step instead of building it. `small-parts-01` is deliberately **absent** from `--recipes`, which is
+what makes it an import. `--fuel` on the two glassworks is recorded for intent but is a **no-op**;
 acetylene is hand-derived as `duty × 10 MW ÷ 1.0 MJ`. Fractional counts come from the same command at
 `--target "lab-instrument:1170"` ÷ 1000.
 
 ```bash
 npx tsx src/cli.ts solve \
-  --recipes "lab-instrument,equipment-chassi,lens,glass-2,crushing-quartz,boron-trioxide,boric-acid,diborane,hydrogen,small-parts-01,iron-gear-wheel,bolts,iron-stick,copper-cable" \
+  --recipes "lab-instrument,equipment-chassi,lens,glass-2,crushing-quartz,boron-trioxide,boric-acid,diborane,hydrogen" \
   --target "lab-instrument:1.17" --time 60 \
   --max-import "equipment-chassi:0.001" \
   --max-import "lens:0.001" --max-import "boron-trioxide:0.001" \
   --max-import "boric-acid:0.001" --max-import "diborane:0.001" --max-import "hydrogen:0.001" \
-  --max-import "small-parts-01:0.001" --max-import "iron-gear-wheel:0.001" \
-  --max-import "bolts:0.001" --max-import "iron-stick:0.001" --max-import "copper-cable:0.001" \
   --max-import "molten-glass:0.001" --max-import "crushed-quartz:0.001" \
   --factory "lab-instrument:automated-factory-mk01" \
   --factory "equipment-chassi:automated-factory-mk01" \
-  --factory "small-parts-01:automated-factory-mk01" \
-  --factory "iron-gear-wheel:automated-factory-mk01" \
-  --factory "bolts:automated-factory-mk01" \
-  --factory "iron-stick:automated-factory-mk01" \
-  --factory "copper-cable:automated-factory-mk01" \
   --factory "lens:glassworks-mk01" \
   --factory "glass-2:glassworks-mk01" \
   --factory "crushing-quartz:jaw-crusher" \

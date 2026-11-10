@@ -1,4 +1,4 @@
-# 18 — Vrauks food — 0.225 vrauks-food-01/s, 39 buildings
+# 18 — Vrauks food — 0.225 vrauks-food-01/s, 39 buildings, 2,899 tiles
 
 Feeds design 17's tier-2 paddocks and nothing else. Split out because it is a five-chain detour off
 one recipe — the latex block has no other use for a fawogae plantation or a wood line, and keeping
@@ -22,29 +22,42 @@ vrauks-food-01  [U] [crafting-with-fluid, 10 s]
 ## Recipe table
 
 ```
-┌──────────────────────┬─────────────────────────┬───────┬───────────────┐
-│ Recipe               │ Factory                 │ Count │ Modules       │
-├──────────────────────┼─────────────────────────┼───────┼───────────────┤
-│ Moss-1               │ moss-farm-mk01          │    10 │ 15x moss      │
-│ fawogae-1            │ fawogae-plantation-mk01 │     9 │ 10x fawogae   │
-│ seaweed-1            │ seaweed-crop-mk01       │     6 │ 10x seaweed   │
-│ log2                 │ fwf-mk01                │     3 │ 10x tree-mk01 │
-│ cellulose-00         │ hpf                     │     2 │               │
-│ agar                 │ hpf                     │     2 │               │
-│ extract-limestone-01 │ soil-extractor-mk01     │     2 │               │
-│ vrauks-food-01       │ automated-factory-mk01  │     1 │               │
-│ wood-seeds           │ automated-factory-mk01  │     1 │               │
-│ fawogae-spore        │ spore-collector-mk01    │     1 │               │
-│ log-wood-fast        │ wpu-mk01                │     1 │               │
-│ wood-seedling        │ botanical-nursery       │     1 │               │
-└──────────────────────┴─────────────────────────┴───────┴───────────────┘
+┌──────────────────────┬─────────────────────────┬───────┬───────┬────────┬───────┬─────────┬───────────────┐
+│ Recipe               │ Factory                 │  frac │ Count │  Util  │ Size  │ MW load │ Modules       │
+├──────────────────────┼─────────────────────────┼───────┼───────┼────────┼───────┼─────────┼───────────────┤
+│ Moss-1               │ moss-farm-mk01          │ 9.617 │  10   │  96.2% │ 6x6   │   0.96  │ 15x moss      │
+│ fawogae-1            │ fawogae-plantation-mk01 │ 8.036 │   9   │  89.3% │ 6x6   │   1.61  │ 10x fawogae   │
+│ seaweed-1            │ seaweed-crop-mk01       │ 5.625 │   6   │  93.8% │ 13x13 │   2.53  │ 10x seaweed   │
+│ log2                 │ fwf-mk01                │ 2.483 │   3   │  82.8% │ 15x15 │   1.12  │ 10x tree-mk01 │
+│ cellulose-00         │ hpf                     │ 1.688 │   2   │  84.4% │ 7x7   │   3.38  │               │
+│ extract-limestone-01 │ soil-extractor-mk01     │ 1.688 │   2   │  84.4% │ 7x7   │   0.68  │               │
+│ agar                 │ hpf                     │ 1.125 │   2   │  56.3% │ 7x7   │   2.25  │               │
+│ fawogae-spore        │ spore-collector-mk01    │ 0.965 │   1   │  96.5% │ 7x7   │   0.14  │               │
+│ wood-seedling        │ botanical-nursery       │ 0.828 │   1   │  82.8% │ 7x7   │   0.10  │               │
+│ vrauks-food-01       │ automated-factory-mk01  │ 0.563 │   1   │  56.3% │ 7x7   │   1.13  │               │
+│ wood-seeds           │ automated-factory-mk01  │ 0.474 │   1   │  47.4% │ 7x7   │   0.95  │               │
+│ log-wood-fast        │ wpu-mk01                │ 0.042 │   1   │   4.2% │ 6x6   │   0.02  │               │
+└──────────────────────┴─────────────────────────┴───────┴───────┴────────┴───────┴─────────┴───────────────┘
 ```
 
-**39 buildings, 14.86 MW electric.**
+**39 buildings · 2,899 tiles · 14.86 MW electric** *(load-weighted; installed capacity is 20.43 MW)*
+
+**`cellulose-00` and `agar` are both category `hpf` — 4 machines doing 2.813 fracs.** Switched onto
+three shared `hpf` they fit with 94 % util, saving a building and 2.00 MW of installed draw. The same
+trick does nothing for `vrauks-food-01` + `wood-seeds`: both run on `automated-factory-mk01` but
+0.563 + 0.474 = 1.037, which still rounds to the two machines already there.
+
+**`log-wood-fast` at 4.2 % is the block's one silly row** — a 6×6 `wpu-mk01` doing 1 s of work per
+24 s. It is correct to leave it (nothing else runs `wpu-handcrafting` here), but it is the first
+thing to fold into a shared machine if this block ever sits next to another wood line.
 
 **Inputs** (/s): water 81.07, steam 28.13, muddy-sludge 9.62, carbon-dioxide 9.62, tin-plate 0.056
 
 **Byproducts**: none. `vrauks-food-01` 0.225/s is the sole output.
+
+**Only one solid crosses the fence.** `tin-plate` at 0.056/s is an iron chest (32 × 100) every
+**15.8 hours** — this block is hand-feedable indefinitely on its item side, and everything else
+arrives by pipe.
 
 ## Intermediate flows
 
@@ -76,6 +89,41 @@ fawogae spore cycle. Both are net-positive and need no import.
 | vrauks-food-01 | 0.225 | **design 17** (`vrauks-2` 2/craft, `vrauks-cocoon-2` 1/craft) | — it is the product | — |
 
 Nothing else leaves the block.
+
+## Risks
+
+1. **Three rows above 93 % with no pad** — `fawogae-spore` 96.5 %, `Moss-1` 96.2 %, `seaweed-1`
+   93.8 %. The spore collector is the sharpest: **one 7×7 machine at 96.5 %**, and it is the sole
+   feed for all nine fawogae plantations — lose it and a quarter of the block idles as soon as the
+   spore buffer drains. A second one is 49 tiles and 0.15 MW.
+2. **Two internal loops, both single-threaded.** `wood-seeds → wood-seedling → log2 → log → wood →
+   wood-seeds` runs through `wood-seedling` (1 machine, 82.8 %) and `log-wood-fast` (1 machine);
+   the fawogae cycle through `fawogae-spore` (1 machine). Neither loop has a buffer in the design,
+   so a stall anywhere in a loop drains it rather than just pausing it. Seed both with a chest.
+3. **The flower banks are 25 of 39 buildings.** `Moss-1` 10 + `fawogae-1` 9 + `seaweed-1` 6 = 64 %
+   of the block and 1,698 of its 2,899 tiles, for 5.1 MW. If any of the three ever becomes available
+   as an import, take it — see the ladder below.
+4. **Steam is an external dependency with no local source.** 28.13/s, and nothing in this block
+   makes steam. If design 17 is down this block is down (§ Steam ties to design 17).
+
+## Fallback ladder
+
+| config | buildings | tiles | MW | imports |
+|---|--:|--:|--:|---|
+| **as designed** | **39** | **2,899** | **14.86** | water, steam, muddy-sludge, CO₂, tin-plate |
+| import `moss` 0.77/s | 29 | 2,539 | 13.90 | **drops muddy-sludge and CO₂**, adds moss |
+| + import `fawogae` 0.28/s | 19 | 2,166 | 12.15 | adds fawogae *(`fawogae-spore` falls out with it)* |
+| + import `seaweed` 1.13/s | 13 | 1,152 | 9.62 | adds seaweed |
+| import `vrauks-food-01` outright | **0** | **0** | **0** | food 0.225/s → add to design 17 |
+
+**The first rung is the best one.** `Moss-1` is `100 muddy-sludge + 100 CO₂ → 8 moss` and it is the
+*only* consumer of either, so importing moss removes ten buildings and two import lanes at once and
+leaves just water, steam, tin-plate and moss crossing the fence.
+
+The `hpf` share (above) composes with any rung and takes one more building off each.
+
+Rates for the import rungs are read off the intermediate table; building, tile and MW figures are
+arithmetic on the row table, not separate solves.
 
 ## Why this is a separate block and not an import
 
@@ -131,6 +179,11 @@ npx tsx src/cli.ts solve \
   --solver simplex \
   --unlocked
 ```
+
+**Re-verified against a fresh export.** The command above reproduces 39 buildings, 14.86 MW and
+13.50 vrauks-food-01/60 s exactly. Fracs come from the same command at `--target
+"vrauks-food-01:13500"`, counts divided by 1000 — no float-ceiling artifacts appeared (every row's
+`ceil(frac)` matches the direct run).
 
 For design 17's 13-paddock or 16-paddock variants, retarget to `vrauks-food-01:12` (0.20/s, 35
 buildings) or `vrauks-food-01:14.75` (0.246/s) respectively.

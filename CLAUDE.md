@@ -78,12 +78,12 @@ correct answer to the wrong question** — arithmetic rigour does not catch a ba
   - **Each byproduct row names the sink that was chosen**, its rate, cost, and what it beat — not a list of options (design guide rule 5)
   - For blocks whose output varies with demand: cascades traced to a raw input, cycles checked for deadlock, and any stated operating policy tested for feasibility before control is designed (§ Backpressure analysis, § Energy economics)
 - Block design output: every design lists the **distinct materials needed to construct its buildings** (separate from flow imports — many never appear in the solve), then gets a two-or-three-sentence **construction-feasibility note** if any of those look unavailable: what's missing, what to build first, and that it's an inference. Both in design guide § Construction-cost feasibility. The note is appended *after* the design — never a gate, never a question round.
-- **Every design records the full solver command that produced it**, in a ```bash block, with every `--recipes` / `--target` / `--input` / `--time` / `--factory` / `--modules` / `--fuel` / `--max-import` flag verbatim — not a prose summary like "input mode, `--input raw-coal:900`". Multi-mode designs record one command per mode. Above the block, add a line for any flag whose *absence* changes the answer (e.g. a `--max-import` that forces a recycling loop the LP would otherwise skip). Rates go stale as prototype data and unlocks change; the command is what makes a design re-checkable instead of re-derivable from scratch. **Designs 06 and 07 are the format reference** — 07 is the stress case at 130 recipes and 130 `--factory` overrides. Applies to new designs and to any existing one being revised. The earlier back catalogue predates the rule and its published rates stand; it may be backfilled later where a command isn't already recorded, but that is never a prerequisite for other work.
+- **Every design records the full solver command that produced it**, in a ```bash block, with every `--recipes` / `--target` / `--input` / `--time` / `--factory` / `--modules` / `--fuel` / `--max-import` flag verbatim — not a prose summary like "input mode, `--input raw-coal:900`". Multi-mode designs record one command per mode. Above the block, add a line for any flag whose *absence* changes the answer (e.g. a `--max-import` that forces a recycling loop the LP would otherwise skip). Rates go stale as prototype data and unlocks change; the command is what makes a design re-checkable instead of re-derivable from scratch. **The standard holds at any size** — a block with 130 recipes and 130 `--factory` overrides records all 130. Applies to new designs and to any existing one being revised. The earlier back catalogue predates the rule and its published rates stand; it may be backfilled later where a command isn't already recorded, but that is never a prerequisite for other work.
   - The command is also what makes a design **revisable**: when a decision changes the recipe set — an import becomes local, a byproduct gets a different sink, a chain is split out — **re-run the command rather than editing the numbers**. Patching propagates the old configuration's consequences, and those are never the rows you changed: removing a recipe strands whatever its byproducts were justifying, two or three steps away and usually in a different subsystem. A re-solve catches that for free. The solver keeps producing a consistent answer either way, which is exactly why hand-editing feels safe.
 - Solver mode selection: use `--target` only for demand-driven blocks with a single end product. Use `--input` for supply-driven or multi-output blocks (e.g. "I have 15/s raw-coal, what comes out"). Target mode minimizes buildings for the named target and will silently skip recipes that don't feed it — on a multi-output chain it produces a plausible-looking answer that drops whole processing branches. Note that `--max-import` is a hard LP constraint in target mode but only post-processing in input mode (`src/commands/solve.ts:207`).
 - Solver defaults: always `--unlocked` and `--solver simplex`. Base-tier entities use bare names (`distilator`, `tar-processing-unit`), not `-mk01`; higher tiers use `-mk02`/`-mk03`/`-mk04`.
 - **No `--solver simplex` *solve* has yet been proven wrong — not once.** Rates, balances, machine counts and feasibility verdicts have a clean record; every "bad answer" traced to the input or the invocation (a face `amount` where the prototype had a `probability`; a recycled item with no positive `--max-import`). It is a deterministic LP returning the optimum of the program it was handed, so "it stranded X" / "it stalled" are not statable hypotheses. On a disagreement re-derive in order: prototype data, own arithmetic, flags. Reading `MatrixSolver.ts` to explain one is itself the tell that the wrong layer is under investigation.
-- **The solve is trustworthy; the reporting is not.** `totalPowerMW` folds `fluid_energy_source` fuel into the electric total — arithmetically a correct sum under a wrong heading (design 30: 23.40 = 14.40 electric + 9.00 acetylene), with the fuel rate absent and `--fuel` a silent no-op on those entities. Belt/pipe throughput and script-driven production are not modelled. `--solver algebra` is legacy and does break.
+- **The solve is trustworthy; the reporting is not.** `totalPowerMW` folds `fluid_energy_source` fuel into the electric total — arithmetically a correct sum under a wrong heading (a reported 23.40 MW turning out to be 14.40 electric + 9.00 acetylene), with the fuel rate absent and `--fuel` a silent no-op on those entities. Belt/pipe throughput and script-driven production are not modelled. `--solver algebra` is legacy and does break.
 
 ## Key files
 
@@ -103,13 +103,27 @@ correct answer to the wrong question** — arithmetic rigour does not catch a ba
 
 ## Pipeline summary format
 
-When showing pipeline summaries, use:
+**Same shape in chat and in a design file.**
 
-1. Header: `<recipe> — <rate>/s, <N> buildings`
-2. Recipe table — ASCII box-drawing (┌─┬─┐ │ ├─┼─┤ └─┴─┘) with columns: Recipe, Factory, Count (right-aligned), Modules (shown when any recipe has modules)
-3. Inputs on one line, comma-separated: `item rate/s, item rate/s, ...`
-4. Byproducts on one line, same format
-5. Intermediates table — ASCII box-drawing with columns: Item, Rate, Producer, Consumer (per-recipe routing for belt/pipe planning)
+1. Header: `<recipe/block> — <rate>/s, <N> buildings, <T> tiles`
+2. Recipe table — ASCII box-drawing (┌─┬─┐ │ ├─┼─┤ └─┴─┘), **sorted by frac descending**, columns:
+   Recipe, Factory, **frac**, Count (right-aligned), **Util**, **Size**, **MW load**, Modules
+   - `frac` is the solver's fractional machine count from a ×1000 probe, 3 dp
+   - `Count` is `ceil(frac)`; `Util` is `frac / Count`
+   - **`MW load` is `frac × entity MW`, never `Count × MW`** — state installed capacity separately
+     when the two diverge, which they do badly whenever a high-draw machine runs at low duty (one
+     10 MW electrolyzer at 13 % is 1.32 MW of load against 10 MW of installed capacity)
+   - Size and Modules columns drop out when every row is the same size / unmoduled
+3. Totals line: `**N buildings · T tiles · X MW electric**`
+4. **Imports** — one comma-separated line for ≤4, a table with `/s` and a note column beyond that
+5. **Exports** — one line, same format, byproducts included
+6. Intermediates table — Item, Rate, Producer, Consumer (per-recipe routing for belt/pipe planning)
+
+Sorting by frac surfaces the pinned rows at the top and collects the sub-20 % tail at the bottom,
+which is the order the build questions arrive in.
+
+**Design files add, in this order:** block boundary, mining annex if any, terminal outputs
+(output / sink chosen / cost / what it beat), scaling ladder, risks, solver command, build materials.
 
 ## TODO
 

@@ -197,6 +197,19 @@ Run at `--target "chromium:2000"` and divide by 1000 for fracs. **Three rows sho
 artifact** — `chromium-01` reads 2.001, `tier-0-chromite-sand` 4.001 and `extract-limestone-01`
 3.001, all exact integers. Cross-check against MW: `13.14` only balances at 2.000 / 4.000 / 3.000.
 
+## Helmod import string
+
+Same command with `--export helmod` appended. Paste into Helmod's import dialog.
+
+```
+eJztmEuP2jAQx+98CotzLZHwPuTSQ2+98AWQsQfw4tipH7B0xXev8yAkMZVSqVpy2Fvy93hn5jfeiQemkFCUCLRNPkYIUUGMScY/FQMx/uaFM2jDlUzi/MXyFJIof9r5TaetVsoW2+qN33O92IgQZ8m4tIsqRRK/f5w6xq7YCMcOgM+KMwwCqNVKXH+DrkztNfOm1Yu6SND12+66zbRijtrEage1uCfUKn1N9kSYSjVK+ASaCj1ywTTIKmyENlH9WGexAcozqNzdU9lETUEyeE8mD+EfUnukp7t+qrxy4NFD/eWI4PaajKXSKREN+3vKjwzqHH6USw3je5DNkHB6mkQtm787Q4ikyknbTBuh1EcswCQft1q8PdZ3QKiSjdV6bRP35R4H3KMud6O4wBdijlweBkI5j6ZV8k9EO+2LdhqgjZ+hHQjSosrwbnVh8cKjO+vLdxbwnXb5Xoj1/4Z7DTAQyplLszdCTy/kO+/Ldx7wnQUtWSnJtMowVfFACNchHXzV5VE5A/8RdkPL1dJVR+5G0vrrDQ/RorvQDau1fBs9e+5X80Xfmi+Cms+7NT9ocgaBrcKGSDaQqr+RC6bave6rsOxLeBkQXnQJG6sk5IBL1F+IS8SrvohXAeJlgNgfXUyJscO501iisXdEwRgfFHaS29dwXvflvA44r7qcqwsFFn64KY91qxN/XXjyGWnSe0iaBMTXT9ozAxxhetQq5XYoF5+Xd4+o/ygazqJRMIxa7i+Wk5rykL6Ffi73s7GBjGjiTV6Eu/cEGj0ZQYMZtOTs0uG0j+rjUfTpz28eo4ZFle7jdnqH1UioTTFA6E9w2qpC5mwSP3PmU9bAOEhbhVPoxS9RhXAbabBOS7QdgWR/AOaUz4Q=
+```
+
+The solver emits a cycle warning on `muddy-sludge → soil → water` while generating it — that is the
+sludge recovery loop working as intended, not a fault. The string does **not** include the 17-drill
+mining annex; Helmod has no mining-drill row for a `basic-with-fluid` resource, so size that from
+§ Mining annex by hand.
+
 ## Build materials
 
 Distinct items to construct the 10 building types, separate from flow imports:
